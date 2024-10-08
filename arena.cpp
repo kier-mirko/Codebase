@@ -1,5 +1,5 @@
-#ifndef CSTD_ARENA
-#define CSTD_ARENA
+#ifndef BASE_ARENA
+#define BASE_ARENA
 
 #include "base.cpp"
 
@@ -9,31 +9,18 @@
 #include <windows.h>
 #endif
 
-namespace cstd {
+#define make(arenaptr, type) (type *)base::raw_make(arenaptr, sizeof(type))
+#define makearr(arenaptr, type, count)                                         \
+  (type *)base::raw_make(arenaptr, count * sizeof(type))
+
+namespace base {
 struct Arena {
   void *base_addr;
   void *head;
   size_t total_size;
 };
 
-template <typename T, typename... A>
-T *make(Arena *arena, size_t count = 1, A... args) {
-  assert(arena != 0);
-
-  T *res = (T *)arena->head;
-  size_t objsize = sizeof(T);
-  size_t align = alignof(T);
-  size_t pad = (size_t)arena->head & (align - 1);
-
-  for (size_t i = 0; i < count; ++i) {
-    new ((void *)&res[i]) T(args...);
-  }
-
-  arena->head = (void *)((u8 *)arena->head + count * objsize + pad);
-  return res;
-}
-
-Arena *make_arena(size_t size, void *base_addr) {
+fn Arena *arena_build(size_t size, void *base_addr = 0) {
 #if OS_LINUX || OS_BSD
   void *fail_state = MAP_FAILED;
   void *mem = mmap(base_addr, size, PROT_READ | PROT_WRITE,
@@ -56,9 +43,7 @@ Arena *make_arena(size_t size, void *base_addr) {
   }
 }
 
-inline Arena *make_arena(size_t size) { return make_arena(size, 0); }
-
-inline bool arena_free(Arena *arena) {
+inline fn bool arena_free(Arena *arena) {
 #if OS_LINUX || OS_BSD
   return munmap(arena->base_addr, arena->total_size);
 #elif OS_WINDOWS
@@ -67,6 +52,14 @@ inline bool arena_free(Arena *arena) {
   return false;
 #endif
 }
-} // namespace cstd
+
+fn void *raw_make(Arena *arena, size_t size) {
+  assert(arena != 0);
+
+  void *res = arena->head;
+  arena->head = (void *)((u8 *)arena->head + size);
+  return res;
+}
+} // namespace base
 
 #endif

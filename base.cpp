@@ -1,5 +1,5 @@
-#ifndef CSTD_BASE
-#define CSTD_BASE
+#ifndef BASE_BASE
+#define BASE_BASE
 
 #if defined(__GNUC__) && !defined(__llvm__) && !defined(__INTEL_COMPILER)
 #define COMPILER_GCC 1
@@ -88,7 +88,7 @@
   } while (0)
 
 #ifndef _assert_break
-#define _assert_break() (*(int *)0 = 0)
+#define _assert_break() __debugbreak
 #endif
 
 #ifdef ENABLE_ASSERT
@@ -108,9 +108,9 @@
 #define GB(BYTES) (MB((BYTES)) * 1024UL)
 #define TB(BYTES) (GB((BYTES)) * 1024UL)
 
-// #define global static
-// #define local static
-// #define fn static
+#define global static
+#define local static
+#define fn static
 
 #define export_c extern "C"
 #define begin_export_c extern "C" {

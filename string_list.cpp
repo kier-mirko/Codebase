@@ -1,17 +1,17 @@
-#ifndef CSTD_STRING_LIST
-#define CSTD_STRING_LIST
+#ifndef BASE_STRING_LIST
+#define BASE_STRING_LIST
 
 #include "arena.cpp"
 #include "string.cpp"
 
-namespace cstd {
+namespace base {
 struct stringnode {
   stringnode *next;
-  string value;
+  string_t value;
 
-  stringnode *append(Arena *arena, string &other) {
+  stringnode *append(Arena *arena, string_t &other) {
     if (!this->next) [[likely]] {
-      this->next = make<stringnode>(arena);
+      this->next = make(arena, stringnode);
       this->next->value = other;
       return this->next;
     }
@@ -25,28 +25,28 @@ struct stringlist {
   stringnode *last;
   size_t size;
 
-  string build(Arena *arena) {
+  string_t build(Arena *arena) {
     size_t final_len = 0, offset = 0;
 
     for (stringnode *curr = this->first; curr; curr = curr->next) {
       final_len += curr->value.size;
     }
 
-    char *final_chars = make<char>(arena, final_len);
+    char *final_chars = makearr(arena, char, final_len);
     for (stringnode *curr = this->first; curr; curr = curr->next) {
       for (size_t i = 0; i < curr->value.size; ++i) {
         *(final_chars + (offset++)) = curr->value[i];
       }
     }
 
-    return string(final_len, final_chars);
+    return string_t{.size = final_len, .cstr = final_chars};
   }
 
-  void append(Arena *arena, string &other) {
+  void append(Arena *arena, string_t &other) {
     ++size;
 
     if (!this->last) {
-      this->first = make<stringnode>(arena);
+      this->first = make(arena, stringnode);
       this->last = this->first;
       this->last->value = other;
     } else [[likely]] {
@@ -54,14 +54,14 @@ struct stringlist {
     }
   }
 };
-} // namespace cstd
+} // namespace base
 
 // ?Maybe temporary?
-std::ostream &operator<<(std::ostream &os, cstd::stringlist *s) {
-  for (cstd::stringnode *curr = s->first; curr; curr = curr->next) {
-    os << curr->value;
-  }
+// std::ostream &operator<<(std::ostream &os, base::stringlist *s) {
+//   for (base::stringnode *curr = s->first; curr; curr = curr->next) {
+//     os << curr->value;
+//   }
 
-  return os;
-}
+//   return os;
+// }
 #endif
