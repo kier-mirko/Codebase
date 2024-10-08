@@ -6,16 +6,21 @@
 #define StackPush(Head, Nodeptr)                                               \
   LLPushFrontCustom((Head), (Head), (Nodeptr), next)
 
+#define StackPop(Head) (Head ? (Head = Head->next) : 0)
+
 #define LLPushFrontCustom(Head, Last, Nodeptr, Next)                           \
   (!(Head) ? (Head) = (Last) = (Nodeptr)                                       \
-           : ((Nodeptr)->(Next) = (Head), (Head) = (Nodeptr)))
+           : ((Nodeptr)->Next = (Head), (Head) = (Nodeptr)))
 
 #define QueuePush(Head, Last, Nodeptr)                                         \
   LLPushBackCustom((Head), (Last), (Nodeptr), next)
 
+#define QueuePop(Head) (Head ? (Head = Head->next) : 0)
+
 #define LLPushBackCustom(Head, Last, Nodeptr, Next)                            \
   (!(Head) ? (Head) = (Last) = (Nodeptr)                                       \
-           : ((Last)->(Next) = (Nodeptr), (Last) = (Nodeptr)))
+           : ((Last) ? ((Last)->Next = (Nodeptr), (Last) = (Nodeptr))          \
+                     : ((Head)->Next = (Last) = (Nodeptr))))
 
 // =============================================================================
 // Doubly Linked List
