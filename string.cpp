@@ -3,7 +3,7 @@
 
 #include "base.cpp"
 
-#define STR(cstr) (string_t{arrsize(cstr), cstr})
+#define STR(cstr) (string_t{arrsize(cstr)-1, cstr})
 
 // `size` and `cstr` are to be considered immutable
 struct string_t {
