@@ -32,7 +32,7 @@
 
 #define DLLPushFrontCustom(Head, Last, Nodeptr, Next, Prev)                    \
   (!(Head) ? (Head) = (Last) = (Nodeptr)                                       \
-           : ((Nodeptr)->(Next) = (Head), (Head)->Prev = (Nodeptr),            \
+           : ((Nodeptr)->Next = (Head), (Head)->Prev = (Nodeptr),              \
               (Head) = (Nodeptr)))
 
 #define DLLPushBackCustom(DLLNodeHead, DLLNodeLast, NodeToInsertptr, Next,     \
