@@ -11,7 +11,7 @@
 
 #define make(arenaptr, type) (type *)base::raw_make(arenaptr, sizeof(type))
 #define makearr(arenaptr, type, count)                                         \
-  (type *)base::raw_make(arenaptr, count * sizeof(type))
+  (type *)base::raw_make(arenaptr, (count) * sizeof(type))
 
 namespace base {
 struct Arena {

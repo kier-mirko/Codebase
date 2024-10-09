@@ -98,8 +98,8 @@
 #endif
 
 #define arrsize(ARR) (sizeof((ARR)) / sizeof(*(ARR)))
-#define max(a, b) ((a) >= (b) ? (a) : (b))
-#define min(a, b) ((a) <= (b) ? (a) : (b))
+#define MAX(a, b) ((a) >= (b) ? (a) : (b))
+#define MIN(a, b) ((a) <= (b) ? (a) : (b))
 #define clamp_top(a, b) min((a), (b))
 #define clamp_bot(a, b) max((a), (b))
 
