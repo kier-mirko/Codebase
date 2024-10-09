@@ -100,8 +100,8 @@
 #define arrsize(ARR) (sizeof((ARR)) / sizeof(*(ARR)))
 #define MAX(a, b) ((a) >= (b) ? (a) : (b))
 #define MIN(a, b) ((a) <= (b) ? (a) : (b))
-#define clamp_top(a, b) min((a), (b))
-#define clamp_bot(a, b) max((a), (b))
+#define clamp_top(a, b) MIN((a), (b))
+#define clamp_bot(a, b) MAX((a), (b))
 
 #define kiB(BYTES) ((BYTES) * 1024)
 #define MB(BYTES) (kiB((BYTES)) * 1024)
