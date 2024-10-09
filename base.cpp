@@ -88,7 +88,11 @@
   } while (0)
 
 #ifndef _assert_break
-#define _assert_break() __debugbreak
+#if OS_WINDOWS
+#define _assert_break() __debugbreak()
+#else
+#define _assert_break() (*(volatile int *)0 = 0)
+#endif
 #endif
 
 #ifdef ENABLE_ASSERT
