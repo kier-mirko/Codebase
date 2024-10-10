@@ -12,7 +12,7 @@
   std::chrono::high_resolution_clock::time_point _time_track_end_ =            \
       std::chrono::high_resolution_clock::now();                               \
   auto _time_track_duration_ = _time_track_end_ - _time_track_start_;          \
-  printf("Took: %ldms(%ldns)\n",                                               \
+  printf("%ldms(%ldns)",                                                       \
          std::chrono::duration_cast<std::chrono::milliseconds>(                \
              _time_track_duration_)                                            \
              .count(),                                                         \
