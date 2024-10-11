@@ -52,12 +52,18 @@
                      : ((Nodeptr)->prev->next = (Nodeptr)->next,               \
                         (Nodeptr)->next->prev = (Nodeptr)->prev))))
 
+#define DLLPop(Head, Last)                                                     \
+  (!(Last)                                                                     \
+       ? 0                                                                     \
+       : (!(Last)->prev ? (Head) = (Last) = 0                                  \
+                        : ((Last)->prev->next = 0, (Last) = (Last)->prev)))
+
 // =============================================================================
 // Heaps
-#define MaxHeapPush(Head, OrderBy, Nodeptr)                                    \
+#define MaxHeapPush(Head, Last, OrderBy, Nodeptr)                              \
   _stmt(                                                                       \
       if (!(Head)) {                                                           \
-        (Head) = (Nodeptr);                                                    \
+        (Head) = (Last) = (Nodeptr);                                           \
       } else if ((Nodeptr)->OrderBy > (Head)->OrderBy) {                       \
         (Nodeptr)->next = (Head);                                              \
         (Head)->prev = (Nodeptr);                                              \
@@ -76,15 +82,16 @@
           if (!curr->next) {                                                   \
             curr->next = (Nodeptr);                                            \
             (Nodeptr)->prev = curr;                                            \
+            (Last) = (Nodeptr);                                                \
             break;                                                             \
           }                                                                    \
         }                                                                      \
       })
 
-#define MinHeapPush(Head, OrderBy, Nodeptr)                                    \
+#define MinHeapPush(Head, Last, OrderBy, Nodeptr)                              \
   _stmt(                                                                       \
       if (!(Head)) {                                                           \
-        (Head) = (Nodeptr);                                                    \
+        (Head) = (Last) = (Nodeptr);                                           \
       } else if ((Nodeptr)->OrderBy < (Head)->OrderBy) {                       \
         (Nodeptr)->next = (Head);                                              \
         (Head)->prev = (Nodeptr);                                              \
@@ -103,6 +110,7 @@
           if (!curr->next) {                                                   \
             curr->next = (Nodeptr);                                            \
             (Nodeptr)->prev = curr;                                            \
+            (Last) = (Nodeptr);                                                \
             break;                                                             \
           }                                                                    \
         }                                                                      \
