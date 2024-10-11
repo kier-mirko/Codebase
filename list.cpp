@@ -52,4 +52,58 @@
                      : ((Nodeptr)->prev->next = (Nodeptr)->next,               \
                         (Nodeptr)->next->prev = (Nodeptr)->prev))))
 
+#define MaxHeapPush(Head, OrderBy, Nodeptr)                                    \
+  _stmt(                                                                       \
+      if (!(Head)) {                                                           \
+        (Head) = (Nodeptr);                                                    \
+      } else if ((Nodeptr)->OrderBy > (Head)->OrderBy) {                       \
+        (Nodeptr)->next = (Head);                                              \
+        (Head)->prev = (Nodeptr);                                              \
+        (Head) = (Nodeptr);                                                    \
+      } else {                                                                 \
+        for (auto curr = (Head); curr; curr = curr->next) {                    \
+          if (curr->OrderBy < (Nodeptr)->OrderBy) {                            \
+            (Nodeptr)->next = curr;                                            \
+            (Nodeptr)->prev = curr->prev;                                      \
+            if (curr->prev) {                                                  \
+              curr->prev->next = (Nodeptr);                                    \
+            }                                                                  \
+            curr->prev = (Nodeptr);                                            \
+            break;                                                             \
+          }                                                                    \
+          if (!curr->next) {                                                   \
+            curr->next = (Nodeptr);                                            \
+            (Nodeptr)->prev = curr;                                            \
+            break;                                                             \
+          }                                                                    \
+        }                                                                      \
+      })
+
+#define MinHeapPush(Head, OrderBy, Nodeptr)                                    \
+  _stmt(                                                                       \
+      if (!(Head)) {                                                           \
+        (Head) = (Nodeptr);                                                    \
+      } else if ((Nodeptr)->OrderBy < (Head)->OrderBy) {                       \
+        (Nodeptr)->next = (Head);                                              \
+        (Head)->prev = (Nodeptr);                                              \
+        (Head) = (Nodeptr);                                                    \
+      } else {                                                                 \
+        for (auto curr = (Head); curr; curr = curr->next) {                    \
+          if (curr->OrderBy > (Nodeptr)->OrderBy) {                            \
+            (Nodeptr)->next = curr;                                            \
+            (Nodeptr)->prev = curr->prev;                                      \
+            if (curr->prev) {                                                  \
+              curr->prev->next = (Nodeptr);                                    \
+            }                                                                  \
+            curr->prev = (Nodeptr);                                            \
+            break;                                                             \
+          }                                                                    \
+          if (!curr->next) {                                                   \
+            curr->next = (Nodeptr);                                            \
+            (Nodeptr)->prev = curr;                                            \
+            break;                                                             \
+          }                                                                    \
+        }                                                                      \
+      })
+
 #endif
