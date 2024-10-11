@@ -52,6 +52,8 @@
                      : ((Nodeptr)->prev->next = (Nodeptr)->next,               \
                         (Nodeptr)->next->prev = (Nodeptr)->prev))))
 
+// =============================================================================
+// Heaps
 #define MaxHeapPush(Head, OrderBy, Nodeptr)                                    \
   _stmt(                                                                       \
       if (!(Head)) {                                                           \
