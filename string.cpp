@@ -27,6 +27,27 @@ struct string_t {
 
     return true;
   }
+
+  constexpr bool operator==(const char *cstr) const {
+    if (this->size == 0 && !cstr) {
+      return true;
+    } else if (!cstr || this->size == 0) {
+      return false;
+    }
+
+    size_t i = 0;
+    for (; i < this->size; ++i) {
+      if (this->cstr[i] != cstr[i]) {
+        return false;
+      }
+    }
+
+    if (cstr[i]) {
+      return false;
+    } else {
+      return true;
+    }
+  }
 };
 
 constexpr string_t prefix(string_t *s, size_t end) {
