@@ -3,24 +3,25 @@
 
 #include "base.cpp"
 
-#define STR(cstr) (string_t{arrsize(cstr)-1, cstr})
+#define strlit(STR) (string8_t{.str = (u8 *)(STR), sizeof(STR) - 1})
+#define strexpand(STR8) (int)((STR8).size), ((STR8).str)
 
 // `size` and `cstr` are to be considered immutable
-struct string_t {
+struct string8_t {
+  u8 *str;
   size_t size;
-  const char *cstr;
 
   constexpr char operator[](size_t idx) const {
-    return idx > this->size ? 0 : this->cstr[idx];
+    return idx > this->size ? 0 : this->str[idx];
   }
 
-  constexpr bool operator==(string_t &other) const {
+  constexpr bool operator==(string8_t &other) const {
     if (this->size != other.size) {
       return false;
     }
 
     for (size_t i = 0; i < this->size; ++i) {
-      if (this->cstr[i] != other.cstr[i]) {
+      if (this->str[i] != other.str[i]) {
         return false;
       }
     }
@@ -37,7 +38,7 @@ struct string_t {
 
     size_t i = 0;
     for (; i < this->size; ++i) {
-      if (this->cstr[i] != cstr[i]) {
+      if (this->str[i] != cstr[i]) {
         return false;
       }
     }
@@ -50,38 +51,28 @@ struct string_t {
   }
 };
 
-constexpr string_t prefix(string_t *s, size_t end) {
-  return {.size = clamp_top(s->size, end), .cstr = s->cstr};
+constexpr string8_t prefix(const string8_t *s, size_t end) {
+  return {.str = s->str, .size = clamp_top(s->size, end)};
 }
 
-constexpr string_t postfix(string_t *s, size_t start) {
-  return {.size = s->size, .cstr = s->cstr + start};
+constexpr string8_t postfix(const string8_t *s, size_t start) {
+  return {.str = s->str + start, .size = s->size};
 }
 
-constexpr string_t substr(string_t *s, size_t end) {
-  return {.size = clamp_top(s->size, end), .cstr = s->cstr};
+constexpr string8_t substr(const string8_t *s, size_t end) {
+  return {.str = s->str, .size = clamp_top(s->size, end)};
 }
 
-constexpr string_t substr(string_t *s, size_t start, size_t end) {
-  return {.size = clamp_top(end, s->size) - start, .cstr = s->cstr + start};
+constexpr string8_t substr(const string8_t *s, size_t start, size_t end) {
+  return {.str = s->str + start, .size = clamp_top(end, s->size) - start};
 }
 
-constexpr string_t split(string_t *s, char ch) {
+constexpr string8_t split(const string8_t *s, char ch) {
   size_t newsize = 0;
 
-  for (newsize = 0; newsize < s->size && s->cstr[newsize] != ch; ++newsize)
+  for (newsize = 0; newsize < s->size && s->str[newsize] != ch; ++newsize)
     ;
-  return {.size = newsize, .cstr = s->cstr};
+  return {.str = s->str, .size = newsize};
 }
 
-// ?Maybe temporary?
-// #include <ostream>
-// std::ostream &operator<<(std::ostream &os, string s) {
-//   os << s.size << " ";
-//   for (size_t i = 0; i < s.size; ++i) {
-//     os << s.cstr[i];
-//   }
-
-//   return os;
-// }
 #endif
