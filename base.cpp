@@ -91,7 +91,7 @@
 #if OS_WINDOWS
 #define _assert_break() __debugbreak()
 #else
-#define _assert_break() (*(volatile int *)0 = 0)
+#define _assert_break() __builtin_trap()
 #endif
 #endif
 
