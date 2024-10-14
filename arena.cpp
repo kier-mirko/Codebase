@@ -14,13 +14,13 @@
   (type *)base::raw_make(arenaptr, (count) * sizeof(type))
 
 namespace base {
-struct Arena {
+struct arena {
   void *base_addr;
   void *head;
   size_t total_size;
 };
 
-fn Arena *arena_build(size_t size, void *base_addr = 0) {
+fn arena *arena_build(size_t size, void *base_addr = 0) {
 #if OS_LINUX || OS_BSD
   void *fail_state = MAP_FAILED;
   void *mem = mmap(base_addr, size, PROT_READ | PROT_WRITE,
@@ -34,8 +34,8 @@ fn Arena *arena_build(size_t size, void *base_addr = 0) {
   if (mem == fail_state) {
     return 0;
   } else {
-    Arena *arena = (Arena *)mem;
-    arena->base_addr = (void *)((u8 *)arena + sizeof(Arena));
+    arena *arena = (base::arena *)mem;
+    arena->base_addr = (void *)((u8 *)arena + sizeof(base::arena));
     arena->head = arena->base_addr;
     arena->total_size = size;
 
@@ -43,7 +43,7 @@ fn Arena *arena_build(size_t size, void *base_addr = 0) {
   }
 }
 
-inline fn bool arena_free(Arena *arena) {
+inline fn bool arena_free(arena *arena) {
 #if OS_LINUX || OS_BSD
   return munmap(arena->base_addr, arena->total_size);
 #elif OS_WINDOWS
@@ -53,7 +53,7 @@ inline fn bool arena_free(Arena *arena) {
 #endif
 }
 
-fn void *raw_make(Arena *arena, size_t size) {
+fn void *raw_make(arena *arena, size_t size) {
   assert(arena != 0);
 
   void *res = arena->head;
