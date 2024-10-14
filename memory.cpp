@@ -13,7 +13,7 @@ void *memcpy(arena *arena, void *dest, void *src, size_t size) {
   }
 
   for (size_t i = 0; i < size; ++i) {
-    if ((((u8 *)dest)[i] = ((u8 *)src)[i])) {
+    if (!(((u8 *)dest)[i] = ((u8 *)src)[i])) {
       return 0;
     }
   }

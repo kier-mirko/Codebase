@@ -84,19 +84,39 @@ fn constexpr base::string8 split(const base::string8 *s, char ch) {
   return {.str = s->str, .size = newsize};
 }
 
-fn bool is_utf8(u8 *bytes, size_t bytes_size) { return true; }
+fn bool is_utf8(u8 *bytes, size_t bytes_size) {
+  for (size_t i = 0, forNext = 0; i < bytes_size; ++i) {
+    if ((bytes[i] & 0x80) == 0) {
+      continue;
+    } else if ((bytes[i] & 0xE0) == 0xC0) {
+      forNext = 1;
+    } else if ((bytes[i] & 0xF0) == 0xE0) {
+      forNext = 2;
+    } else if ((bytes[i] & 0xF8) == 0xF0) {
+      forNext = 3;
+    } else {
+      return false;
+    }
+
+    while (forNext-- > 0) {
+      if (++i >= bytes_size || (bytes[i] & 0xC0) != 0x80) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
 
 fn base::string8 utf8_decode(base::arena *arena, u8 *bytes, size_t bytes_size) {
   if (!is_utf8(bytes, bytes_size)) {
     return {};
   }
 
-  base::string8 res{.size = bytes_size};
   size_t length = 0;
-
   for (u8 *start = bytes, *end = bytes + bytes_size; start < end; ++length) {
     if ((*start & 0x80) == 0) {
-      ++start;
+      start += 1;
     } else if ((*start & 0xE0) == 0xC0) {
       start += 2;
     } else if ((*start & 0xF0) == 0xE0) {
@@ -106,11 +126,10 @@ fn base::string8 utf8_decode(base::arena *arena, u8 *bytes, size_t bytes_size) {
     }
   }
 
-  res.length = length;
-  res.str = makearr(arena, u8, bytes_size);
-  base::memcpy(arena, res.str, bytes, bytes_size);
-
-  return res;
+  return {.str = (u8 *)base::memcpy(arena, makearr(arena, u8, bytes_size),
+                                    bytes, bytes_size),
+          .size = bytes_size,
+          .length = length};
 }
 
 fn u8 *utf8_encode(base::arena *arena, base::string8 *str) {
@@ -156,9 +175,8 @@ fn base::string16 utf16_decode(base::arena *arena, u16 *words,
     return {};
   }
 
-  base::string16 res{.size = words_size, .length = 0};
-  for (u16 *start = words, *end = words + words_size; start < end;
-       ++res.length) {
+  size_t length = 0;
+  for (u16 *start = words, *end = words + words_size; start < end; ++length) {
     if (*start <= 0xD7FF || *start >= 0xE000) {
       start += 1;
     } else {
@@ -166,10 +184,10 @@ fn base::string16 utf16_decode(base::arena *arena, u16 *words,
     }
   }
 
-  res.str = makearr(arena, u16, words_size);
-  base::memcpy(arena, res.str, words, words_size);
-
-  return res;
+  return {.str = (u16 *)base::memcpy(arena, makearr(arena, u16, words_size),
+                                     words, words_size),
+          .size = words_size,
+          .length = length};
 }
 
 fn u16 *utf16_encode(base::arena *arena, base::string16 *str) {
@@ -177,10 +195,8 @@ fn u16 *utf16_encode(base::arena *arena, base::string16 *str) {
     return 0;
   }
 
-  u16 *res = makearr(arena, u16, str->size);
-  base::memcpy(arena, res, str->str, str->size);
-
-  return res;
+  return (u16 *)base::memcpy(arena, makearr(arena, u16, str->size), str->str,
+                             str->size);
 }
 
 // =============================================================================
@@ -213,12 +229,10 @@ fn base::string32 utf32_decode(base::arena *arena, u32 *dwords,
     return {};
   }
 
-  base::string32 res{.str = makearr(arena, u32, dwords_size),
-                     .size = dwords_size,
-                     .length = dwords_size};
-  base::memcpy(arena, res.str, dwords, dwords_size);
-
-  return res;
+  return {.str = (u32 *)base::memcpy(arena, makearr(arena, u32, dwords_size),
+                                     dwords, dwords_size),
+          .size = dwords_size,
+          .length = dwords_size};
 }
 
 fn u32 *utf32_encode(base::arena *arena, base::string32 *str) {
@@ -226,10 +240,8 @@ fn u32 *utf32_encode(base::arena *arena, base::string32 *str) {
     return 0;
   }
 
-  u32 *res = makearr(arena, u32, str->size);
-  base::memcpy(arena, res, str->str, str->size);
-
-  return res;
+  return (u32 *)base::memcpy(arena, makearr(arena, u32, str->size), str->str,
+                             str->size);
 }
 
 #endif
