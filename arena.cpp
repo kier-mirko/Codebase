@@ -13,15 +13,15 @@
 #define makearr(arenaptr, type, count)                                         \
   (type *)arena_raw_make(arenaptr, (count) * sizeof(type))
 
-namespace base {
-struct arena {
+namespace Base {
+struct Arena {
   void *base_addr;
   void *head;
   size_t total_size;
 };
-} // namespace base
+} // namespace Base
 
-fn base::arena *arena_build(size_t size, void *base_addr = 0) {
+fn Base::Arena *arena_build(size_t size, void *base_addr = 0) {
 #if OS_LINUX || OS_BSD
   void *fail_state = MAP_FAILED;
   void *mem = mmap(base_addr, size, PROT_READ | PROT_WRITE,
@@ -35,8 +35,8 @@ fn base::arena *arena_build(size_t size, void *base_addr = 0) {
   if (mem == fail_state) {
     return 0;
   } else {
-    base::arena *arena = (base::arena *)mem;
-    arena->base_addr = (void *)((u8 *)arena + sizeof(base::arena));
+    Base::Arena *arena = (Base::Arena *)mem;
+    arena->base_addr = (void *)((u8 *)arena + sizeof(Base::Arena));
     arena->head = arena->base_addr;
     arena->total_size = size;
 
@@ -44,23 +44,23 @@ fn base::arena *arena_build(size_t size, void *base_addr = 0) {
   }
 }
 
-inline void arena_pop(base::arena *arena, size_t bytes) {
+inline void arena_pop(Base::Arena *arena, size_t bytes) {
   assert(arena);
   arena->head = clamp_bot((u8 *)arena->head - bytes, arena->base_addr);
   assert(arena->head >= arena->base_addr);
 }
 
-inline fn bool arena_free(base::arena *arena) {
+inline fn bool arena_free(Base::Arena *arena) {
 #if OS_LINUX || OS_BSD
   return munmap(arena->base_addr, arena->total_size);
 #elif OS_WINDOWS
-  return VirtualFree(arena->base_addr, 0, MEM_RELEASE);
+  return VirtualFree(arena->Base_addr, 0, MEM_RELEASE);
 #else
   return false;
 #endif
 }
 
-fn void *arena_raw_make(base::arena *arena, size_t size) {
+fn void *arena_raw_make(Base::Arena *arena, size_t size) {
   assert(arena);
 
   void *res = arena->head;

@@ -33,7 +33,7 @@
                    _time_track_duration_)                                      \
                    .count());)
 
-namespace base {
+namespace Base {
 struct Timer {
   std::chrono::high_resolution_clock::time_point start;
 
@@ -49,6 +49,6 @@ struct Timer {
         std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count());
   }
 };
-} // namespace base
+} // namespace Base
 
 #endif

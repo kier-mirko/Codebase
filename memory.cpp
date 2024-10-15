@@ -4,8 +4,8 @@
 #include "arena.cpp"
 #include "base.cpp"
 
-namespace base {
-void *memcpy(arena *arena, void *dest, void *src, size_t size) {
+namespace Base {
+void *memcpy(Arena *arena, void *dest, void *src, size_t size) {
   if (!arena || !dest || !src) {
     return 0;
   } else if (size == 0) {
@@ -20,6 +20,6 @@ void *memcpy(arena *arena, void *dest, void *src, size_t size) {
 
   return dest;
 }
-} // namespace base
+} // namespace Base
 
 #endif
