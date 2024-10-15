@@ -3,9 +3,17 @@
 
 #include "arena.cpp"
 #include "base.cpp"
-#include "memory.cpp"
 
 // `size` and `cstr` are to be considered immutable
+
+// =============================================================================
+// Unicode codepoint
+namespace base {
+struct Codepoint {
+  u32 codepoint;
+  u8 size;
+};
+} // namespace base
 
 // =============================================================================
 // UTF-8 Strings
@@ -84,59 +92,57 @@ fn constexpr base::string8 split(const base::string8 *s, char ch) {
   return {.str = s->str, .size = newsize};
 }
 
-fn bool is_utf8(u8 *bytes, size_t bytes_size) {
-  for (size_t i = 0, forNext = 0; i < bytes_size; ++i) {
-    if ((bytes[i] & 0x80) == 0) {
-      continue;
-    } else if ((bytes[i] & 0xE0) == 0xC0) {
-      forNext = 1;
-    } else if ((bytes[i] & 0xF0) == 0xE0) {
-      forNext = 2;
-    } else if ((bytes[i] & 0xF8) == 0xF0) {
-      forNext = 3;
-    } else {
-      return false;
-    }
+fn base::Codepoint decode_utf8(u8 *glyph_start) {
+  base::Codepoint res = {0};
 
-    while (forNext-- > 0) {
-      if (++i >= bytes_size || (bytes[i] & 0xC0) != 0x80) {
-        return false;
-      }
-    }
+  if ((*glyph_start & 0x80) == 0) {
+    res.codepoint = *glyph_start;
+    res.size = 1;
+  } else if ((*glyph_start & 0xE0) == 0xC0) {
+    res.codepoint = glyph_start[1] & 0x3F;
+    res.codepoint |= (glyph_start[0] & 0x1F) << 6;
+    res.size = 2;
+  } else if ((*glyph_start & 0xF0) == 0xE0) {
+    res.codepoint = glyph_start[2] & 0x3F;
+    res.codepoint |= (glyph_start[1] & 0x3F) << 6;
+    res.codepoint |= (glyph_start[0] & 0xf) << 12;
+    res.size = 3;
+  } else if ((*glyph_start & 0xF8) == 0xF0) {
+    res.codepoint = glyph_start[3] & 0x3F;
+    res.codepoint |= (glyph_start[2] & 0x3F) << 6;
+    res.codepoint |= (glyph_start[1] & 0x3F) << 12;
+    res.codepoint |= (glyph_start[0] & 0x7) << 18;
+    res.size = 4;
+  } else {
+    assert(false);
   }
 
-  return true;
+  return res;
 }
 
-fn base::string8 utf8_decode(base::arena *arena, u8 *bytes, size_t bytes_size) {
-  // TODO: maybe this should be an assert
-  if (!is_utf8(bytes, bytes_size)) {
-    return {};
+fn u8 encode_utf8(u8 *res, base::Codepoint cp) {
+  if (cp.codepoint <= 0x7F) {
+    res[0] = cp.codepoint;
+    return 1;
+  } else if (cp.codepoint <= 0x7FF) {
+    res[0] = 0xC0 | (cp.codepoint >> 6);
+    res[1] = 0x80 | (cp.codepoint & 0x3F);
+    return 2;
+  } else if (cp.codepoint <= 0xFFFF) {
+    res[0] = 0xE0 | (cp.codepoint >> 12);
+    res[1] = 0x80 | ((cp.codepoint >> 6) & 0x3F);
+    res[2] = 0x80 | (cp.codepoint & 0x3F);
+    return 3;
+  } else if (cp.codepoint <= 0x10FFFF) {
+    res[0] = 0xF0 | (cp.codepoint >> 18);
+    res[1] = 0x80 | ((cp.codepoint >> 12) & 0x3F);
+    res[2] = 0x80 | ((cp.codepoint >> 6) & 0x3F);
+    res[3] = 0x80 | (cp.codepoint & 0x3F);
+    return 4;
+  } else {
+    assert(false);
+    return -1;
   }
-
-  size_t length = 0;
-  for (u8 *start = bytes, *end = bytes + bytes_size; start < end; ++length) {
-    if ((*start & 0x80) == 0) {
-      start += 1;
-    } else if ((*start & 0xE0) == 0xC0) {
-      start += 2;
-    } else if ((*start & 0xF0) == 0xE0) {
-      start += 3;
-    } else if ((*start & 0xF8) == 0xF0) {
-      start += 4;
-    }
-  }
-
-  return {.str = (u8 *)base::memcpy(arena, makearr(arena, u8, bytes_size),
-                                    bytes, bytes_size),
-          .size = bytes_size,
-          .length = length};
-}
-
-fn u8 *utf8_encode(base::arena *arena, base::string8 *str) {
-  assert(str && str->size != 0);
-  return (u8 *)base::memcpy(arena, makearr(arena, u8, str->size), str->str,
-                            str->size);
 }
 
 // =============================================================================
@@ -151,48 +157,38 @@ struct string16 {
 
 // No other operations are defined. Use UTF-8 strings instead.
 
-fn bool is_utf16(u16 *words, size_t words_size) {
-  for (size_t i = 0; i < words_size; ++i) {
-    if (words[i] >= 0xDC00 && words[i] <= 0xDFFF) {
-      return false;
-    } else if (words[i] >= 0xD800 && words[i] <= 0xDBFF) {
-      if (++i >= words_size) {
-        return false;
-      } else if (words[i] < 0xDC00 || words[i] > 0xDFFF) {
-        return false;
-      }
-    }
+fn base::Codepoint decode_utf16(u16 *glyph_start) {
+  base::Codepoint res = {0};
+
+  if (glyph_start[0] <= 0xD7FF ||
+      (glyph_start[0] >= 0xE000 && glyph_start[0] <= 0xFFFF)) {
+    res.size = 1;
+    res.codepoint = *glyph_start;
+  } else if ((glyph_start[0] >= 0xD800 && glyph_start[0] <= 0xDBFF) &&
+             (glyph_start[1] >= 0xDC00 && glyph_start[1] <= 0xDFFF)) {
+    res.size = 2;
+    res.codepoint =
+        ((glyph_start[0] - 0xD800) << 10) + (glyph_start[1] - 0xDC00) + 0x10000;
+  } else {
+    assert(false);
   }
 
-  return true;
+  return res;
 }
 
-fn base::string16 utf16_decode(base::arena *arena, u16 *words,
-                               size_t words_size) {
-  // TODO: maybe this should be an assert
-  if (!is_utf16(words, words_size)) {
-    return {};
+fn u8 encode_utf16(u16 *res, base::Codepoint cp) {
+  if (cp.codepoint <= 0xD7FF ||
+      (cp.codepoint >= 0xE000 && cp.codepoint <= 0xFFFF)) {
+    res[0] = cp.codepoint;
+    return 1;
+  } else if (cp.codepoint >= 0x10000 && cp.codepoint <= 0x10FFFF) {
+    res[0] = ((cp.codepoint - 0x10000) >> 10) + 0xD800;
+    res[1] = ((cp.codepoint - 0x10000) & 0x3FF) + 0xDC00;
+    return 2;
+  } else {
+    assert(false);
+    return -1;
   }
-
-  size_t length = 0;
-  for (u16 *start = words, *end = words + words_size; start < end; ++length) {
-    if (*start <= 0xD7FF || *start >= 0xE000) {
-      start += 1;
-    } else {
-      start += 2;
-    }
-  }
-
-  return {.str = (u16 *)base::memcpy(arena, makearr(arena, u16, words_size),
-                                     words, words_size),
-          .size = words_size,
-          .length = length};
-}
-
-fn u16 *utf16_encode(base::arena *arena, base::string16 *str) {
-  assert(str && str->size != 0);
-  return (u16 *)base::memcpy(arena, makearr(arena, u16, str->size), str->str,
-                             str->size);
 }
 
 // =============================================================================
@@ -207,35 +203,71 @@ struct string32 {
 
 // No other operations are defined. Use UTF-8 strings instead.
 
-fn bool is_utf32(u32 *dwords, size_t dwords_size) {
-  for (size_t i = 0; i < dwords_size; ++i) {
-    if (dwords[i] > 0x10FFFF) {
-      return false;
-    } else if (dwords[i] >= 0xD800 && dwords[i] <= 0xDFFF) {
-      return false;
+fn base::string32 utf32_from_8(base::arena *arena, base::string8 *in) {
+  assert(in);
+
+  base::string32 res{.str = (u32 *)makearr(arena, u32, in->length),
+                     .size = in->length * sizeof(u32),
+                     .length = in->length};
+  for (u8 *start = in->str, *end = in->str + in->size; start < end;) {
+    if ((*start & 0x80) == 0) {
+      start += 1;
+    } else if ((*start & 0xE0) == 0xC0) {
+      start += 2;
+    } else if ((*start & 0xF0) == 0xE0) {
+      start += 3;
+    } else if ((*start & 0xF8) == 0xF0) {
+      start += 4;
     }
   }
 
-  return true;
+  return {};
 }
 
-fn base::string32 utf32_decode(base::arena *arena, u32 *dwords,
-                               size_t dwords_size) {
-  // TODO: maybe this should be an assert
-  if (!is_utf32(dwords, dwords_size)) {
-    return {};
+fn base::string32 utf32_from_16(base::arena *arena, base::string16 *in) {
+  return {};
+}
+
+fn base::string16 utf16_from_8(base::arena *arena, base::string8 *in) {
+  size_t res_size = 0, approx_size = in->size * 2;
+  u16 *res = makearr(arena, u16, approx_size), *res_offset = res;
+
+  base::Codepoint codepoint = {0};
+  for (size_t i = 0; i < in->size; i += codepoint.size) {
+    codepoint = decode_utf8(in->str + i);
+
+    u8 utf16_codepoint_size = encode_utf16(res_offset, codepoint);
+    res_size += utf16_codepoint_size;
+    res_offset += utf16_codepoint_size;
   }
 
-  return {.str = (u32 *)base::memcpy(arena, makearr(arena, u32, dwords_size),
-                                     dwords, dwords_size),
-          .size = dwords_size,
-          .length = dwords_size};
+  arena_pop(arena, (approx_size - res_size));
+  return {.str = res, .size = res_size, .length = in->length};
 }
 
-fn u32 *utf32_encode(base::arena *arena, base::string32 *str) {
-  assert(str && str->size != 0);
-  return (u32 *)base::memcpy(arena, makearr(arena, u32, str->size), str->str,
-                             str->size);
+fn base::string16 utf16_from_32(base::arena *arena, base::string16 *in) {
+  return {};
+}
+
+fn base::string8 utf8_from_16(base::arena *arena, base::string16 *in) {
+  size_t res_size = 0, approx_size = in->size * 4;
+  u8 *res = makearr(arena, u8, approx_size), *res_offset = res;
+
+  base::Codepoint codepoint = {0};
+  for (size_t i = 0; i < in->size; i += codepoint.size) {
+    codepoint = decode_utf16(in->str + i);
+
+    u8 utf8_codepoint_size = encode_utf8(res_offset, codepoint);
+    res_size += utf8_codepoint_size;
+    res_offset += utf8_codepoint_size;
+  }
+
+  arena_pop(arena, (approx_size - res_size));
+  return {.str = res, .size = res_size, .length = in->length};
+}
+
+fn base::string8 utf8_from_32(base::arena *arena, base::string8 *in) {
+  return {};
 }
 
 #endif
