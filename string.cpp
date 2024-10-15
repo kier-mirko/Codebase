@@ -109,6 +109,7 @@ fn bool is_utf8(u8 *bytes, size_t bytes_size) {
 }
 
 fn base::string8 utf8_decode(base::arena *arena, u8 *bytes, size_t bytes_size) {
+  // TODO: maybe this should be an assert
   if (!is_utf8(bytes, bytes_size)) {
     return {};
   }
@@ -133,10 +134,7 @@ fn base::string8 utf8_decode(base::arena *arena, u8 *bytes, size_t bytes_size) {
 }
 
 fn u8 *utf8_encode(base::arena *arena, base::string8 *str) {
-  if (!str || str->size == 0) {
-    return 0;
-  }
-
+  assert(str && str->size != 0);
   return (u8 *)base::memcpy(arena, makearr(arena, u8, str->size), str->str,
                             str->size);
 }
@@ -171,6 +169,7 @@ fn bool is_utf16(u16 *words, size_t words_size) {
 
 fn base::string16 utf16_decode(base::arena *arena, u16 *words,
                                size_t words_size) {
+  // TODO: maybe this should be an assert
   if (!is_utf16(words, words_size)) {
     return {};
   }
@@ -191,10 +190,7 @@ fn base::string16 utf16_decode(base::arena *arena, u16 *words,
 }
 
 fn u16 *utf16_encode(base::arena *arena, base::string16 *str) {
-  if (!str || str->size == 0) {
-    return 0;
-  }
-
+  assert(str && str->size != 0);
   return (u16 *)base::memcpy(arena, makearr(arena, u16, str->size), str->str,
                              str->size);
 }
@@ -225,6 +221,7 @@ fn bool is_utf32(u32 *dwords, size_t dwords_size) {
 
 fn base::string32 utf32_decode(base::arena *arena, u32 *dwords,
                                size_t dwords_size) {
+  // TODO: maybe this should be an assert
   if (!is_utf32(dwords, dwords_size)) {
     return {};
   }
@@ -236,10 +233,7 @@ fn base::string32 utf32_decode(base::arena *arena, u32 *dwords,
 }
 
 fn u32 *utf32_encode(base::arena *arena, base::string32 *str) {
-  if (!str || str->size == 0) {
-    return 0;
-  }
-
+  assert(str && str->size != 0);
   return (u32 *)base::memcpy(arena, makearr(arena, u32, str->size), str->str,
                              str->size);
 }
