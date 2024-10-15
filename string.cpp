@@ -15,7 +15,8 @@ struct Codepoint {
 
 // =============================================================================
 // UTF-8 Strings
-#define strlit(STR) (::base::string8{.str = (u8 *)(STR), sizeof(STR) - 1})
+#define strlit(STR)                                                            \
+  (::base::string8{.str = (u8 *)(STR), .size = sizeof(STR) - 1})
 #define strexpand(STR) (int)((STR).size), (char *)((STR).str)
 
 // `size` and `cstr` are to be considered immutable
