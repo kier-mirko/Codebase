@@ -68,7 +68,7 @@ struct String8 {
 } // namespace Base
 
 fn constexpr Base::String8 prefix(const Base::String8 *s, size_t end) {
-  return {.str = s->str, .size = clamp_top(s->size, end)};
+  return {.str = s->str, .size = ClampTop(s->size, end)};
 }
 
 fn constexpr Base::String8 postfix(const Base::String8 *s, size_t start) {
@@ -76,12 +76,12 @@ fn constexpr Base::String8 postfix(const Base::String8 *s, size_t start) {
 }
 
 fn constexpr Base::String8 substr(const Base::String8 *s, size_t end) {
-  return {.str = s->str, .size = clamp_top(s->size, end)};
+  return {.str = s->str, .size = ClampTop(s->size, end)};
 }
 
 fn constexpr Base::String8 substr(const Base::String8 *s, size_t start,
                                   size_t end) {
-  return {.str = s->str + start, .size = clamp_top(end, s->size) - start};
+  return {.str = s->str + start, .size = ClampTop(end, s->size) - start};
 }
 
 fn constexpr Base::String8 split(const Base::String8 *s, char ch) {
@@ -114,7 +114,7 @@ fn Base::Codepoint decode_utf8(u8 *glyph_start) {
     res.codepoint |= (glyph_start[0] & 0x7) << 18;
     res.size = 4;
   } else {
-    assert(false);
+    Assert(false);
   }
 
   return res;
@@ -140,7 +140,7 @@ fn u8 encode_utf8(u8 *res, Base::Codepoint cp) {
     res[3] = 0x80 | (cp.codepoint & 0x3F);
     return 4;
   } else {
-    assert(false);
+    Assert(false);
     return -1;
   }
 }
@@ -189,7 +189,7 @@ fn Base::Codepoint decode_utf16(u16 *glyph_start) {
     res.codepoint =
         ((glyph_start[0] - 0xD800) << 10) + (glyph_start[1] - 0xDC00) + 0x10000;
   } else {
-    assert(false);
+    Assert(false);
   }
 
   return res;
@@ -205,7 +205,7 @@ fn u8 encode_utf16(u16 *res, Base::Codepoint cp) {
     res[1] = ((cp.codepoint - 0x10000) & 0x3FF) + 0xDC00;
     return 2;
   } else {
-    assert(false);
+    Assert(false);
     return -1;
   }
 }

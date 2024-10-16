@@ -44,24 +44,27 @@ fn Base::Arena *arena_build(size_t size, void *base_addr = 0) {
   }
 }
 
-inline void arena_pop(Base::Arena *arena, size_t bytes) {
-  assert(arena);
-  arena->head = clamp_bot((u8 *)arena->head - bytes, arena->base_addr);
-  assert(arena->head >= arena->base_addr);
+inline fn void arena_pop(Base::Arena *arena, size_t bytes) {
+  Assert(arena);
+  arena->head = ClampBot((u8 *)arena->head - bytes, arena->base_addr);
 }
 
 inline fn bool arena_free(Base::Arena *arena) {
 #if OS_LINUX || OS_BSD
   return munmap(arena->base_addr, arena->total_size);
 #elif OS_WINDOWS
-  return VirtualFree(arena->Base_addr, 0, MEM_RELEASE);
+  return VirtualFree(arena->base_addr, 0, MEM_RELEASE);
 #else
   return false;
 #endif
 }
 
 fn void *arena_raw_make(Base::Arena *arena, size_t size) {
-  assert(arena);
+  Assert(arena);
+
+  if (((u8 *)arena->head + size) >= ((u8 *)arena->base_addr + arena->total_size - sizeof(Base::Arena))) {
+    return 0;
+  }
 
   void *res = arena->head;
   arena->head = (void *)((u8 *)arena->head + size);

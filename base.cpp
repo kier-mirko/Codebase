@@ -96,16 +96,16 @@
 #endif
 
 #ifdef ENABLE_ASSERT
-#define assert(COND) _stmt(if (!(COND)) { _assert_break(); })
+#define Assert(COND) _stmt(if (!(COND)) { _assert_break(); })
 #else
-#define assert(COND)
+#define Assert(COND)
 #endif
 
-#define arrsize(ARR) (sizeof((ARR)) / sizeof(*(ARR)))
-#define MAX(a, b) ((a) >= (b) ? (a) : (b))
-#define MIN(a, b) ((a) <= (b) ? (a) : (b))
-#define clamp_top(a, b) MIN((a), (b))
-#define clamp_bot(a, b) MAX((a), (b))
+#define Arrsize(ARR) (sizeof((ARR)) / sizeof(*(ARR)))
+#define Max(a, b) ((a) >= (b) ? (a) : (b))
+#define Min(a, b) ((a) <= (b) ? (a) : (b))
+#define ClampTop(a, b) Min((a), (b))
+#define ClampBot(a, b) Max((a), (b))
 
 #define kiB(BYTES) ((BYTES) * 1024)
 #define MB(BYTES) (kiB((BYTES)) * 1024)
@@ -139,5 +139,23 @@ typedef u64 size_t;
 #else
 typedef u32 size_t;
 #endif
+
+#define U8_MAX  0xFF
+#define U8_MIN  0
+#define U16_MAX 0xFFFF
+#define U16_MIN 0
+#define U32_MAX 0xFFFFFFFF
+#define U32_MIN 0
+#define U64_MAX 0xFFFFFFFFFFFFFFFF
+#define U64_MIN 0
+
+#define I8_MAX  0x7F
+#define I8_MIN  (-0x80)
+#define I16_MAX 0x7FFF
+#define I16_MIN (-0x8000)
+#define I32_MAX 0x7FFFFFFF
+#define I32_MIN (-0x80000000)
+#define I64_MAX 0x7FFFFFFFFFFFFFFF
+#define I64_MIN (-0x8000000000000000)
 
 #endif
