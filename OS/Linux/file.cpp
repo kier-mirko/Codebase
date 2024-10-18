@@ -79,26 +79,13 @@ fn bool write(String8 filepath, StringStream *content,
   return true;
 }
 
-// =============================================================================
-// Memory mapping files for easier and faster handling
-// TODO: implement `file_open` and `file_close` for memory mapping a file
-
-// =============================================================================
-// Getting file properties
 fn FileProperties getprop(String8 filepath) {
   if (filepath.size == 0) {
     return {0};
   }
 
-  i32 fd = ::open((char *)filepath.str, O_RDONLY);
-  if (fd < 0) {
-    (void)::close(fd);
-    return {0};
-  }
-
   struct stat file_stat;
   if (::stat((char *)filepath.str, &file_stat) < 0) {
-    (void)::close(fd);
     return {0};
   }
 
@@ -126,6 +113,42 @@ fn FileProperties getprop(String8 filepath) {
 }
 
 // =============================================================================
+// Memory mapping files for easier and faster handling
+struct File {
+  i32 descriptor;
+  FileProperties prop;
+  u8 *content;
+};
+
+fn File *open(Arena *arena, String8 filepath, void *location = 0) {
+  Assert(arena);
+  if (filepath.size == 0) {
+    return 0;
+  }
+
+  i32 fd = ::open((char *)filepath.str, O_RDONLY);
+  if (fd < 0) {
+    (void)::close(fd);
+    return 0;
+  }
+
+  File *memfile = make(arena, File);
+  memfile->descriptor = fd;
+  memfile->prop = getprop(filepath);
+  memfile->content = (u8 *)mmap(location, memfile->prop.byte_size, PROT_READ,
+                                MAP_PRIVATE, fd, 0);
+
+  (void)::close(fd);
+  return memfile;
+}
+
+inline fn void close(File *file) {
+  Assert(file);
+  (void)::munmap(file->content, file->prop.byte_size);
+  (void)::close(file->descriptor);
+}
+
+// =============================================================================
 // Misc operation on the filesystem
 fn bool remove(String8 filepath) {
   // TODO: Implement FS remove `filepath`
@@ -136,6 +159,8 @@ fn bool rename(String8 filepath, String8 to) {
   // TODO: Implement FS rename `filepath` to `to`
   return true;
 }
+
+// TODO: maybe also `remove` and `rename` for `File *`?
 
 fn bool mkdir(String8 path) {
   // TODO: Implement FS make directory `path`
