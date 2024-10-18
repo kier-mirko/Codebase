@@ -10,7 +10,7 @@ struct StringNode {
   String8 value;
 };
 
-struct stringstream {
+struct StringStream {
   StringNode *first;
   StringNode *last;
   size_t size;
@@ -18,7 +18,7 @@ struct stringstream {
 } // namespace Base
 
 fn Base::String8 stringstream_str(Base::Arena *arena,
-                                  Base::stringstream *stream) {
+                                  Base::StringStream *stream) {
   size_t final_len = 0, offset = 0;
 
   for (Base::StringNode *curr = stream->first; curr; curr = curr->next) {
@@ -35,15 +35,18 @@ fn Base::String8 stringstream_str(Base::Arena *arena,
   return Base::String8{.str = final_chars, .size = final_len};
 }
 
-fn void stringstream_append(Base::Arena *arena, Base::stringstream *strlist,
-                            Base::String8 &other) {
+fn void stringstream_append(Base::Arena *arena, Base::StringStream *strlist,
+                            Base::String8 other) {
+  Assert(arena);
+  Assert(strlist);
   ++strlist->size;
 
   if (!strlist->last) {
     strlist->first = strlist->last = make(arena, Base::StringNode);
     strlist->last->value = other;
   } else [[likely]] {
-    strlist->last = strlist->last->next = make(arena, Base::StringNode);
+    strlist->last->next = make(arena, Base::StringNode);
+    strlist->last = strlist->last->next;
     strlist->last->value = other;
   }
 }
