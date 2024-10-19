@@ -9,6 +9,7 @@
 #include "../file_properties.cpp"
 
 #include <fcntl.h>
+#include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -63,6 +64,10 @@ fn bool write(String8 filepath, String8 *content, bool shouldAppend = false) {
   return true;
 }
 
+inline fn bool write(String8 filepath, String8 content, bool shouldAppend = false) {
+  return write(filepath, &content, shouldAppend);
+}
+
 fn bool write(String8 filepath, StringStream *content,
               bool shouldAppend = false) {
   for (StringNode *start = content->first;
@@ -115,6 +120,7 @@ fn FileProperties getprop(String8 filepath) {
 // =============================================================================
 // Memory mapping files for easier and faster handling
 struct File {
+  String8 path;
   i32 descriptor;
   FileProperties prop;
   u8 *content;
@@ -133,6 +139,7 @@ fn File *open(Arena *arena, String8 filepath, void *location = 0) {
   }
 
   File *memfile = make(arena, File);
+  memfile->path = filepath;
   memfile->descriptor = fd;
   memfile->prop = getprop(filepath);
   memfile->content = (u8 *)mmap(location, memfile->prop.byte_size, PROT_READ,
@@ -150,30 +157,41 @@ inline fn void close(File *file) {
 
 // =============================================================================
 // Misc operation on the filesystem
-fn bool remove(String8 filepath) {
-  // TODO: Implement FS remove `filepath`
-  return true;
+inline fn bool remove(String8 filepath) {
+  Assert(filepath.size != 0);
+  return ::unlink((char *)filepath.str) >= 0;
 }
 
-fn bool rename(String8 filepath, String8 to) {
-  // TODO: Implement FS rename `filepath` to `to`
-  return true;
+inline fn bool rename(String8 filepath, String8 to) {
+  Assert(filepath.size != 0 && to.size != 0);
+  return ::rename((char *)filepath.str, (char *)to.str) >= 0;
 }
 
-// TODO: maybe also `remove` and `rename` for `File *`?
+inline fn bool remove(File *f) {
+  Assert(f && f->path.size != 0);
+  return ::unlink((char *)f->path.str) >= 0;
+}
+
+inline fn bool rename(File *f, String8 to) {
+  Assert(f && f->path.size != 0 && to.size != 0);
+  return ::rename((char *)f->path.str, (char *)to.str) >= 0;
+}
 
 fn bool mkdir(String8 path) {
-  // TODO: Implement FS make directory `path`
-  return true;
+  Assert(path.size != 0);
+  return ::mkdir((char *)path.str, S_IRWXU | (S_IRGRP | S_IXGRP) | (S_IROTH | S_IXOTH)) >= 0;
 }
 
 fn bool rmdir(String8 path) {
-  // TODO: Implement FS remove directory `path`
-  return true;
+  Assert(path.size != 0);
+  return ::rmdir((char *)path.str) >= 0;
 }
 
 // TODO: Implement something to iterate over all the files in a given directory
 // (ignoring the `.` and `..` file)
+
+// TODO: Use said file iteration to delete all the files in a directory
+// recursively (/not actually recursively/)
 } // namespace Base::OS::FS
 
 #endif
