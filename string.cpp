@@ -30,7 +30,7 @@ struct String8 {
     return idx > this->size ? 0 : this->str[idx];
   }
 
-  constexpr bool operator==(String8 &other) const {
+  constexpr bool operator==(String8 other) const {
     if (this->size != other.size) {
       return false;
     }
@@ -65,26 +65,47 @@ struct String8 {
     }
   }
 };
-} // namespace Base
 
-fn constexpr Base::String8 prefix(const Base::String8 *s, size_t end) {
+fn String8 str8(u8 *chars, size_t len) {
+  return {
+      .str = chars,
+      .size = len,
+  };
+}
+
+fn size_t strlen(u8 *chars) {
+  u8 *start = chars;
+  for (; *start; ++start)
+    ;
+
+  return start - chars;
+}
+
+fn String8 str8(u8 *chars) {
+  return {
+      .str = chars,
+      .size = strlen(chars),
+  };
+}
+
+fn constexpr String8 prefix(const String8 *s, size_t end) {
   return {.str = s->str, .size = ClampTop(s->size, end)};
 }
 
-fn constexpr Base::String8 postfix(const Base::String8 *s, size_t start) {
+fn constexpr String8 postfix(const String8 *s, size_t start) {
   return {.str = s->str + start, .size = s->size};
 }
 
-fn constexpr Base::String8 substr(const Base::String8 *s, size_t end) {
+fn constexpr String8 substr(const String8 *s, size_t end) {
   return {.str = s->str, .size = ClampTop(s->size, end)};
 }
 
-fn constexpr Base::String8 substr(const Base::String8 *s, size_t start,
+fn constexpr String8 substr(const String8 *s, size_t start,
                                   size_t end) {
   return {.str = s->str + start, .size = ClampTop(end, s->size) - start};
 }
 
-fn constexpr Base::String8 split(const Base::String8 *s, char ch) {
+fn constexpr String8 split(const String8 *s, char ch) {
   size_t newsize = 0;
 
   for (newsize = 0; newsize < s->size && s->str[newsize] != ch; ++newsize)
@@ -92,8 +113,8 @@ fn constexpr Base::String8 split(const Base::String8 *s, char ch) {
   return {.str = s->str, .size = newsize};
 }
 
-fn Base::Codepoint decode_utf8(u8 *glyph_start) {
-  Base::Codepoint res = {0};
+fn Codepoint decodeUTF8(u8 *glyph_start) {
+  Codepoint res = {0};
 
   if ((*glyph_start & 0x80) == 0) {
     res.codepoint = *glyph_start;
@@ -120,7 +141,7 @@ fn Base::Codepoint decode_utf8(u8 *glyph_start) {
   return res;
 }
 
-fn u8 encode_utf8(u8 *res, Base::Codepoint cp) {
+fn u8 encodeUTF8(u8 *res, Codepoint cp) {
   if (cp.codepoint <= 0x7F) {
     res[0] = cp.codepoint;
     return 1;
@@ -148,7 +169,6 @@ fn u8 encode_utf8(u8 *res, Base::Codepoint cp) {
 // =============================================================================
 // UTF-16 Strings
 // `size` and `cstr` are to be considered immutable
-namespace Base {
 struct String16 {
   u16 *str;
   size_t size = 0;
@@ -172,12 +192,11 @@ struct String16 {
     return true;
   }
 };
-} // namespace Base
 
 // No other operations are defined. Use UTF-8 strings instead.
 
-fn Base::Codepoint decode_utf16(u16 *glyph_start) {
-  Base::Codepoint res = {0};
+fn Codepoint decodeUTF16(u16 *glyph_start) {
+  Codepoint res = {0};
 
   if (glyph_start[0] <= 0xD7FF ||
       (glyph_start[0] >= 0xE000 && glyph_start[0] <= 0xFFFF)) {
@@ -195,7 +214,7 @@ fn Base::Codepoint decode_utf16(u16 *glyph_start) {
   return res;
 }
 
-fn u8 encode_utf16(u16 *res, Base::Codepoint cp) {
+fn u8 encodeUTF16(u16 *res, Codepoint cp) {
   if (cp.codepoint <= 0xD7FF ||
       (cp.codepoint >= 0xE000 && cp.codepoint <= 0xFFFF)) {
     res[0] = cp.codepoint;
@@ -213,7 +232,6 @@ fn u8 encode_utf16(u16 *res, Base::Codepoint cp) {
 // =============================================================================
 // UTF-32 Strings
 // `size` and `cstr` are to be considered immutable
-namespace Base {
 struct String32 {
   u32 *str;
   size_t size = 0;
@@ -237,125 +255,125 @@ struct String32 {
     return true;
   }
 };
-} // namespace Base
 
 // No other operations are defined. Use UTF-8 strings instead.
 
-inline fn Base::Codepoint decode_utf32(u32 *glyph_start) {
+inline fn Codepoint decodeUTF32(u32 *glyph_start) {
   return {.codepoint = *glyph_start, .size = 1};
 }
 
-inline fn u8 encode_utf32(u32 *res, Base::Codepoint cp) {
+inline fn u8 encodeUTF32(u32 *res, Codepoint cp) {
   res[0] = cp.codepoint;
   return 1;
 }
 
 // =============================================================================
 // UTF-32 from UTF-8/16
-fn Base::String8 utf8_from_16(Base::Arena *arena, Base::String16 *in) {
+fn String8 UTF8From16(Arena *arena, String16 *in) {
   size_t res_size = 0, approx_size = in->size * 4;
   u8 *res = makearr(arena, u8, approx_size), *res_offset = res;
 
-  Base::Codepoint codepoint = {0};
+  Codepoint codepoint = {0};
   for (u16 *start = in->str, *end = in->str + in->size; start < end;
        start += codepoint.size) {
-    codepoint = decode_utf16(start);
+    codepoint = decodeUTF16(start);
 
-    u8 utf8_codepoint_size = encode_utf8(res_offset, codepoint);
+    u8 utf8_codepoint_size = encodeUTF8(res_offset, codepoint);
     res_size += utf8_codepoint_size;
     res_offset += utf8_codepoint_size;
   }
 
-  arena_pop(arena, (approx_size - res_size));
+  arenaPop(arena, (approx_size - res_size));
   return {.str = res, .size = res_size, .length = in->length};
 }
 
-fn Base::String8 utf8_from_32(Base::Arena *arena, Base::String32 *in) {
+fn String8 UTF8From32(Arena *arena, String32 *in) {
   size_t res_size = 0, approx_size = in->size * 4;
   u8 *res = makearr(arena, u8, approx_size), *res_offset = res;
 
-  Base::Codepoint codepoint = {0};
+  Codepoint codepoint = {0};
   for (u32 *start = in->str, *end = in->str + in->size; start < end;
        start += codepoint.size) {
-    codepoint = decode_utf32(start);
+    codepoint = decodeUTF32(start);
 
-    u8 utf8_codepoint_size = encode_utf8(res_offset, codepoint);
+    u8 utf8_codepoint_size = encodeUTF8(res_offset, codepoint);
     res_size += utf8_codepoint_size;
     res_offset += utf8_codepoint_size;
   }
 
-  arena_pop(arena, (approx_size - res_size));
+  arenaPop(arena, (approx_size - res_size));
   return {.str = res, .size = res_size, .length = in->length};
 }
 
 // =============================================================================
 // UTF-16 from UTF-16/32
-fn Base::String16 utf16_from_8(Base::Arena *arena, Base::String8 *in) {
+fn String16 UTF16From8(Arena *arena, String8 *in) {
   size_t res_size = 0, approx_size = in->size * 2;
   u16 *res = makearr(arena, u16, approx_size), *res_offset = res;
 
-  Base::Codepoint codepoint = {0};
+  Codepoint codepoint = {0};
   for (u8 *start = in->str, *end = in->str + in->size; start < end;
        start += codepoint.size) {
-    codepoint = decode_utf8(start);
+    codepoint = decodeUTF8(start);
 
-    u8 utf16_codepoint_size = encode_utf16(res_offset, codepoint);
+    u8 utf16_codepoint_size = encodeUTF16(res_offset, codepoint);
     res_size += utf16_codepoint_size;
     res_offset += utf16_codepoint_size;
   }
 
-  arena_pop(arena, (approx_size - res_size));
+  arenaPop(arena, (approx_size - res_size));
   return {.str = res, .size = res_size, .length = in->length};
 }
 
-fn Base::String16 utf16_from_32(Base::Arena *arena, Base::String32 *in) {
+fn String16 UTF16From32(Arena *arena, String32 *in) {
   size_t res_size = 0, approx_size = in->size * 2;
   u16 *res = makearr(arena, u16, approx_size), *res_offset = res;
 
-  Base::Codepoint codepoint = {0};
+  Codepoint codepoint = {0};
   for (u32 *start = in->str, *end = in->str + in->size; start < end;
        start += codepoint.size) {
-    codepoint = decode_utf32(start);
+    codepoint = decodeUTF32(start);
 
-    u8 utf16_codepoint_size = encode_utf16(res_offset, codepoint);
+    u8 utf16_codepoint_size = encodeUTF16(res_offset, codepoint);
     res_size += utf16_codepoint_size;
     res_offset += utf16_codepoint_size;
   }
 
-  arena_pop(arena, (approx_size - res_size));
+  arenaPop(arena, (approx_size - res_size));
   return {.str = res, .size = res_size, .length = in->length};
 }
 
 // =============================================================================
 // UTF-32 from UTF-8/16
-fn Base::String32 utf32_from_8(Base::Arena *arena, Base::String8 *in) {
+fn String32 UTF32From8(Arena *arena, String8 *in) {
   size_t res_size = 0, approx_size = in->size * 2;
   u32 *res = makearr(arena, u32, approx_size), *res_offset = res;
 
-  Base::Codepoint cp = {0};
+  Codepoint cp = {0};
   for (u8 *start = in->str, *end = in->str + in->size; start < end;
        start += cp.size, ++res_size) {
-    cp = decode_utf8(start);
+    cp = decodeUTF8(start);
     *res_offset++ = cp.codepoint;
   }
 
-  arena_pop(arena, (approx_size - res_size));
+  arenaPop(arena, (approx_size - res_size));
   return {.str = res, .size = res_size, .length = in->length};
 }
 
-fn Base::String32 utf32_from_16(Base::Arena *arena, Base::String16 *in) {
+fn String32 UTF32From16(Arena *arena, String16 *in) {
   size_t res_size = 0, approx_size = in->size * 2;
   u32 *res = makearr(arena, u32, approx_size), *res_offset = res;
 
-  Base::Codepoint cp = {0};
+  Codepoint cp = {0};
   for (u16 *start = in->str, *end = in->str + in->size; start < end;
        start += cp.size, ++res_size) {
-    cp = decode_utf16(start);
+    cp = decodeUTF16(start);
     *res_offset++ = cp.codepoint;
   }
 
-  arena_pop(arena, (approx_size - res_size));
+  arenaPop(arena, (approx_size - res_size));
   return {.str = res, .size = res_size, .length = in->length};
 }
+} // namespace Base
 
 #endif

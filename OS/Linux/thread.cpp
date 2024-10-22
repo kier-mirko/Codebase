@@ -7,10 +7,10 @@
 #include <pthread.h>
 
 
-namespace Base::OS {
+namespace OS {
 typedef pthread_t ThreadID;
 
-fn ThreadID thread_spawn(void *(*thread_main)(void *), void *arg_data) {
+fn ThreadID threadSpawn(void *(*thread_main)(void *), void *arg_data) {
   Assert(thread_main);
 
   ThreadID thread_id;
@@ -23,18 +23,18 @@ fn ThreadID thread_spawn(void *(*thread_main)(void *), void *arg_data) {
   return thread_id;
 }
 
-inline fn ThreadID thread_spawn(void *(*thread_main)(void *)) {
-  return thread_spawn(thread_main, 0);
+inline fn ThreadID threadSpawn(void *(*thread_main)(void *)) {
+  return threadSpawn(thread_main, 0);
 }
 
-fn void thread_join(ThreadID id, void **save_return_value_in) {
+fn void threadJoin(ThreadID id, void **save_return_value_in) {
   if (pthread_join(id, save_return_value_in) != 0) {
     perror("`Base::OS::thread_join`");
   }
 }
 
-inline fn void thread_join(ThreadID id) {
-  thread_join(id, 0);
+inline fn void threadJoin(ThreadID id) {
+  threadJoin(id, 0);
 }
 } // namespace Base::OS
 

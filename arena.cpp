@@ -9,9 +9,9 @@
 #include <windows.h>
 #endif
 
-#define make(arenaptr, type) (type *)arena_raw_make(arenaptr, sizeof(type))
+#define make(arenaptr, type) (type *)arenaMake(arenaptr, sizeof(type))
 #define makearr(arenaptr, type, count)                                         \
-  (type *)arena_raw_make(arenaptr, (count) * sizeof(type))
+  (type *)arenaMake(arenaptr, (count) * sizeof(type))
 
 namespace Base {
 struct Arena {
@@ -19,9 +19,8 @@ struct Arena {
   void *head;
   size_t total_size;
 };
-} // namespace Base
 
-fn Base::Arena *arena_build(size_t size, void *base_addr = 0) {
+fn Arena *arenaBuild(size_t size, void *base_addr = 0) {
 #if OS_LINUX || OS_BSD
   void *fail_state = MAP_FAILED;
   void *mem = mmap(base_addr, size, PROT_READ | PROT_WRITE,
@@ -35,8 +34,8 @@ fn Base::Arena *arena_build(size_t size, void *base_addr = 0) {
   if (mem == fail_state) {
     return 0;
   } else {
-    Base::Arena *arena = (Base::Arena *)mem;
-    arena->base_addr = (void *)((u8 *)arena + sizeof(Base::Arena));
+    Arena *arena = (Arena *)mem;
+    arena->base_addr = (void *)((u8 *)arena + sizeof(Arena));
     arena->head = arena->base_addr;
     arena->total_size = size;
 
@@ -44,12 +43,12 @@ fn Base::Arena *arena_build(size_t size, void *base_addr = 0) {
   }
 }
 
-inline fn void arena_pop(Base::Arena *arena, size_t bytes) {
+inline fn void arenaPop(Arena *arena, size_t bytes) {
   Assert(arena);
   arena->head = ClampBot((u8 *)arena->head - bytes, arena->base_addr);
 }
 
-inline fn bool arena_free(Base::Arena *arena) {
+inline fn bool arenaFree(Arena *arena) {
 #if OS_LINUX || OS_BSD
   return munmap(arena->base_addr, arena->total_size);
 #elif OS_WINDOWS
@@ -59,10 +58,11 @@ inline fn bool arena_free(Base::Arena *arena) {
 #endif
 }
 
-fn void *arena_raw_make(Base::Arena *arena, size_t size) {
+fn void *arenaMake(Arena *arena, size_t size) {
   Assert(arena);
 
-  if (((u8 *)arena->head + size) >= ((u8 *)arena->base_addr + arena->total_size - sizeof(Base::Arena))) {
+  if (((u8 *)arena->head + size) >=
+      ((u8 *)arena->base_addr + arena->total_size - sizeof(Arena))) {
     return 0;
   }
 
@@ -70,5 +70,6 @@ fn void *arena_raw_make(Base::Arena *arena, size_t size) {
   arena->head = (void *)((u8 *)arena->head + size);
   return res;
 }
+} // namespace Base
 
 #endif
