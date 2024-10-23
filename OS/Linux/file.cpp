@@ -38,8 +38,8 @@ fn Base::String8 *read(Base::Arena *arena, Base::String8 filepath) {
     return 0;
   }
 
-  Base::String8 *res = make(arena, Base::String8);
-  res->str = makearr(arena, u8, file_stat.st_size);
+  Base::String8 *res = Make(arena, Base::String8);
+  res->str = Makearr(arena, u8, file_stat.st_size);
   res->size = ::read(fd, res->str, file_stat.st_size);
 
   (void)::close(fd);
@@ -170,7 +170,7 @@ fn File *open(Base::Arena *arena, Base::String8 filepath, void *location = 0) {
     return 0;
   }
 
-  File *memfile = make(arena, File);
+  File *memfile = Make(arena, File);
   memfile->path = filepath;
   memfile->descriptor = fd;
   memfile->prop = getprop(filepath);
@@ -234,8 +234,8 @@ struct FilenameList {
 fn FilenameList iterFiles(Base::Arena *arena, Base::String8 dirname) {
   using namespace Base;
 
-  const String8 currdir = StrlitComp(".");
-  const String8 parentdir = StrlitComp("..");
+  const String8 currdir StrlitInit(".");
+  const String8 parentdir StrlitInit("..");
 
   FilenameList res{0};
 
@@ -251,7 +251,7 @@ fn FilenameList iterFiles(Base::Arena *arena, Base::String8 dirname) {
       continue;
     }
 
-    FilenameNode *node = make(arena, FilenameNode);
+    FilenameNode *node = Make(arena, FilenameNode);
     node->value = str;
     DLLPushBack(res.first, res.last, node);
   }
@@ -263,13 +263,13 @@ fn FilenameList iterFiles(Base::Arena *arena, Base::String8 dirname) {
 fn bool rmIter(Base::Arena *temp_arena, Base::String8 dirname) {
   using namespace Base;
 
-  const String8 currdir = StrlitComp(".");
-  const String8 parentdir = StrlitComp("..");
+  const String8 currdir StrlitInit(".");
+  const String8 parentdir StrlitInit("..");
   void *prev_head = temp_arena->head;
 
   FilenameList dirstack{0};
   FilenameList deletable{0};
-  FilenameNode *root = make(temp_arena, FilenameNode);
+  FilenameNode *root = Make(temp_arena, FilenameNode);
   root->value = dirname;
   StackPush(dirstack.first, root);
 
@@ -293,7 +293,7 @@ fn bool rmIter(Base::Arena *temp_arena, Base::String8 dirname) {
                                    Strexpand(current->value), Strexpand(str));
 
       if (entry->d_type == DT_DIR) {
-        FilenameNode *childdir = make(temp_arena, FilenameNode);
+        FilenameNode *childdir = Make(temp_arena, FilenameNode);
         childdir->value = fullpath;
         StackPush(dirstack.first, childdir);
       } else {

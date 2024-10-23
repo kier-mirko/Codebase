@@ -23,7 +23,7 @@ fn String8 str8FromStream(Arena *arena, StringStream *stream) {
     final_len += curr->value.size;
   }
 
-  u8 *final_chars = makearr(arena, u8, final_len);
+  u8 *final_chars = Makearr(arena, u8, final_len);
   for (StringNode *curr = stream->first; curr; curr = curr->next) {
     for (size_t i = 0; i < curr->value.size; ++i) {
       *(final_chars + (offset++)) = curr->value[i];
@@ -40,10 +40,10 @@ fn void stringstreamAppend(Arena *arena, StringStream *strlist,
   ++strlist->size;
 
   if (!strlist->last) {
-    strlist->first = strlist->last = make(arena, StringNode);
+    strlist->first = strlist->last = Make(arena, StringNode);
     strlist->last->value = other;
   } else [[likely]] {
-    strlist->last->next = make(arena, StringNode);
+    strlist->last->next = Make(arena, StringNode);
     strlist->last = strlist->last->next;
     strlist->last->value = other;
   }

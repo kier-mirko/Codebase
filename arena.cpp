@@ -9,9 +9,9 @@
 #include <windows.h>
 #endif
 
-#define make(arenaptr, type) (type *)arenaMake(arenaptr, sizeof(type))
-#define makearr(arenaptr, type, count)                                         \
-  (type *)arenaMake(arenaptr, (count) * sizeof(type))
+#define Make(arenaptr, type) (type *)::Base::arenaMake(arenaptr, sizeof(type))
+#define Makearr(arenaptr, type, count)                                         \
+  (type *)::Base::arenaMake(arenaptr, (count) * sizeof(type))
 
 namespace Base {
 struct Arena {
