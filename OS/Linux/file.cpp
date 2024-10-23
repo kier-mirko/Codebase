@@ -234,6 +234,9 @@ struct FilenameList {
 fn FilenameList iterFiles(Base::Arena *arena, Base::String8 dirname) {
   using namespace Base;
 
+  const String8 currdir = StrlitComp(".");
+  const String8 parentdir = StrlitComp("..");
+
   FilenameList res{0};
 
   DIR *dir = opendir((char *)dirname.str);
@@ -244,7 +247,7 @@ fn FilenameList iterFiles(Base::Arena *arena, Base::String8 dirname) {
   struct dirent *entry;
   while ((entry = readdir(dir))) {
     String8 str = str8((u8 *)entry->d_name);
-    if (str == strlit(".") || str == strlit("..")) {
+    if (str == currdir || str == parentdir) {
       continue;
     }
 
@@ -257,36 +260,63 @@ fn FilenameList iterFiles(Base::Arena *arena, Base::String8 dirname) {
   return res;
 }
 
-fn bool rmIter(Base::Arena *arena, Base::String8 dirname) {
+fn bool rmIter(Base::Arena *temp_arena, Base::String8 dirname) {
   using namespace Base;
 
-  DIR *dir = opendir((char *)dirname.str);
-  if (!dir) {
-    return false;
-  }
+  const String8 currdir = StrlitComp(".");
+  const String8 parentdir = StrlitComp("..");
+  void *prev_head = temp_arena->head;
 
-  void *prev_head = arena->head;
-  struct dirent *entry;
-  while ((entry = readdir(dir))) {
-    String8 str = str8((u8 *)entry->d_name);
-    if (str == strlit(".") || str == strlit("..")) {
-      continue;
-    } else if (!rmIter(arena, str)) {
-      StringStream fullpath = {0};
-      stringstreamAppend(arena, &fullpath, dirname);
-      stringstreamAppend(arena, &fullpath, strlit("/"));
-      stringstreamAppend(arena, &fullpath, str);
+  FilenameList dirstack{0};
+  FilenameList deletable{0};
+  FilenameNode *root = make(temp_arena, FilenameNode);
+  root->value = dirname;
+  StackPush(dirstack.first, root);
 
-      if (!remove(str8FromStream(arena, &fullpath))) {
-	arena->head = prev_head;
-	return false;
+  while (dirstack.first) {
+    FilenameNode *current = dirstack.first;
+    StackPop(dirstack.first);
+
+    DIR *dir = opendir((char *)current->value.str);
+    Assert(dir);
+
+    struct dirent *entry;
+    bool is_empty = true;
+    while ((entry = readdir(dir))) {
+      String8 str = str8((u8 *)entry->d_name);
+      if (str == currdir || str == parentdir) {
+        continue;
       }
+
+      is_empty = false;
+      String8 fullpath = formatStr(temp_arena, "%.*s/%.*s",
+                                   Strexpand(current->value), Strexpand(str));
+
+      if (entry->d_type == DT_DIR) {
+        FilenameNode *childdir = make(temp_arena, FilenameNode);
+        childdir->value = fullpath;
+        StackPush(dirstack.first, childdir);
+      } else {
+        Assert(remove(fullpath));
+      }
+    }
+
+    (void)closedir(dir);
+    if (is_empty) {
+      (void)rmdir(current->value);
+    } else {
+      StackPush(deletable.first, current);
     }
   }
 
-  arena->head = prev_head;
-  (void)closedir(dir);
-  return rmdir(dirname);
+  bool res = true;
+  while (deletable.first && res) {
+    res = rmdir(deletable.first->value);
+    StackPop(deletable.first);
+  }
+
+  temp_arena->head = prev_head;
+  return res;
 }
 
 } // namespace OS::FS

@@ -4,6 +4,9 @@
 #include "arena.cpp"
 #include "base.cpp"
 
+#include <stdio.h>
+#include <stdarg.h>
+
 // =============================================================================
 // Unicode codepoint
 namespace Base {
@@ -15,9 +18,9 @@ struct Codepoint {
 
 // =============================================================================
 // UTF-8 Strings
-#define strlit(STR)                                                            \
-  (::Base::String8{.str = (u8 *)(STR), .size = sizeof(STR) - 1})
-#define strexpand(STR) (int)((STR).size), (char *)((STR).str)
+#define Strlit(STR) (::Base::String8{.str = (u8 *)(STR), .size = sizeof(STR) - 1})
+#define StrlitInit(STR) {(u8 *)(STR), sizeof(STR) - 1,}
+#define Strexpand(STR) (int)((STR).size), (char *)((STR).str)
 
 // `size` and `cstr` are to be considered immutable
 namespace Base {
@@ -86,6 +89,29 @@ fn String8 str8(u8 *chars) {
       .str = chars,
       .size = strlen(chars),
   };
+}
+
+fn String8 formatStr(Arena *arena, const char *fmt, va_list args) {
+  va_list args2;
+  va_copy(args2, args);
+  u32 needed_bytes = vsnprintf(0, 0, fmt, args2) + 1;
+
+  String8 res {0};
+  res.str = makearr(arena, u8, needed_bytes);
+  res.size = vsnprintf((char *)res.str, needed_bytes, fmt, args);
+  res.str[res.size] = 0;
+
+  va_end(args2);
+  return res;
+}
+
+fn String8 formatStr(Arena *arena, const char *fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  String8 res = formatStr(arena, fmt, args);
+  va_end(args);
+
+  return res;
 }
 
 fn constexpr String8 prefix(const String8 *s, size_t end) {
