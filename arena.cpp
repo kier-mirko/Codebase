@@ -1,26 +1,11 @@
 #ifndef BASE_ARENA
 #define BASE_ARENA
 
-#include "base.cpp"
-
-#if OS_LINUX || OS_BSD
-#include <sys/mman.h>
-#elif OS_WINDOWS
-#include <windows.h>
-#endif
-
-#define Make(arenaptr, type) (type *)::Base::arenaMake(arenaptr, sizeof(type))
-#define Makearr(arenaptr, type, count)                                         \
-  (type *)::Base::arenaMake(arenaptr, (count) * sizeof(type))
+#include "base.h"
+#include "arena.hpp"
 
 namespace Base {
-struct Arena {
-  void *base_addr;
-  void *head;
-  size_t total_size;
-};
-
-fn Arena *arenaBuild(size_t size, void *base_addr = 0) {
+fn Arena *arenaBuild(size_t size, void *base_addr) {
 #if OS_LINUX || OS_BSD
   void *fail_state = MAP_FAILED;
   void *mem = mmap(base_addr, size, PROT_READ | PROT_WRITE,

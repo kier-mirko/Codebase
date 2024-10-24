@@ -1,8 +1,8 @@
 #ifndef BASE_MEMORY
 #define BASE_MEMORY
 
-#include "arena.cpp"
-#include "base.cpp"
+#include "base.h"
+#include "arena.hpp"
 
 namespace Base {
 void *memcpy(Arena *arena, void *dest, void *src, size_t size) {

@@ -1,15 +1,9 @@
 #ifndef BASE_OS_THREAD
 #define BASE_OS_THREAD
 
-#include "../../base.cpp"
-
-#include <stdio.h>
-#include <pthread.h>
-
+#include "thread.hpp"
 
 namespace OS {
-typedef pthread_t ThreadID;
-
 fn ThreadID threadSpawn(void *(*thread_main)(void *), void *arg_data) {
   Assert(thread_main);
 

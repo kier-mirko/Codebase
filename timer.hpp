@@ -1,8 +1,8 @@
 #ifndef BASE_TIMER
 #define BASE_TIMER
 
+#include <stdio.h>
 #include <chrono>
-#include <cstdio>
 
 #define TIMER_START()                                                          \
   std::chrono::high_resolution_clock::time_point _time_track_start_ =          \

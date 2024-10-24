@@ -1,21 +1,12 @@
 #ifndef BASE_STRING_LIST
 #define BASE_STRING_LIST
 
+#include "stringstream.hpp"
+#include "string.hpp"
+
 #include "arena.cpp"
-#include "string.cpp"
 
 namespace Base {
-struct StringNode {
-  StringNode *next;
-  String8 value;
-};
-
-struct StringStream {
-  StringNode *first;
-  StringNode *last;
-  size_t size;
-};
-
 fn String8 str8FromStream(Arena *arena, StringStream *stream) {
   size_t final_len = 0, offset = 0;
 
@@ -33,8 +24,7 @@ fn String8 str8FromStream(Arena *arena, StringStream *stream) {
   return String8{.str = final_chars, .size = final_len};
 }
 
-fn void stringstreamAppend(Arena *arena, StringStream *strlist,
-                            String8 other) {
+fn void stringstreamAppend(Arena *arena, StringStream *strlist, String8 other) {
   Assert(arena);
   Assert(strlist);
   ++strlist->size;

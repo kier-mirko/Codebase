@@ -1,7 +1,7 @@
 #ifndef BASE_OS_FILE_PROPERITES
 #define BASE_OS_FILE_PROPERITES
 
-#include "../base.cpp"
+#include "../base.h"
 
 namespace Base {
 enum AccessFlag {

@@ -1,21 +1,7 @@
 #ifndef BASE_OS_FILE
 #define BASE_OS_FILE
 
-#include "../../arena.cpp"
-#include "../../base.cpp"
-#include "../../list.cpp"
-#include "../../string.cpp"
-#include "../../stringstream.cpp"
-
-#include "../file_properties.cpp"
-
-#include <fcntl.h>
-#include <stdio.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
-#include <dirent.h>
-#include <sys/types.h>
+#include "file.hpp"
 
 namespace OS::FS {
 // =============================================================================
@@ -47,7 +33,7 @@ fn Base::String8 *read(Base::Arena *arena, Base::String8 filepath) {
 }
 
 fn bool write(Base::String8 filepath, Base::String8 *content,
-              bool shouldAppend = false) {
+              bool shouldAppend) {
   if (filepath.size == 0) {
     return false;
   }
@@ -70,12 +56,12 @@ fn bool write(Base::String8 filepath, Base::String8 *content,
 }
 
 inline fn bool write(Base::String8 filepath, Base::String8 content,
-                     bool shouldAppend = false) {
+                     bool shouldAppend) {
   return write(filepath, &content, shouldAppend);
 }
 
 fn bool write(Base::String8 filepath, Base::StringStream *content,
-              bool shouldAppend = false) {
+              bool shouldAppend) {
   for (Base::StringNode *start = content->first;
        start < content->first + content->size; ++start) {
     if (!write(filepath, &start->value, shouldAppend)) {
@@ -151,14 +137,8 @@ fn Base::FileProperties getprop(Base::String8 filepath) {
 
 // =============================================================================
 // Memory mapping files for easier and faster handling
-struct File {
-  Base::String8 path;
-  i32 descriptor;
-  Base::FileProperties prop;
-  u8 *content;
-};
 
-fn File *open(Base::Arena *arena, Base::String8 filepath, void *location = 0) {
+fn File *open(Base::Arena *arena, Base::String8 filepath, void *location) {
   Assert(arena);
   if (filepath.size == 0) {
     return 0;
@@ -219,17 +199,6 @@ fn bool rmdir(Base::String8 path) {
   Assert(path.size != 0);
   return ::rmdir((char *)path.str) >= 0;
 }
-
-struct FilenameNode {
-  Base::String8 value;
-  FilenameNode *next;
-  FilenameNode *prev;
-};
-
-struct FilenameList {
-  FilenameNode *first;
-  FilenameNode *last;
-};
 
 fn FilenameList iterFiles(Base::Arena *arena, Base::String8 dirname) {
   using namespace Base;
@@ -318,7 +287,6 @@ fn bool rmIter(Base::Arena *temp_arena, Base::String8 dirname) {
   temp_arena->head = prev_head;
   return res;
 }
-
 } // namespace OS::FS
 
 #endif
