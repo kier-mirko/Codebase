@@ -246,7 +246,7 @@ fn FilenameList iterFiles(Base::Arena *arena, Base::String8 dirname) {
 
   struct dirent *entry;
   while ((entry = readdir(dir))) {
-    String8 str = str8((u8 *)entry->d_name);
+    String8 str = str8(entry->d_name);
     if (str == currdir || str == parentdir) {
       continue;
     }
@@ -283,7 +283,7 @@ fn bool rmIter(Base::Arena *temp_arena, Base::String8 dirname) {
     struct dirent *entry;
     bool is_empty = true;
     while ((entry = readdir(dir))) {
-      String8 str = str8((u8 *)entry->d_name);
+      String8 str = str8(entry->d_name);
       if (str == currdir || str == parentdir) {
         continue;
       }

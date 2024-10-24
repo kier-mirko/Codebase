@@ -69,24 +69,24 @@ struct String8 {
   }
 };
 
-fn String8 str8(u8 *chars, size_t len) {
+fn String8 str8(char *chars, size_t len) {
   return {
-      .str = chars,
+      .str = (u8 *)chars,
       .size = len,
   };
 }
 
-fn size_t strlen(u8 *chars) {
-  u8 *start = chars;
+fn size_t strlen(char *chars) {
+  char *start = chars;
   for (; *start; ++start)
     ;
 
   return start - chars;
 }
 
-fn String8 str8(u8 *chars) {
+fn String8 str8(char *chars) {
   return {
-      .str = chars,
+      .str = (u8 *)chars,
       .size = strlen(chars),
   };
 }
