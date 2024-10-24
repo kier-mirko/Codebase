@@ -2,6 +2,7 @@
 #define BASE_STRING
 
 #include "string.hpp"
+#include <math.h>
 
 // `size` and `cstr` are to be considered immutable
 namespace Base {
@@ -121,6 +122,147 @@ fn String8 str8(char *chars) {
   };
 }
 
+fn bool strIsSignedInteger(String8 s) {
+  u8 *curr = s.str;
+  if (*curr == '-' || *curr == '+') {
+    ++curr;
+  }
+
+  for (; curr < s.str + s.size; ++curr) {
+    if (!charIsDigit(*curr)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+fn bool strIsInteger(String8 s) {
+  for (u8 *curr = s.str; curr < s.str + s.size; ++curr) {
+    if (!charIsDigit(*curr)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+fn bool strIsFloating(String8 s) {
+  bool decimal_found = false;
+  u8 *curr = s.str;
+  if (*curr == '-' || *curr == '+') {
+    ++curr;
+  }
+
+  for (; curr < s.str + s.size; ++curr) {
+    if (!charIsDigit(*curr)) {
+      if (*curr == '.' && !decimal_found) {
+        decimal_found = true;
+      } else {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+fn i64 i64FromStr(String8 s) {
+  i64 res = 0, decimal = 1;
+
+  Assert(strIsSignedInteger(s));
+  for (u8 *curr = s.str + s.size - 1; curr > s.str; --curr, decimal *= 10) {
+    res += (*curr - '0') * decimal;
+  }
+
+  if (s[0] == '-') {
+    return -res;
+  } else if (s[0] == '+') {
+    return res;
+  } else {
+    return res + (s[0] - '0') * decimal;
+  }
+}
+
+fn u64 u64FromStr(String8 s) {
+  i64 res = 0, decimal = 1;
+
+  Assert(strIsInteger(s));
+  for (u8 *curr = s.str + s.size - 1; curr >= s.str; --curr, decimal *= 10) {
+    res += (*curr - '0') * decimal;
+  }
+
+  return res;
+}
+
+// TODO: maybe implement it yourself?
+fn f64 f64FromStr(String8 s) {
+  u8 *end = s.str + s.size;
+  return ::strtod((char *)s.str, (char **)&end);
+}
+
+fn String8 stringifyI64(Arena *arena, i64 n) {
+  i64 sign = n;
+  if (n < 0) {
+    n = -n;
+  }
+
+  size_t i = 0, approx = 30;
+  u8 *str = Makearr(arena, u8, approx);
+  for (; n > 0; ++i, n /= 10) {
+    str[i] = n % 10 + '0';
+  }
+
+  if (sign < 0) {
+    str[i++] = '-';
+  }
+
+  for (size_t j = 0, k = i - 1; j < k; ++j, --k) {
+    u8 tmp = str[k];
+    str[k] = str[j];
+    str[j] = tmp;
+  }
+
+  arenaPop(arena, approx - i);
+  return {
+      .str = str,
+      .size = i,
+  };
+}
+
+fn String8 stringifyU64(Arena *arena, u64 n) {
+  size_t i = 0, approx = 30;
+  u8 *str = Makearr(arena, u8, approx);
+  for (; n > 0; ++i, n /= 10) {
+    str[i] = n % 10 + '0';
+  }
+
+  for (size_t j = 0, k = i - 1; j < k; ++j, --k) {
+    u8 tmp = str[k];
+    str[k] = str[j];
+    str[j] = tmp;
+  }
+
+  arenaPop(arena, approx - i);
+  return {
+      .str = str,
+      .size = i,
+  };
+}
+
+fn String8 stringifyF64(Arena *arena, f64 n) {
+  size_t approx = 100, size = 0;
+  u8 *str = Makearr(arena, u8, approx);
+
+  // TODO: maybe implement this yourself?
+  size = sprintf((char *)str, "%f", n);
+  arenaPop(arena, approx - size);
+  return {
+      .str = str,
+      .size = size,
+  };
+}
+
 fn size_t strlen(char *chars) {
   char *start = chars;
   for (; *start; ++start)
@@ -129,16 +271,16 @@ fn size_t strlen(char *chars) {
   return start - chars;
 }
 
-fn String8 formatStr(Arena *arena, const char *fmt, ...) {
+fn String8 strfmt(Arena *arena, const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
-  String8 res = formatStr(arena, fmt, args);
+  String8 res = strfmt(arena, fmt, args);
   va_end(args);
 
   return res;
 }
 
-fn String8 formatStr(Arena *arena, const char *fmt, va_list args) {
+fn String8 strfmt(Arena *arena, const char *fmt, va_list args) {
   va_list args2;
   va_copy(args2, args);
   u32 needed_bytes = vsnprintf(0, 0, fmt, args2) + 1;
@@ -152,20 +294,24 @@ fn String8 formatStr(Arena *arena, const char *fmt, va_list args) {
   return res;
 }
 
-constexpr fn String8 prefix(const String8 s, size_t end) {
+constexpr fn String8 strPrefix(String8 s, size_t end) {
   return {.str = s.str, .size = ClampTop(s.size, end)};
 }
 
-constexpr fn String8 postfix(const String8 s, size_t start) {
+constexpr fn String8 strPostfix(String8 s, size_t start) {
   return {.str = s.str + start, .size = s.size};
 }
 
-constexpr fn String8 substr(const String8 s, size_t end) {
+constexpr fn String8 substr(String8 s, size_t end) {
   return {.str = s.str, .size = ClampTop(s.size, end)};
 }
 
-constexpr fn String8 substr(const String8 s, size_t start, size_t end) {
+constexpr fn String8 substr(String8 s, size_t start, size_t end) {
   return {.str = s.str + start, .size = ClampTop(end, s.size) - start};
+}
+
+constexpr fn bool strEndsWith(String8 s, char ch) {
+  return s[s.size - 1] == ch;
 }
 
 constexpr fn String8 longestCommonSubstring(Arena *arena, String8 s1,
@@ -206,7 +352,44 @@ constexpr fn String8 longestCommonSubstring(Arena *arena, String8 s1,
   };
 }
 
-fn StringStream split(Arena *arena, String8 s, char ch) {
+fn String8 upperFromStr(Arena *arena, String8 s) {
+  String8 res{.str = Makearr(arena, u8, s.size), .size = s.size};
+
+  for (size_t i = 0; i < s.size; ++i) {
+    res.str[i] = charToUpper(s[i]);
+  }
+
+  return res;
+}
+
+fn String8 lowerFromStr(Arena *arena, String8 s) {
+  String8 res{.str = Makearr(arena, u8, s.size), .size = s.size};
+
+  for (size_t i = 0; i < s.size; ++i) {
+    res.str[i] = charToLower(s[i]);
+  }
+
+  return res;
+}
+
+fn String8 capitalizeFromStr(Arena *arena, String8 s) {
+  String8 res{.str = Makearr(arena, u8, s.size), .size = s.size};
+
+  res.str[0] = charToUpper(s.str[0]);
+  for (size_t i = 1; i < s.size; ++i) {
+    if (charIsSpace(s[i])) {
+      res.str[i] = s[i];
+      ++i;
+      res.str[i] = charToUpper(s[i]);
+    } else {
+      res.str[i] = charToLower(s[i]);
+    }
+  }
+
+  return res;
+}
+
+fn StringStream strSplit(Arena *arena, String8 s, char ch) {
   StringStream res{0};
 
   size_t prev = 0;
@@ -221,6 +404,38 @@ fn StringStream split(Arena *arena, String8 s, char ch) {
   return res;
 }
 
+fn bool strContains(String8 s, char ch) {
+  for (u8 *curr = s.str; curr < s.str + s.size + 1; ++curr) {
+    if (*curr == ch) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+constexpr fn bool charIsSpace(u8 ch) { return ch == ' '; }
+constexpr fn bool charIsSlash(u8 ch) { return ch == '/'; }
+constexpr fn bool charIsUpper(u8 ch) { return ch >= 'A' && ch <= 'Z'; }
+constexpr fn bool charIsLower(u8 ch) { return ch >= 'a' && ch <= 'z'; }
+constexpr fn bool charIsDigit(u8 ch) { return ch >= '0' && ch <= '9'; }
+constexpr fn bool charIsAlpha(u8 ch) {
+  return (ch >= 'A' && ch <= 'Z') || ch >= 'a' && ch <= 'z';
+}
+
+constexpr fn bool charIsAlphanumeric(u8 ch) {
+  return charIsDigit(ch) || charIsAlpha(ch);
+}
+
+constexpr fn u8 charToUpper(u8 ch) { return charIsLower(ch) ? ch - 32 : ch; }
+constexpr fn u8 charToLower(u8 ch) { return charIsUpper(ch) ? ch + 32 : ch; }
+constexpr fn u8 getCorrectPathSeparator() {
+#if OS_WINDOWS
+  return '\\';
+#else
+  return '/';
+#endif
+}
 // =============================================================================
 
 // =============================================================================

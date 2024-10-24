@@ -258,7 +258,7 @@ fn bool rmIter(Base::Arena *temp_arena, Base::String8 dirname) {
       }
 
       is_empty = false;
-      String8 fullpath = formatStr(temp_arena, "%.*s/%.*s",
+      String8 fullpath = strfmt(temp_arena, "%.*s/%.*s",
                                    Strexpand(current->value), Strexpand(str));
 
       if (entry->d_type == DT_DIR) {
