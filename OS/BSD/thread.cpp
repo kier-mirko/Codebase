@@ -1,14 +1,9 @@
 #ifndef BASE_OS_THREAD
 #define BASE_OS_THREAD
 
-#include "../../base.cpp"
-
-#include <pthread.h>
-#include <stdio.h>
+#include "thread.hpp"
 
 namespace Base::OS {
-typedef struct pthread Thread;
-
 fn Thread *thread_spawn(void *(*thread_main)(void *), void *arg_data) {
   Assert(thread_main);
 
