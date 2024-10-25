@@ -107,7 +107,7 @@
 #define ClampTop(a, b) Min((a), (b))
 #define ClampBot(a, b) Max((a), (b))
 
-#define kiB(BYTES) ((BYTES) * 1024)
+#define kiB(BYTES) ((BYTES)*1024)
 #define MB(BYTES) (kiB((BYTES)) * 1024)
 #define GB(BYTES) (MB((BYTES)) * 1024UL)
 #define TB(BYTES) (GB((BYTES)) * 1024UL)
@@ -119,6 +119,12 @@
 #define export_c extern "C"
 #define begin_export_c extern "C" {
 #define end_export_c }
+
+#if COMPILER_GCC || COMPILER_CLANG
+#define shared_export export_c __attribute__((visibility("default")))
+#elif COMPILER_CL
+#define shared_export export_c __declspec(dllexport)
+#endif
 
 #include <stdint.h>
 typedef float f32;
@@ -140,8 +146,8 @@ typedef u64 size_t;
 typedef u32 size_t;
 #endif
 
-#define U8_MAX  0xFF
-#define U8_MIN  0
+#define U8_MAX 0xFF
+#define U8_MIN 0
 #define U16_MAX 0xFFFF
 #define U16_MIN 0
 #define U32_MAX 0xFFFFFFFF
@@ -149,8 +155,8 @@ typedef u32 size_t;
 #define U64_MAX 0xFFFFFFFFFFFFFFFF
 #define U64_MIN 0
 
-#define I8_MAX  0x7F
-#define I8_MIN  (-0x80)
+#define I8_MAX 0x7F
+#define I8_MIN (-0x80)
 #define I16_MAX 0x7FFF
 #define I16_MIN (-0x8000)
 #define I32_MAX 0x7FFFFFFF

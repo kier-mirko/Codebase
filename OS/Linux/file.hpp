@@ -5,7 +5,6 @@
 
 #include "../../arena.hpp"
 #include "../../string.hpp"
-#include "../../stringstream.hpp"
 
 #include "../file_properties.hpp"
 

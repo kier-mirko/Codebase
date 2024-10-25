@@ -2,7 +2,6 @@
 
 #include "base.h"
 #include "arena.hpp"
-#include "stringstream.hpp"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -77,6 +76,20 @@ struct String8 {
     }
   }
 };
+
+struct StringNode {
+  StringNode *next;
+  String8 value;
+};
+
+struct StringStream {
+  StringNode *first;
+  StringNode *last;
+  size_t size;
+};
+
+fn String8 str8FromStream(Arena *arena, StringStream *stream);
+fn void stringstreamAppend(Arena *arena, StringStream *strlist, String8 other);
 
 fn String8 str8(char *chars);
 fn String8 str8(char *chars, size_t len);

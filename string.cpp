@@ -2,6 +2,7 @@
 #define BASE_STRING
 
 #include "string.hpp"
+
 #include <math.h>
 
 // `size` and `cstr` are to be considered immutable
@@ -120,6 +121,38 @@ fn String8 str8(char *chars) {
       .str = (u8 *)chars,
       .size = strlen(chars),
   };
+}
+
+fn String8 str8FromStream(Arena *arena, StringStream *stream) {
+  size_t final_len = 0, offset = 0;
+
+  for (StringNode *curr = stream->first; curr; curr = curr->next) {
+    final_len += curr->value.size;
+  }
+
+  u8 *final_chars = Makearr(arena, u8, final_len);
+  for (StringNode *curr = stream->first; curr; curr = curr->next) {
+    for (size_t i = 0; i < curr->value.size; ++i) {
+      *(final_chars + (offset++)) = curr->value[i];
+    }
+  }
+
+  return String8{.str = final_chars, .size = final_len};
+}
+
+fn void stringstreamAppend(Arena *arena, StringStream *strlist, String8 other) {
+  Assert(arena);
+  Assert(strlist);
+  ++strlist->size;
+
+  if (!strlist->last) {
+    strlist->first = strlist->last = Make(arena, StringNode);
+    strlist->last->value = other;
+  } else [[likely]] {
+    strlist->last->next = Make(arena, StringNode);
+    strlist->last = strlist->last->next;
+    strlist->last->value = other;
+  }
 }
 
 fn bool strIsSignedInteger(String8 s) {
