@@ -3,15 +3,14 @@
 
 #include "../base.h"
 
-namespace Base {
-enum AccessFlag {
-  Unknown = 0,
-  Execute = 1 << 0,
-  Read = 1 << 2,
-  Write = 1 << 1,
-};
+typedef enum {
+  ACF_Unknown = 0,
+  ACF_Execute = 1 << 0,
+  ACF_Read = 1 << 2,
+  ACF_Write = 1 << 1,
+} AccessFlag;
 
-struct FileProperties {
+typedef struct {
   u32 ownerID;
   u32 groupID;
   size_t byte_size;
@@ -29,7 +28,6 @@ struct FileProperties {
       AccessFlag other;
     };
   };
-};
-} // namespace Base
+} FileProperties;
 
 #endif

@@ -1,12 +1,11 @@
 #ifndef BASE_STRING
 #define BASE_STRING
 
-#include "string.hpp"
+#include "string.h"
 
-#include <math.h>
+#include <stdlib.h>
 
 // `size` and `cstr` are to be considered immutable
-namespace Base {
 // =============================================================================
 // Unicode codepoint
 fn Codepoint decodeUTF8(u8 *glyph_start) {
@@ -37,6 +36,30 @@ fn Codepoint decodeUTF8(u8 *glyph_start) {
   return res;
 }
 
+fn Codepoint decodeUTF16(u16 *glyph_start) {
+  Codepoint res = {0};
+
+  if (glyph_start[0] <= 0xD7FF ||
+      (glyph_start[0] >= 0xE000 && glyph_start[0] <= 0xFFFF)) {
+    res.size = 1;
+    res.codepoint = *glyph_start;
+  } else if ((glyph_start[0] >= 0xD800 && glyph_start[0] <= 0xDBFF) &&
+             (glyph_start[1] >= 0xDC00 && glyph_start[1] <= 0xDFFF)) {
+    res.size = 2;
+    res.codepoint =
+        ((glyph_start[0] - 0xD800) << 10) + (glyph_start[1] - 0xDC00) + 0x10000;
+  } else {
+    Assert(false);
+  }
+
+  return res;
+}
+
+inline fn Codepoint decodeUTF32(u32 *glyph_start) {
+  Codepoint res = {.codepoint = *glyph_start, .size = 1};
+  return res;
+}
+
 fn u8 encodeUTF8(u8 *res, Codepoint cp) {
   if (cp.codepoint <= 0x7F) {
     res[0] = cp.codepoint;
@@ -62,25 +85,6 @@ fn u8 encodeUTF8(u8 *res, Codepoint cp) {
   }
 }
 
-fn Codepoint decodeUTF16(u16 *glyph_start) {
-  Codepoint res = {0};
-
-  if (glyph_start[0] <= 0xD7FF ||
-      (glyph_start[0] >= 0xE000 && glyph_start[0] <= 0xFFFF)) {
-    res.size = 1;
-    res.codepoint = *glyph_start;
-  } else if ((glyph_start[0] >= 0xD800 && glyph_start[0] <= 0xDBFF) &&
-             (glyph_start[1] >= 0xDC00 && glyph_start[1] <= 0xDFFF)) {
-    res.size = 2;
-    res.codepoint =
-        ((glyph_start[0] - 0xD800) << 10) + (glyph_start[1] - 0xDC00) + 0x10000;
-  } else {
-    Assert(false);
-  }
-
-  return res;
-}
-
 fn u8 encodeUTF16(u16 *res, Codepoint cp) {
   if (cp.codepoint <= 0xD7FF ||
       (cp.codepoint >= 0xE000 && cp.codepoint <= 0xFFFF)) {
@@ -96,33 +100,13 @@ fn u8 encodeUTF16(u16 *res, Codepoint cp) {
   }
 }
 
-inline fn Codepoint decodeUTF32(u32 *glyph_start) {
-  return {.codepoint = *glyph_start, .size = 1};
-}
-
 inline fn u8 encodeUTF32(u32 *res, Codepoint cp) {
   res[0] = cp.codepoint;
   return 1;
 }
 
 // =============================================================================
-
-// =============================================================================
 // UTF-8 string
-fn String8 str8(char *chars, size_t len) {
-  return {
-      .str = (u8 *)chars,
-      .size = len,
-  };
-}
-
-fn String8 str8(char *chars) {
-  return {
-      .str = (u8 *)chars,
-      .size = strlen(chars),
-  };
-}
-
 fn String8 str8FromStream(Arena *arena, StringStream *stream) {
   size_t final_len = 0, offset = 0;
 
@@ -133,11 +117,11 @@ fn String8 str8FromStream(Arena *arena, StringStream *stream) {
   u8 *final_chars = Makearr(arena, u8, final_len);
   for (StringNode *curr = stream->first; curr; curr = curr->next) {
     for (size_t i = 0; i < curr->value.size; ++i) {
-      *(final_chars + (offset++)) = curr->value[i];
+      *(final_chars + (offset++)) = curr->value.str[i];
     }
   }
-
-  return String8{.str = final_chars, .size = final_len};
+  String8 res = {.str = final_chars, .size = final_len};
+  return res;
 }
 
 fn void stringstreamAppend(Arena *arena, StringStream *strlist, String8 other) {
@@ -148,10 +132,61 @@ fn void stringstreamAppend(Arena *arena, StringStream *strlist, String8 other) {
   if (!strlist->last) {
     strlist->first = strlist->last = Make(arena, StringNode);
     strlist->last->value = other;
-  } else [[likely]] {
+  } else {
     strlist->last->next = Make(arena, StringNode);
     strlist->last = strlist->last->next;
     strlist->last->value = other;
+  }
+}
+
+fn String8 str8(char *chars, size_t len) {
+  String8 res = {
+      .str = (u8 *)chars,
+      .size = len,
+  };
+  return res;
+}
+
+fn String8 strFromCstr(char *chars) {
+  String8 res = {
+      .str = (u8 *)chars,
+      .size = strlen(chars),
+  };
+  return res;
+}
+
+fn bool strEq(String8 s1, String8 s2) {
+  if (s1.size != s2.size) {
+    return false;
+  }
+
+  for (size_t i = 0; i < s1.size; ++i) {
+    if (s1.str[i] != s2.str[i]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+fn bool strEqCstr(String8 s, const char *cstr) {
+  if (s.size == 0 && !cstr) {
+    return true;
+  } else if (!cstr || s.size == 0) {
+    return false;
+  }
+
+  size_t i = 0;
+  for (; i < s.size; ++i) {
+    if (s.str[i] != cstr[i]) {
+      return false;
+    }
+  }
+
+  if (cstr[i]) {
+    return false;
+  } else {
+    return true;
   }
 }
 
@@ -208,12 +243,12 @@ fn i64 i64FromStr(String8 s) {
     res += (*curr - '0') * decimal;
   }
 
-  if (s[0] == '-') {
+  if (s.str[0] == '-') {
     return -res;
-  } else if (s[0] == '+') {
+  } else if (s.str[0] == '+') {
     return res;
   } else {
-    return res + (s[0] - '0') * decimal;
+    return res + (s.str[0] - '0') * decimal;
   }
 }
 
@@ -228,10 +263,10 @@ fn u64 u64FromStr(String8 s) {
   return res;
 }
 
-// TODO: maybe implement it yourself?
+// TODO: maybe implement `strtod`?
 fn f64 f64FromStr(String8 s) {
   u8 *end = s.str + s.size;
-  return ::strtod((char *)s.str, (char **)&end);
+  return strtod((char *)s.str, (char **)&end);
 }
 
 fn String8 stringifyI64(Arena *arena, i64 n) {
@@ -257,10 +292,11 @@ fn String8 stringifyI64(Arena *arena, i64 n) {
   }
 
   arenaPop(arena, approx - i);
-  return {
+  String8 res = {
       .str = str,
       .size = i,
   };
+  return res;
 }
 
 fn String8 stringifyU64(Arena *arena, u64 n) {
@@ -277,23 +313,25 @@ fn String8 stringifyU64(Arena *arena, u64 n) {
   }
 
   arenaPop(arena, approx - i);
-  return {
+  String8 res = {
       .str = str,
       .size = i,
   };
+  return res;
 }
 
 fn String8 stringifyF64(Arena *arena, f64 n) {
   size_t approx = 100, size = 0;
   u8 *str = Makearr(arena, u8, approx);
 
-  // TODO: maybe implement this yourself?
+  // TODO: maybe implement `sprintf`?
   size = sprintf((char *)str, "%f", n);
   arenaPop(arena, approx - size);
-  return {
+  String8 res = {
       .str = str,
       .size = size,
   };
+  return res;
 }
 
 fn size_t strlen(char *chars) {
@@ -304,21 +342,21 @@ fn size_t strlen(char *chars) {
   return start - chars;
 }
 
-fn String8 strfmt(Arena *arena, const char *fmt, ...) {
+fn String8 strFormat(Arena *arena, const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
-  String8 res = strfmt(arena, fmt, args);
+  String8 res = strFormatVa(arena, fmt, args);
   va_end(args);
 
   return res;
 }
 
-fn String8 strfmt(Arena *arena, const char *fmt, va_list args) {
+fn String8 strFormatVa(Arena *arena, const char *fmt, va_list args) {
   va_list args2;
   va_copy(args2, args);
   u32 needed_bytes = vsnprintf(0, 0, fmt, args2) + 1;
 
-  String8 res{0};
+  String8 res = {0};
   res.str = Makearr(arena, u8, needed_bytes);
   res.size = vsnprintf((char *)res.str, needed_bytes, fmt, args);
   res.str[res.size] = 0;
@@ -327,38 +365,40 @@ fn String8 strfmt(Arena *arena, const char *fmt, va_list args) {
   return res;
 }
 
-constexpr fn String8 strPrefix(String8 s, size_t end) {
-  return {.str = s.str, .size = ClampTop(s.size, end)};
+fn String8 strPrefix(String8 s, size_t end) {
+  String8 res = {.str = s.str, .size = ClampTop(s.size, end)};
+  return res;
 }
 
-constexpr fn String8 strPostfix(String8 s, size_t start) {
-  return {.str = s.str + start, .size = s.size};
+fn String8 strPostfix(String8 s, size_t start) {
+  String8 res = {.str = s.str + start, .size = s.size};
+  return res;
 }
 
-constexpr fn String8 substr(String8 s, size_t end) {
-  return {.str = s.str, .size = ClampTop(s.size, end)};
+fn String8 substr(String8 s, size_t end) {
+  String8 res = {.str = s.str, .size = ClampTop(s.size, end)};
+  return res;
 }
 
-constexpr fn String8 substr(String8 s, size_t start, size_t end) {
-  return {.str = s.str + start, .size = ClampTop(end, s.size) - start};
+fn String8 strRange(String8 s, size_t start, size_t end) {
+  String8 res = {.str = s.str + start, .size = ClampTop(end, s.size) - start};
+  return res;
 }
 
-constexpr fn bool strEndsWith(String8 s, char ch) {
-  return s[s.size - 1] == ch;
-}
+fn bool strEndsWith(String8 s, char ch) { return s.str[s.size - 1] == ch; }
 
-constexpr fn String8 longestCommonSubstring(Arena *arena, String8 s1,
-                                            String8 s2) {
+fn String8 longestCommonSubstring(Arena *arena, String8 s1, String8 s2) {
+  String8 res = {0};
   if (s1.size == 0 || s2.size == 0) {
-    return {0};
+    return res;
   }
 
-  auto memo = (size_t(*)[s2.size + 1])
+  size_t(*memo)[s2.size + 1] =
       arenaMake(arena, sizeof(size_t[s1.size + 1][s2.size + 1]));
 
   for (i32 i = s1.size - 1; i >= 0; --i) {
     for (i32 j = s2.size - 1; j >= 0; --j) {
-      if (s1[i] == s2[j]) {
+      if (s1.str[i] == s2.str[j]) {
         memo[i][j] = 1 + memo[i + 1][j + 1];
       } else {
         memo[i][j] = Max(memo[i + 1][j], memo[i][j + 1]);
@@ -366,56 +406,54 @@ constexpr fn String8 longestCommonSubstring(Arena *arena, String8 s1,
     }
   }
 
-  char *res = Makearr(arena, char, memo[0][0]);
+  res.size = memo[0][0];
+  res.str = Makearr(arena, u8, memo[0][0]);
   for (i32 i = 0, j = 0, last = 0; i < s1.size && j < s2.size;) {
     if (memo[i][j] == memo[i + 1][j]) {
       ++i;
     } else if (memo[i][j] == memo[i][j + 1]) {
       ++j;
     } else if (memo[i][j] - 1 == memo[i + 1][j + 1]) {
-      res[last++] = s1[i];
+      res.str[last++] = s1.str[i];
       ++i;
       ++j;
     }
   }
 
-  return {
-      .str = (u8 *)res,
-      .size = memo[0][0],
-  };
+  return res;
 }
 
 fn String8 upperFromStr(Arena *arena, String8 s) {
-  String8 res{.str = Makearr(arena, u8, s.size), .size = s.size};
+  String8 res = {.str = Makearr(arena, u8, s.size), .size = s.size};
 
   for (size_t i = 0; i < s.size; ++i) {
-    res.str[i] = charToUpper(s[i]);
+    res.str[i] = charToUpper(s.str[i]);
   }
 
   return res;
 }
 
 fn String8 lowerFromStr(Arena *arena, String8 s) {
-  String8 res{.str = Makearr(arena, u8, s.size), .size = s.size};
+  String8 res = {.str = Makearr(arena, u8, s.size), .size = s.size};
 
   for (size_t i = 0; i < s.size; ++i) {
-    res.str[i] = charToLower(s[i]);
+    res.str[i] = charToLower(s.str[i]);
   }
 
   return res;
 }
 
 fn String8 capitalizeFromStr(Arena *arena, String8 s) {
-  String8 res{.str = Makearr(arena, u8, s.size), .size = s.size};
+  String8 res = {.str = Makearr(arena, u8, s.size), .size = s.size};
 
   res.str[0] = charToUpper(s.str[0]);
   for (size_t i = 1; i < s.size; ++i) {
-    if (charIsSpace(s[i])) {
-      res.str[i] = s[i];
+    if (charIsSpace(s.str[i])) {
+      res.str[i] = s.str[i];
       ++i;
-      res.str[i] = charToUpper(s[i]);
+      res.str[i] = charToUpper(s.str[i]);
     } else {
-      res.str[i] = charToLower(s[i]);
+      res.str[i] = charToLower(s.str[i]);
     }
   }
 
@@ -423,17 +461,17 @@ fn String8 capitalizeFromStr(Arena *arena, String8 s) {
 }
 
 fn StringStream strSplit(Arena *arena, String8 s, char ch) {
-  StringStream res{0};
+  StringStream res = {0};
 
   size_t prev = 0;
   for (size_t i = 0; i < s.size; ++i) {
     if (s.str[i] == ch) {
-      stringstreamAppend(arena, &res, substr(s, prev, i));
+      stringstreamAppend(arena, &res, strRange(s, prev, i));
       prev = i + 1;
     }
   }
 
-  stringstreamAppend(arena, &res, substr(s, prev, s.size));
+  stringstreamAppend(arena, &res, strRange(s, prev, s.size));
   return res;
 }
 
@@ -447,35 +485,64 @@ fn bool strContains(String8 s, char ch) {
   return false;
 }
 
-constexpr fn bool charIsSpace(u8 ch) { return ch == ' '; }
-constexpr fn bool charIsSlash(u8 ch) { return ch == '/'; }
-constexpr fn bool charIsUpper(u8 ch) { return ch >= 'A' && ch <= 'Z'; }
-constexpr fn bool charIsLower(u8 ch) { return ch >= 'a' && ch <= 'z'; }
-constexpr fn bool charIsDigit(u8 ch) { return ch >= '0' && ch <= '9'; }
-constexpr fn bool charIsAlpha(u8 ch) {
+fn bool charIsSpace(u8 ch) { return ch == ' '; }
+fn bool charIsSlash(u8 ch) { return ch == '/'; }
+fn bool charIsUpper(u8 ch) { return ch >= 'A' && ch <= 'Z'; }
+fn bool charIsLower(u8 ch) { return ch >= 'a' && ch <= 'z'; }
+fn bool charIsDigit(u8 ch) { return ch >= '0' && ch <= '9'; }
+fn bool charIsAlpha(u8 ch) {
   return (ch >= 'A' && ch <= 'Z') || ch >= 'a' && ch <= 'z';
 }
 
-constexpr fn bool charIsAlphanumeric(u8 ch) {
+fn bool charIsAlphanumeric(u8 ch) {
   return charIsDigit(ch) || charIsAlpha(ch);
 }
 
-constexpr fn u8 charToUpper(u8 ch) { return charIsLower(ch) ? ch - 32 : ch; }
-constexpr fn u8 charToLower(u8 ch) { return charIsUpper(ch) ? ch + 32 : ch; }
-constexpr fn u8 getCorrectPathSeparator() {
+fn u8 charToUpper(u8 ch) { return charIsLower(ch) ? ch - 32 : ch; }
+fn u8 charToLower(u8 ch) { return charIsUpper(ch) ? ch + 32 : ch; }
+fn u8 getCorrectPathSeparator() {
 #if OS_WINDOWS
   return '\\';
 #else
   return '/';
 #endif
 }
+
 // =============================================================================
+// Other UTF strings
+bool str16Eq(String16 s1, String16 s2) {
+  if (s1.size != s2.size) {
+    return false;
+  }
+
+  for (size_t i = 0; i < s1.size; ++i) {
+    if (s1.str[i] != s2.str[i]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+fn bool str32Eq(String32 s1, String32 s2) {
+  if (s1.size != s2.size) {
+    return false;
+  }
+
+  for (size_t i = 0; i < s1.size; ++i) {
+    if (s1.str[i] != s2.str[i]) {
+      return false;
+    }
+  }
+
+  return true;
+}
 
 // =============================================================================
 // UTF string conversion
 fn String8 UTF8From16(Arena *arena, String16 *in) {
   size_t res_size = 0, approx_size = in->size * 4;
-  u8 *res = Makearr(arena, u8, approx_size), *res_offset = res;
+  u8 *bytes = Makearr(arena, u8, approx_size), *res_offset = bytes;
 
   Codepoint codepoint = {0};
   for (u16 *start = in->str, *end = in->str + in->size; start < end;
@@ -488,12 +555,13 @@ fn String8 UTF8From16(Arena *arena, String16 *in) {
   }
 
   arenaPop(arena, (approx_size - res_size));
-  return {.str = res, .size = res_size, .length = in->length};
+  String8 res = {.str = bytes, .size = res_size};
+  return res;
 }
 
 fn String8 UTF8From32(Arena *arena, String32 *in) {
   size_t res_size = 0, approx_size = in->size * 4;
-  u8 *res = Makearr(arena, u8, approx_size), *res_offset = res;
+  u8 *bytes = Makearr(arena, u8, approx_size), *res_offset = bytes;
 
   Codepoint codepoint = {0};
   for (u32 *start = in->str, *end = in->str + in->size; start < end;
@@ -506,12 +574,13 @@ fn String8 UTF8From32(Arena *arena, String32 *in) {
   }
 
   arenaPop(arena, (approx_size - res_size));
-  return {.str = res, .size = res_size, .length = in->length};
+  String8 res = {.str = bytes, .size = res_size};
+  return res;
 }
 
 fn String16 UTF16From8(Arena *arena, String8 *in) {
   size_t res_size = 0, approx_size = in->size * 2;
-  u16 *res = Makearr(arena, u16, approx_size), *res_offset = res;
+  u16 *words = Makearr(arena, u16, approx_size), *res_offset = words;
 
   Codepoint codepoint = {0};
   for (u8 *start = in->str, *end = in->str + in->size; start < end;
@@ -524,12 +593,13 @@ fn String16 UTF16From8(Arena *arena, String8 *in) {
   }
 
   arenaPop(arena, (approx_size - res_size));
-  return {.str = res, .size = res_size, .length = in->length};
+  String16 res = {.str = words, .size = res_size};
+  return res;
 }
 
 fn String16 UTF16From32(Arena *arena, String32 *in) {
   size_t res_size = 0, approx_size = in->size * 2;
-  u16 *res = Makearr(arena, u16, approx_size), *res_offset = res;
+  u16 *words = Makearr(arena, u16, approx_size), *res_offset = words;
 
   Codepoint codepoint = {0};
   for (u32 *start = in->str, *end = in->str + in->size; start < end;
@@ -542,12 +612,13 @@ fn String16 UTF16From32(Arena *arena, String32 *in) {
   }
 
   arenaPop(arena, (approx_size - res_size));
-  return {.str = res, .size = res_size, .length = in->length};
+  String16 res = {.str = words, .size = res_size};
+  return res;
 }
 
 fn String32 UTF32From8(Arena *arena, String8 *in) {
   size_t res_size = 0, approx_size = in->size * 2;
-  u32 *res = Makearr(arena, u32, approx_size), *res_offset = res;
+  u32 *dwords = Makearr(arena, u32, approx_size), *res_offset = dwords;
 
   Codepoint cp = {0};
   for (u8 *start = in->str, *end = in->str + in->size; start < end;
@@ -557,12 +628,13 @@ fn String32 UTF32From8(Arena *arena, String8 *in) {
   }
 
   arenaPop(arena, (approx_size - res_size));
-  return {.str = res, .size = res_size, .length = in->length};
+  String32 res = {.str = dwords, .size = res_size};
+  return res;
 }
 
 fn String32 UTF32From16(Arena *arena, String16 *in) {
   size_t res_size = 0, approx_size = in->size * 2;
-  u32 *res = Makearr(arena, u32, approx_size), *res_offset = res;
+  u32 *dwords = Makearr(arena, u32, approx_size), *res_offset = dwords;
 
   Codepoint cp = {0};
   for (u16 *start = in->str, *end = in->str + in->size; start < end;
@@ -572,8 +644,8 @@ fn String32 UTF32From16(Arena *arena, String16 *in) {
   }
 
   arenaPop(arena, (approx_size - res_size));
-  return {.str = res, .size = res_size, .length = in->length};
+  String32 res = {.str = dwords, .size = res_size};
+  return res;
 }
-} // namespace Base
 
 #endif

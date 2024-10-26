@@ -2,9 +2,8 @@
 #define BASE_MEMORY
 
 #include "base.h"
-#include "arena.hpp"
+#include "arena.h"
 
-namespace Base {
 void *memcpy(Arena *arena, void *dest, void *src, size_t size) {
   if (!arena || !dest || !src) {
     return 0;
@@ -12,14 +11,14 @@ void *memcpy(Arena *arena, void *dest, void *src, size_t size) {
     return dest;
   }
 
+  u8 *dest_byte = dest, *src_byte = src;
   for (size_t i = 0; i < size; ++i) {
-    if (!(((u8 *)dest)[i] = ((u8 *)src)[i])) {
+    if (!(dest_byte[i] = src_byte[i])) {
       return 0;
     }
   }
 
   return dest;
 }
-} // namespace Base
 
 #endif

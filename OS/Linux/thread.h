@@ -5,12 +5,10 @@
 #include <stdio.h>
 #include <pthread.h>
 
-namespace OS {
 typedef pthread_t ThreadID;
 
 inline fn ThreadID threadSpawn(void *(*thread_main)(void *));
-       fn ThreadID threadSpawn(void *(*thread_main)(void *), void *arg_data);
+       fn ThreadID threadSpawnArgs(void *(*thread_main)(void *), void *arg_data);
 
 inline fn void threadJoin(ThreadID id);
-       fn void threadJoin(ThreadID id, void **save_return_value_in);
-}
+       fn void threadJoinReturn(ThreadID id, void **save_return_value_in);

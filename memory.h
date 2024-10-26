@@ -1,8 +1,6 @@
 #pragma once
 
 #include "base.h"
-#include "arena.hpp"
+#include "arena.h"
 
-namespace Base {
 void *memcpy(Arena *arena, void *dest, void *src, size_t size);
-}

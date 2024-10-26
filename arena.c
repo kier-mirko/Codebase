@@ -2,9 +2,8 @@
 #define BASE_ARENA
 
 #include "base.h"
-#include "arena.hpp"
+#include "arena.h"
 
-namespace Base {
 fn Arena *arenaBuild(size_t size, void *base_addr) {
 #if OS_LINUX || OS_BSD
   void *fail_state = MAP_FAILED;
@@ -19,8 +18,8 @@ fn Arena *arenaBuild(size_t size, void *base_addr) {
   if (mem == fail_state) {
     return 0;
   } else {
-    Arena *arena = (Arena *)mem;
-    arena->base_addr = (void *)((u8 *)arena + sizeof(Arena));
+    Arena *arena = mem;
+    arena->base_addr = arena + sizeof(Arena);
     arena->head = arena->base_addr;
     arena->total_size = size;
 
@@ -30,7 +29,7 @@ fn Arena *arenaBuild(size_t size, void *base_addr) {
 
 inline fn void arenaPop(Arena *arena, size_t bytes) {
   Assert(arena);
-  arena->head = ClampBot((u8 *)arena->head - bytes, arena->base_addr);
+  arena->head = ClampBot(arena->head - bytes, arena->base_addr);
 }
 
 inline fn bool arenaFree(Arena *arena) {
@@ -46,15 +45,14 @@ inline fn bool arenaFree(Arena *arena) {
 fn void *arenaMake(Arena *arena, size_t size) {
   Assert(arena);
 
-  if (((u8 *)arena->head + size) >=
-      ((u8 *)arena->base_addr + arena->total_size - sizeof(Arena))) {
+  if (arena->head + size >=
+      arena->base_addr + arena->total_size - sizeof(Arena)) {
     return 0;
   }
 
   void *res = arena->head;
-  arena->head = (void *)((u8 *)arena->head + size);
+  arena->head = arena->head + size;
   return res;
 }
-} // namespace Base
 
 #endif
