@@ -190,6 +190,21 @@ fn bool strEqCstr(String8 s, const char *cstr) {
   }
 }
 
+fn bool cstrEq(char *s1, char *s2) {
+  if (s1 == s2) {
+    return true;
+  }
+
+  char *it1 = s1, *it2 = s2;
+  for (; *it1 && *it2; ++it1, ++it2) {
+    if (*it1 != *it2) {
+      return false;
+    }
+  }
+
+  return !*it1 && !*it2;
+}
+
 fn bool strIsSignedInteger(String8 s) {
   u8 *curr = s.str;
   if (*curr == '-' || *curr == '+') {

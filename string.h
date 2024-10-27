@@ -50,6 +50,7 @@ fn String8 strFromCstr(char *chars);
 
 fn bool strEq(String8 s1, String8 s2);
 fn bool strEqCstr(String8 s, const char *cstr);
+fn bool cstrEq(char *s1, char *s2);
 
 fn bool strIsSignedInteger(String8 s);
 fn bool strIsInteger(String8 s);
