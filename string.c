@@ -194,6 +194,9 @@ fn bool cstrEq(char *s1, char *s2) {
   if (s1 == s2) {
     return true;
   }
+  if (!s1 || !s2) {
+    return false;
+  }
 
   char *it1 = s1, *it2 = s2;
   for (; *it1 && *it2; ++it1, ++it2) {
