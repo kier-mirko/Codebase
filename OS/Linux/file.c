@@ -112,7 +112,7 @@ fn FileProperties fs_getProp(String8 filepath) {
 
   res.ownerID = file_stat.st_uid;
   res.groupID = file_stat.st_gid;
-  res.byte_size = (size_t)file_stat.st_size;
+  res.size = (size_t)file_stat.st_size;
   res.last_access_time = (u64)file_stat.st_atime;
   res.last_modification_time = (u64)file_stat.st_mtime;
   res.last_status_change_time = (u64)file_stat.st_ctime;
@@ -172,17 +172,31 @@ fn File *fs_open(Arena *arena, String8 filepath, void *location) {
   memfile->path = filepath;
   memfile->descriptor = fd;
   memfile->prop = fs_getProp(filepath);
-  memfile->content =
-      mmap(location, memfile->prop.byte_size, PROT_READ, MAP_PRIVATE, fd, 0);
+  memfile->content = mmap(location, memfile->prop.size, PROT_READ, MAP_PRIVATE, fd, 0);
 
   (void)close(fd);
   return memfile;
 }
 
+inline fn void fs_sync(File *file, size_t offset, size_t size) {
+  if (!size) {
+    size = file->prop.size;
+  }
+
+  (void)msync(file->content + ClampTop(offset, file->prop.size), size, MS_ASYNC | MS_INVALIDATE);
+}
+
 inline fn void fs_close(File *file) {
   Assert(file);
-  (void)munmap(file->content, file->prop.byte_size);
+  (void)munmap(file->content, file->prop.size);
   (void)close(file->descriptor);
+}
+
+inline fn bool fs_hasChanged(File *file) {
+  FileProperties prop = fs_getProp(file->path);
+  return (prop.last_access_time != file->prop.last_access_time) ||
+	 (prop.last_modification_time != file->prop.last_modification_time) ||
+	 (prop.last_status_change_time != file->prop.last_status_change_time);
 }
 
 // =============================================================================

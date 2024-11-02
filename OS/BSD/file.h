@@ -31,14 +31,17 @@ fn FileProperties fs_getProp(String8 filepath);
 // =============================================================================
 // Memory mapping files for easier and faster handling
 typedef struct {
-  String8 path;
   i32 descriptor;
+  String8 path;
   FileProperties prop;
   u8 *content;
 } File;
 
        fn File *fs_open(Arena *arena, String8 filepath, void *location);
+inline fn void fs_sync(File *file, size_t offset, size_t size);
 inline fn void fs_close(File *file);
+
+inline fn bool fs_hasChanged(File *file);
 
 // =============================================================================
 // Misc operation on the filesystem

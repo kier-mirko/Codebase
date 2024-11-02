@@ -13,7 +13,7 @@ typedef enum {
 typedef struct {
   u32 ownerID;
   u32 groupID;
-  size_t byte_size;
+  size_t size;
 
   u64 last_access_time;
   u64 last_modification_time;

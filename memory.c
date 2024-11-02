@@ -4,7 +4,7 @@
 #include "base.h"
 #include "arena.h"
 
-void *memcpy(Arena *arena, void *dest, void *src, size_t size) {
+void *memcopy(Arena *arena, void *dest, void *src, size_t size) {
   if (!arena || !dest || !src) {
     return 0;
   } else if (size == 0) {

@@ -106,6 +106,8 @@
 #define Min(a, b) ((a) <= (b) ? (a) : (b))
 #define ClampTop(a, b) Min((a), (b))
 #define ClampBot(a, b) Max((a), (b))
+#define Swap(a, b, _tmp) ((_tmp) = (a), (a) = (b), (b) = (_tmp))
+#define Abs(a) ((a) >= 0 ? (a) : (-(a)))
 
 #define kiB(BYTES) ((BYTES)*1024)
 #define MB(BYTES) (kiB((BYTES)) * 1024)
