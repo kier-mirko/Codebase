@@ -63,7 +63,7 @@ fn String8 stringifyI64(Arena *arena, i64 n);
 fn String8 stringifyU64(Arena *arena, u64 n);
 fn String8 stringifyF64(Arena *arena, f64 n);
 
-fn size_t strlen(char *chars);
+fn size_t str8len(char *chars);
 
 fn String8 strFormat(Arena *arena, const char *fmt, ...);
 fn String8 strFormatVa(Arena *arena, const char *fmt, va_list args);

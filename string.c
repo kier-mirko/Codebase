@@ -150,7 +150,7 @@ fn String8 str8(char *chars, size_t len) {
 fn String8 strFromCstr(char *chars) {
   String8 res = {
       .str = (u8 *)chars,
-      .size = strlen(chars),
+      .size = str8len(chars),
   };
   return res;
 }
@@ -352,7 +352,7 @@ fn String8 stringifyF64(Arena *arena, f64 n) {
   return res;
 }
 
-fn size_t strlen(char *chars) {
+fn size_t str8len(char *chars) {
   char *start = chars;
   for (; *start; ++start)
     ;
