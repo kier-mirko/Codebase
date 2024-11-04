@@ -109,6 +109,8 @@
 #define Swap(a, b, _tmp) ((_tmp) = (a), (a) = (b), (b) = (_tmp))
 #define Abs(a) ((a) >= 0 ? (a) : (-(a)))
 
+#define DeferLoop(...) for(u8 __i_ = 1; __i_; --__i_, __VA_ARGS__)
+
 #define kiB(BYTES) ((BYTES)*1024)
 #define MB(BYTES) (kiB((BYTES)) * 1024)
 #define GB(BYTES) (MB((BYTES)) * 1024UL)
