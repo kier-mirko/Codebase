@@ -23,8 +23,8 @@ fn String8 *fs_read(Arena *arena, String8 filepath) {
     return 0;
   }
 
-  String8 *res = Make(arena, String8);
-  res->str = Makearr(arena, u8, file_stat.st_size);
+  String8 *res = New(arena, String8);
+  res->str = Newarr(arena, u8, file_stat.st_size);
   res->size = read(fd, res->str, file_stat.st_size);
 
   (void)close(fd);
@@ -168,7 +168,7 @@ fn File *fs_open(Arena *arena, String8 filepath, void *location) {
     return 0;
   }
 
-  File *memfile = Make(arena, File);
+  File *memfile = New(arena, File);
   memfile->path = filepath;
   memfile->descriptor = fd;
   memfile->prop = fs_getProp(filepath);
@@ -251,7 +251,7 @@ fn FilenameList fs_iterFiles(Arena *arena, String8 dirname) {
       continue;
     }
 
-    FilenameNode *node = Make(arena, FilenameNode);
+    FilenameNode *node = New(arena, FilenameNode);
     node->value = str;
     DLLPushBack(res.first, res.last, node);
   }
@@ -267,7 +267,7 @@ fn bool fs_rmIter(Arena *temp_arena, String8 dirname) {
 
   FilenameList dirstack = {0};
   FilenameList deletable = {0};
-  FilenameNode *root = Make(temp_arena, FilenameNode);
+  FilenameNode *root = New(temp_arena, FilenameNode);
   root->value = dirname;
   StackPush(dirstack.first, root);
 
@@ -291,7 +291,7 @@ fn bool fs_rmIter(Arena *temp_arena, String8 dirname) {
                                    Strexpand(current->value), Strexpand(str));
 
       if (entry->d_type == DT_DIR) {
-        FilenameNode *childdir = Make(temp_arena, FilenameNode);
+        FilenameNode *childdir = New(temp_arena, FilenameNode);
         childdir->value = fullpath;
         StackPush(dirstack.first, childdir);
       } else {

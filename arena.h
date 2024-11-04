@@ -8,8 +8,8 @@
 #include <windows.h>
 #endif
 
-#define Make(arenaptr, type) (type *)arenaMake(arenaptr, sizeof(type))
-#define Makearr(arenaptr, type, count) (type *)arenaMake(arenaptr, (count) * sizeof(type))
+#define New(arenaptr, type) (type *)arenaMake(arenaptr, sizeof(type))
+#define Newarr(arenaptr, type, count) (type *)arenaMake(arenaptr, (count) * sizeof(type))
 
 typedef struct {
   void *base_addr;
