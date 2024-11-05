@@ -15,7 +15,7 @@ typedef struct {
   u32 xatom_delete_id;
 } Viewport;
 
-Viewport viewport_create(String8 viewport_name,
+fn Viewport viewport_create(String8 viewport_name,
 			 size_t initial_width, size_t initial_height) {
   Viewport viewport = {.xdisplay = XOpenDisplay(0)};
   if (!viewport.xdisplay) {
@@ -34,14 +34,12 @@ Viewport viewport_create(String8 viewport_name,
   XMapWindow(viewport.xdisplay, viewport.xwindow_id);
   XSelectInput(viewport.xdisplay, viewport.xwindow_id,
 	       ExposureMask |
-	       KeyPressMask | KeyReleaseMask |
-	       ButtonPressMask | ButtonReleaseMask);
+	       KeyPressMask |
+	       ButtonPressMask | PointerMotionMask);
 
   viewport.xatom_delete_id = XInternAtom(viewport.xdisplay, "WM_DELETE_WINDOW", False);
-  XSetWMProtocols(viewport.xdisplay,
-		  viewport.xwindow_id,
-		  (Atom *)&viewport.xatom_delete_id,
-		  1);
+  XSetWMProtocols(viewport.xdisplay, viewport.xwindow_id,
+		  (Atom *)&viewport.xatom_delete_id, 1);
 
   return viewport;
 }
@@ -50,31 +48,41 @@ Viewport viewport_create(String8 viewport_name,
 void viewport_echoKbdEvent(Viewport *viewport) {
   XEvent event = {0};
 
-  while (XPending(viewport->xdisplay)) {
+  if (XPending(viewport->xdisplay)) {
     XNextEvent(viewport->xdisplay, &event);
 
     switch (event.type) {
     case KeyPress: {
       u32 keycode = event.xkey.keycode;
-      printf("KeyPress: %d\n", keycode);
+      printf("Key press: %d\n", keycode);
     } break;
-    case KeyRelease: {
-      u32 keycode = event.xkey.keycode;
-      printf("KeyRelease: %d\n", keycode);
+    case ButtonPress: {
+      u32 keycode = event.xbutton.button;
+      printf("Button press: %d\n", keycode);
+    } break;
+    case MotionNotify: {
+      i32 x = event.xmotion.x;
+      i32 y = event.xmotion.y;
+      printf("Pointer motion: (%d, %d)\n", x, y);
     } break;
     case ClientMessage: {
+      /* Make sure we aren't consuming the `window close` message */
+      if (event.xclient.data.l[0] == viewport->xatom_delete_id) {
+	XPutBackEvent(viewport->xdisplay, &event);
+      }
+
       printf("Client message\n");
     } break;
     }
   }
 }
 
-bool viewport_shouldClose(Viewport *viewport) {
+inline fn bool viewport_shouldClose(Viewport *viewport) {
   XEvent event = {0};
   return XCheckTypedEvent(viewport->xdisplay, ClientMessage, &event) &&
 	 event.xclient.data.l[0] == viewport->xatom_delete_id;
 }
 
-void viewport_close(Viewport *viewport) {
+inline fn void viewport_close(Viewport *viewport) {
   (void)XCloseDisplay(viewport->xdisplay);
 }
