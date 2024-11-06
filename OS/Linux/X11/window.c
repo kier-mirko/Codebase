@@ -6,7 +6,6 @@
 
 #include "string.h"
 
-/* TODO: this definition shouldn't be in here and i'm not sure about the name */
 typedef struct {
   String8 viewport_name;
   size_t width;
@@ -16,30 +15,30 @@ typedef struct {
   u32 xscreen_id;
   u32 xroot_id;
   u32 xwindow_id;
-  u32 xatom_delete_id;
+
+  union {
+    u32 xatoms[13];
+
+    struct {
+      u32 xatom_close;
+
+      u32 xatom_dndAware;
+      u32 xatom_dndTypeList;
+      u32 xatom_dndSelection;
+      u32 xatom_dndEnter;
+      u32 xatom_dndPosition;
+      u32 xatom_dndDrop;
+      u32 xatom_dndStatus;
+      u32 xatom_dndLeave;
+      u32 xatom_dndFinished;
+      u32 xatom_dndActionCopy;
+      u32 xatom_dndUriList;
+      u32 xatom_dndPlainText;
+    };
+  };
 
   GLXContext glx_context;
 } Viewport;
-
-void DrawAQuad() {
-  glClearColor(0.0, 0.0, 0.0, 1.0);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-  glOrtho(-1., 1., -1., 1., 1., 20.);
-
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
-  gluLookAt(0., 0., 10., 0., 0., 0., 0., 1., 0.);
-
-  glBegin(GL_QUADS);
-  glColor3f(1., 0., 0.); glVertex3f(-.75, -.75, 0.);
-  glColor3f(0., 1., 0.); glVertex3f( .75, -.75, 0.);
-  glColor3f(0., 0., 1.); glVertex3f( .75,  .75, 0.);
-  glColor3f(1., 1., 0.); glVertex3f(-.75,  .75, 0.);
-  glEnd();
-}
 
 fn Viewport viewport_create(String8 viewport_name,
 			    size_t initial_width, size_t initial_height) {
@@ -81,11 +80,28 @@ fn Viewport viewport_create(String8 viewport_name,
   /* Display the window */
   XMapWindow(viewport.xdisplay, viewport.xwindow_id);
 
-  /* Loop for WM_DELETE_WINDOW client msg for this viewport
-   * so that i know how to exit gracefully */
-  viewport.xatom_delete_id = XInternAtom(viewport.xdisplay, "WM_DELETE_WINDOW", False);
+  viewport.xatom_close = XInternAtom(viewport.xdisplay, "WM_DELETE_WINDOW", False);
+
+  viewport.xatom_dndAware = XInternAtom(viewport.xdisplay, "XdndAware", False);
+  viewport.xatom_dndTypeList = XInternAtom(viewport.xdisplay, "XdndTypeList", False);
+  viewport.xatom_dndSelection = XInternAtom(viewport.xdisplay, "XdndSelection", False);
+  viewport.xatom_dndEnter = XInternAtom(viewport.xdisplay, "XdndEnter", False);
+  viewport.xatom_dndPosition = XInternAtom(viewport.xdisplay, "XdndPosition", False);
+  viewport.xatom_dndDrop = XInternAtom(viewport.xdisplay, "XdndDrop", False);
+  viewport.xatom_dndStatus = XInternAtom(viewport.xdisplay, "XdndStatus", False);
+  viewport.xatom_dndLeave = XInternAtom(viewport.xdisplay, "XdndLeave", False);
+  viewport.xatom_dndFinished = XInternAtom(viewport.xdisplay, "XdndFinished", False);
+  viewport.xatom_dndActionCopy = XInternAtom(viewport.xdisplay, "XdndActionCopy", False);
+  viewport.xatom_dndUriList = XInternAtom(viewport.xdisplay, "text/uri-list", False);
+  viewport.xatom_dndPlainText = XInternAtom(viewport.xdisplay, "text/plain", False);
+
+  u8 xdnd_version = 5;
+  XChangeProperty(viewport.xdisplay, viewport.xwindow_id,
+		  viewport.xatom_dndAware, 4, 32,
+		  PropModeReplace, &xdnd_version, 1);
+
   XSetWMProtocols(viewport.xdisplay, viewport.xwindow_id,
-		  (Atom *)&viewport.xatom_delete_id, 1);
+		  (Atom *)&viewport.xatom_close, 1);
 
   /* More OpenGL stuff */
   viewport.glx_context = glXCreateContext(viewport.xdisplay, vi, NULL, GL_TRUE);
@@ -98,7 +114,7 @@ fn Viewport viewport_create(String8 viewport_name,
 }
 
 /* TODO: This is temporary */
-void viewport_echoKbdEvent(Viewport *viewport) {
+void viewport_echoKbdEvent(Viewport *viewport, void (*on_expose)()) {
   XEvent event = {0};
   XWindowAttributes gwa = {0};
 
@@ -109,7 +125,7 @@ void viewport_echoKbdEvent(Viewport *viewport) {
     case Expose: {
       XGetWindowAttributes(viewport->xdisplay, viewport->xwindow_id, &gwa);
       glViewport(0, 0, gwa.width, gwa.height);
-      DrawAQuad();
+      on_expose();
       glXSwapBuffers(viewport->xdisplay, viewport->xwindow_id);
     } break;
     case KeyPress: {
@@ -127,7 +143,7 @@ void viewport_echoKbdEvent(Viewport *viewport) {
     } break;
     case ClientMessage: {
       /* Make sure we aren't consuming the `window close` message */
-      if (event.xclient.data.l[0] == viewport->xatom_delete_id) {
+      if (event.xclient.data.l[0] == viewport->xatom_close) {
 	XPutBackEvent(viewport->xdisplay, &event);
       }
 
@@ -140,7 +156,7 @@ void viewport_echoKbdEvent(Viewport *viewport) {
 inline fn bool viewport_shouldClose(Viewport *viewport) {
   XEvent event = {0};
   return XCheckTypedEvent(viewport->xdisplay, ClientMessage, &event) &&
-	 event.xclient.data.l[0] == viewport->xatom_delete_id;
+	 event.xclient.data.l[0] == viewport->xatom_close;
 }
 
 inline fn void viewport_close(Viewport *viewport) {
