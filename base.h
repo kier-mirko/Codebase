@@ -95,10 +95,11 @@
 #endif
 #endif
 
+#define AssertAlways(COND) _stmt(if (!(COND)) { _assert_break(); })
 #ifdef ENABLE_ASSERT
-#define Assert(COND) _stmt(if (!(COND)) { _assert_break(); })
+#define Assert(COND) AssertAlways(COND)
 #else
-#define Assert(COND)
+#define Assert(COND) (void)(COND)
 #endif
 
 #define Arrsize(ARR) (sizeof((ARR)) / sizeof(*(ARR)))
