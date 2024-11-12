@@ -8,16 +8,16 @@
 #include <windows.h>
 #endif
 
-#define New(arenaptr, type) (type *)arenaMake(arenaptr, sizeof(type))
-#define Newarr(arenaptr, type, count) (type *)arenaMake(arenaptr, (count) * sizeof(type))
+#define New(arenaptr, type) (type *)arenaPush(arenaptr, sizeof(type), alignof(type))
+#define Newarr(arenaptr, type, count) (type *)arenaPush(arenaptr, (count) * sizeof(type), alignof(type))
 
 typedef struct {
   void *base_addr;
   void *head;
-  size_t total_size;
+  usize total_size;
 } Arena;
 
-       fn Arena *arenaBuild(size_t size, void *base_addr);
-inline fn void arenaPop(Arena *arena, size_t bytes);
+       fn Arena *arenaBuild(usize size, void *base_addr);
+inline fn void arenaPop(Arena *arena, usize bytes);
 inline fn bool arenaFree(Arena *arena);
-       fn void *arenaMake(Arena *arena, size_t size);
+       fn void *arenaPush(Arena *arena, usize size, usize align);

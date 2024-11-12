@@ -8,8 +8,8 @@
 
 typedef struct {
   String8 name;
-  size_t width;
-  size_t height;
+  usize width;
+  usize height;
 
   Display *xdisplay;
   u32 xscreen;
@@ -41,7 +41,7 @@ typedef struct {
 } Viewport;
 
 fn Viewport viewport_create(String8 name,
-			    size_t initial_width, size_t initial_height) {
+			    usize initial_width, usize initial_height) {
   local GLint att[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
   local u8 xdnd_version = 5;
 

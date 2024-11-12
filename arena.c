@@ -4,7 +4,7 @@
 #include "base.h"
 #include "arena.h"
 
-fn Arena *arenaBuild(size_t size, void *base_addr) {
+fn Arena *arenaBuild(usize size, void *base_addr) {
 #if OS_LINUX || OS_BSD
   void *fail_state = MAP_FAILED;
   void *mem = mmap(base_addr, size, PROT_READ | PROT_WRITE,
@@ -21,20 +21,20 @@ fn Arena *arenaBuild(size_t size, void *base_addr) {
     Arena *arena = mem;
     arena->base_addr = arena + sizeof(Arena);
     arena->head = arena->base_addr;
-    arena->total_size = size;
+    arena->total_size = size - sizeof(Arena);
 
     return arena;
   }
 }
 
-inline fn void arenaPop(Arena *arena, size_t bytes) {
+inline fn void arenaPop(Arena *arena, usize bytes) {
   Assert(arena);
   arena->head = ClampBot(arena->head - bytes, arena->base_addr);
 }
 
 inline fn bool arenaFree(Arena *arena) {
 #if OS_LINUX || OS_BSD
-  return munmap(arena->base_addr, arena->total_size);
+  return munmap(arena->base_addr, arena->total_size + sizeof(Arena));
 #elif OS_WINDOWS
   return VirtualFree(arena->base_addr, 0, MEM_RELEASE);
 #else
@@ -42,16 +42,18 @@ inline fn bool arenaFree(Arena *arena) {
 #endif
 }
 
-fn void *arenaMake(Arena *arena, size_t size) {
+
+fn void *arenaPush(Arena *arena, usize size, usize align) {
   Assert(arena);
 
-  if (arena->head + size >=
-      arena->base_addr + arena->total_size - sizeof(Arena)) {
+  usize padding = (usize)arena->head & (align - 1);
+  if (arena->head + size + padding >=
+      arena->base_addr + arena->total_size) {
     return 0;
   }
 
-  void *res = arena->head;
-  arena->head = arena->head + size;
+  void *res = arena->head + padding;
+  arena->head = arena->head + padding + size;
   return res;
 }
 

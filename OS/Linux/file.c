@@ -112,7 +112,7 @@ fn FileProperties fs_getProp(String8 filepath) {
 
   res.ownerID = file_stat.st_uid;
   res.groupID = file_stat.st_gid;
-  res.size = (size_t)file_stat.st_size;
+  res.size = (usize)file_stat.st_size;
   res.last_access_time = (u64)file_stat.st_atime;
   res.last_modification_time = (u64)file_stat.st_mtime;
   res.last_status_change_time = (u64)file_stat.st_ctime;
@@ -178,7 +178,7 @@ fn File *fs_open(Arena *arena, String8 filepath, void *location) {
   return memfile;
 }
 
-inline fn void fs_sync(File *file, size_t offset, size_t size) {
+inline fn void fs_sync(File *file, usize offset, usize size) {
   if (!size) {
     size = file->prop.size;
   }

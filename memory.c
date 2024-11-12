@@ -4,7 +4,7 @@
 #include "base.h"
 #include "arena.h"
 
-void *memcopy(Arena *arena, void *dest, void *src, size_t size) {
+void *memcopy(Arena *arena, void *dest, void *src, usize size) {
   if (!arena || !dest || !src) {
     return 0;
   } else if (size == 0) {
@@ -12,7 +12,7 @@ void *memcopy(Arena *arena, void *dest, void *src, size_t size) {
   }
 
   u8 *dest_byte = dest, *src_byte = src;
-  for (size_t i = 0; i < size; ++i) {
+  for (usize i = 0; i < size; ++i) {
     if (!(dest_byte[i] = src_byte[i])) {
       return 0;
     }

@@ -82,6 +82,16 @@
 #define ARCH_ARM64 0
 #endif
 
+#if COMPILER_GCC
+#define alignof(TYPE) __alignof__(TYPE)
+#elif COMPILER_CLANG
+#define alignof(TYPE) _Alignof(TYPE)
+#elif COMPILER_CL
+  /* I think `alignof` is already defined */
+#else
+#define alignof(TYPE) 1
+#endif
+
 #define _stmt(S)                                                               \
   do {                                                                         \
     S                                                                          \
@@ -151,9 +161,11 @@ typedef enum {
 } bool;
 
 #if defined(ARCH_X64) || defined(ARCH_ARM64)
-typedef u64 size_t;
+typedef u64 usize;
+typedef i64 isize;
 #else
-typedef u32 size_t;
+typedef u32 usize;
+typedef i32 isize;
 #endif
 
 #define U8_MAX 0xFF

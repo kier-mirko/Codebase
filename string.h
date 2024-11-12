@@ -6,7 +6,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#define Strlit(STR) {.str = (u8 *)(STR), .size = sizeof(STR) - 1}
+#define Strlit(STR) (String8){.str = (u8 *)(STR), .size = sizeof(STR) - 1}
 #define StrlitInit(STR) { (u8 *)(STR), sizeof(STR) - 1, }
 #define Strexpand(STR) (i32)((STR).size), (char *)((STR).str)
 
@@ -28,7 +28,7 @@ inline fn u8 encodeUTF32(u32 *res, Codepoint cp);
 // UTF-8 string
 typedef struct {
   u8 *str;
-  size_t size;
+  usize size;
 } String8;
 
 typedef struct StringNode {
@@ -39,13 +39,13 @@ typedef struct StringNode {
 typedef struct {
   StringNode *first;
   StringNode *last;
-  size_t size;
+  usize size;
 } StringStream;
 
 fn String8 str8FromStream(Arena *arena, StringStream *stream);
 fn void stringstreamAppend(Arena *arena, StringStream *strlist, String8 other);
 
-fn String8 str8(char *chars, size_t len);
+fn String8 str8(char *chars, usize len);
 fn String8 strFromCstr(char *chars);
 
 fn bool strEq(String8 s1, String8 s2);
@@ -63,15 +63,15 @@ fn String8 stringifyI64(Arena *arena, i64 n);
 fn String8 stringifyU64(Arena *arena, u64 n);
 fn String8 stringifyF64(Arena *arena, f64 n);
 
-fn size_t str8len(char *chars);
+fn usize str8len(char *chars);
 
 fn String8 strFormat(Arena *arena, const char *fmt, ...);
 fn String8 strFormatVa(Arena *arena, const char *fmt, va_list args);
 
-fn String8 strPrefix(String8 s, size_t end);
-fn String8 strPostfix(String8 s, size_t start);
-fn String8 substr(String8 s, size_t end);
-fn String8 strRange(String8 s, size_t start, size_t end);
+fn String8 strPrefix(String8 s, usize end);
+fn String8 strPostfix(String8 s, usize start);
+fn String8 substr(String8 s, usize end);
+fn String8 strRange(String8 s, usize start, usize end);
 fn bool strEndsWith(String8 s, char ch);
 fn String8 longestCommonSubstring(Arena *arena, String8 s1, String8 s2);
 
@@ -99,12 +99,12 @@ fn u8 getCorrectPathSeparator();
 
 typedef struct {
   u16 *str;
-  size_t size;
+  usize size;
 } String16;
 
 typedef struct {
   u32 *str;
-  size_t size;
+  usize size;
 } String32;
 
 fn bool str16Eq(String16 s1, String16 s2);

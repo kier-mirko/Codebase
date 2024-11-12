@@ -38,7 +38,7 @@ typedef struct {
 } File;
 
        fn File *fs_open(Arena *arena, String8 filepath, void *location);
-inline fn void fs_sync(File *file, size_t offset, size_t size);
+inline fn void fs_sync(File *file, usize offset, usize size);
 inline fn void fs_close(File *file);
 
 inline fn bool fs_hasChanged(File *file);
