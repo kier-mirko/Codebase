@@ -2,6 +2,7 @@
 #define BASE_STRING
 
 #include "string.h"
+#include "time.h"
 
 #include <stdlib.h>
 
@@ -139,20 +140,29 @@ fn void stringstreamAppend(Arena *arena, StringStream *strlist, String8 other) {
   }
 }
 
-fn String8 str8(char *chars, usize len) {
-  String8 res = {
+inline fn String8 str8(char *chars, usize len) {
+  return (String8) {
       .str = (u8 *)chars,
       .size = len,
   };
-  return res;
 }
 
-fn String8 strFromCstr(char *chars) {
-  String8 res = {
+inline fn String8 strFromCstr(char *chars) {
+  return (String8) {
       .str = (u8 *)chars,
       .size = str8len(chars),
   };
-  return res;
+}
+
+inline fn String8 strFromUnixTime(Arena *arena, u64 unix_timestamp) {
+  GMTDateTime dt = dateTimeFromUnix(unix_timestamp);
+  return strFromDateTime(arena, dt);
+}
+
+inline fn String8 strFromDateTime(Arena *arena, GMTDateTime dt) {
+  return strFormat(arena, "%02d/%02d/%04d %02d:%02d:%02d.%02d",
+	    dt.day, dt.month, dt.year,
+	    dt.hour, dt.minute, dt.second, dt.ms);
 }
 
 fn bool strEq(String8 s1, String8 s2) {
