@@ -47,7 +47,7 @@ fn void stringstreamAppend(Arena *arena, StringStream *strlist, String8 other);
 
 inline fn String8 str8(char *chars, usize len);
 inline fn String8 strFromCstr(char *chars);
-inline fn String8 strFromDateTime(Arena *arena, GMTDateTime dt);
+inline fn String8 strFromDateTime(Arena *arena, DateTime dt);
 inline fn String8 strFromUnixTime(Arena *arena, u64 unix_timestamp);
 
 fn bool strEq(String8 s1, String8 s2);

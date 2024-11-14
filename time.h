@@ -11,7 +11,7 @@ typedef struct {
     u8 minute;
     u8 second;
     u8 ms;
-} GMTDateTime;
+} DateTime;
 
 #define UNIX_MINUTE 60
 #define UNIX_HOUR 3600
@@ -23,15 +23,12 @@ typedef struct {
 
 global const u8 daysXmonth[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
-inline fn bool isLeapYear(u32 year) {
-    return (year % 4 == 0 && year % 100 != 0) ||
-	   (year % 400 == 0);
-}
+inline fn bool isLeapYear(u32 year);
 
 // TODO: maybe add more time formats?
-GMTDateTime dateTimeFromUnix(u64 timestamp);
-u64 unixFromDateTime(GMTDateTime dt);
+DateTime dateTimeFromUnix(u64 timestamp);
+u64 unixFromDateTime(DateTime dt);
 
-GMTDateTime localizeDateTime(GMTDateTime dt, i8 hour_offset);
+DateTime localizeDateTime(DateTime dt, i8 utc_offset);
 
 #endif

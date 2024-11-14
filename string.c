@@ -155,11 +155,11 @@ inline fn String8 strFromCstr(char *chars) {
 }
 
 inline fn String8 strFromUnixTime(Arena *arena, u64 unix_timestamp) {
-  GMTDateTime dt = dateTimeFromUnix(unix_timestamp);
+  DateTime dt = dateTimeFromUnix(unix_timestamp);
   return strFromDateTime(arena, dt);
 }
 
-inline fn String8 strFromDateTime(Arena *arena, GMTDateTime dt) {
+inline fn String8 strFromDateTime(Arena *arena, DateTime dt) {
   return strFormat(arena, "%02d/%02d/%04d %02d:%02d:%02d.%02d",
 	    dt.day, dt.month, dt.year,
 	    dt.hour, dt.minute, dt.second, dt.ms);

@@ -129,7 +129,7 @@ fn Viewport viewport_create(String8 name,
   return viewport;
 }
 
-/* TODO: This is temporary */
+// TODO: This is temporary
 void viewport_echoKbdEvent(Viewport *viewport, void (*on_expose)()) {
   XEvent event = {0};
   XWindowAttributes gwa = {0};
