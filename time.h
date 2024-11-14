@@ -1,6 +1,8 @@
 #ifndef BASE_TIME_H
 #define BASE_TIME_H
 
+#include <time.h>
+
 #include "base.h"
 
 typedef struct {

@@ -1,5 +1,3 @@
-#include <time.h>
-
 #include "time.h"
 
 inline fn bool isLeapYear(u32 year) {
