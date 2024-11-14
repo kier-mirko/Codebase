@@ -46,7 +46,7 @@ inline fn bool arenaFree(Arena *arena) {
 fn void *arenaPush(Arena *arena, usize size, usize align) {
   Assert(arena);
 
-  usize padding = (usize)arena->head & (align - 1);
+  usize padding = (align - ((usize)arena->head % align)) % align;
   if (arena->head + size + padding >=
       arena->base_addr + arena->total_size) {
     return 0;
