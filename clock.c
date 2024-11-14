@@ -17,6 +17,10 @@ inline fn DateTime currentDateTime() {
 #endif
 }
 
+inline fn DateTime localCurrentDateTime(i8 utc_offset) {
+  return localizeDateTime(currentDateTime(), utc_offset);
+}
+
 DateTime dateTimeFromUnix(u64 timestamp) {
     DateTime dt = {.year = 1970, .day = 1, .month = 1};
 

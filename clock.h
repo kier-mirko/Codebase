@@ -28,6 +28,7 @@ global const u8 daysXmonth[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 
 inline fn bool isLeapYear(u32 year);
 
 inline fn DateTime currentDateTime();
+inline fn DateTime localCurrentDateTime(i8 utc_offset);
 
 // TODO: maybe add more time formats?
 DateTime dateTimeFromUnix(u64 timestamp);
