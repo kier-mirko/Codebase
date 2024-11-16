@@ -6,14 +6,14 @@
 #include "../string.h"
 #include "../OS/file.h"
 
-typedef struct CSVRow {
-  usize next_at;
+typedef struct {
   char delimiter;
-  StringStream value;
   File *file;
-} CSVRow;
 
-fn CSVRow csv_header(Arena *arena, File *csv, char delimiter);
-fn CSVRow csv_nextRow(Arena *arena, CSVRow prev);
+  usize offset;
+} CSV;
+
+fn StringStream csv_header(Arena *arena, CSV *config);
+fn StringStream csv_nextRow(Arena *arena, CSV *config);
 
 #endif

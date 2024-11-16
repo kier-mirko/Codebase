@@ -1,40 +1,34 @@
 #include "csv.h"
 
-fn CSVRow csv_header(Arena *arena, File *csv, char delimiter) {
-  usize line_ends = strFindFirst(csv->content, '\n');
-  String8 header_line = strPrefix(csv->content, line_ends);
+fn StringStream csv_header(Arena *arena, CSV *config) {
+  usize line_ends = strFindFirst(config->file->content, '\n');
+  String8 header_line = strPrefix(config->file->content, line_ends);
   StringStream res = {0};
 
+  config->offset += line_ends + 1;
+
   while (header_line.size) {
-    usize i = strFindFirst(header_line, delimiter);
+    usize i = strFindFirst(header_line, config->delimiter);
     stringstreamAppend(arena, &res, strPrefix(header_line, i));
     header_line = strPostfix(header_line, i + 1);
   }
 
-  return (CSVRow) {
-    .next_at = line_ends + 1,
-    .delimiter = delimiter,
-    .value = res,
-    .file = csv,
-  };
+  return res;
 }
 
-fn CSVRow csv_nextRow(Arena *arena, CSVRow prev) {
-  String8 content = strPostfix(prev.file->content, prev.next_at);
+fn StringStream csv_nextRow(Arena *arena, CSV *config) {
+  String8 content = strPostfix(config->file->content, config->offset);
   usize line_ends = strFindFirst(content, '\n');
   String8 header_line = strPrefix(content, line_ends);
   StringStream res = {0};
 
+  config->offset += line_ends + 1;
+
   while (header_line.size) {
-    usize i = strFindFirst(header_line, prev.delimiter);
+    usize i = strFindFirst(header_line, config->delimiter);
     stringstreamAppend(arena, &res, strPrefix(header_line, i));
     header_line = strPostfix(header_line, i + 1);
   }
 
-  return (CSVRow) {
-    .next_at = line_ends + prev.next_at + 1,
-    .delimiter = prev.delimiter,
-    .value = res,
-    .file = prev.file,
-  };
+  return res;
 }
