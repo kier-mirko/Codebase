@@ -33,6 +33,7 @@ typedef struct {
 
 typedef struct StringNode {
   struct StringNode *next;
+  struct StringNode *prev;
   String8 value;
 } StringNode;
 
@@ -82,6 +83,7 @@ fn String8 lowerFromStr(Arena *arena, String8 s);
 fn String8 capitalizeFromStr(Arena *arena, String8 s);
 
 fn StringStream strSplit(Arena *arena, String8 s, char ch);
+fn usize strFindFirst(String8 s, char ch);
 fn bool strContains(String8 s, char ch);
 
 fn bool charIsSpace(u8 ch);

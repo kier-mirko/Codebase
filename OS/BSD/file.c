@@ -1,7 +1,15 @@
 #ifndef BASE_OS_FILE
 #define BASE_OS_FILE
 
-#include "file.h"
+#include "../file.h"
+
+#include <fcntl.h>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+#include <dirent.h>
+#include <sys/types.h>
 
 // =============================================================================
 // File reading and writing/appending
@@ -172,8 +180,7 @@ fn File *fs_open(Arena *arena, String8 filepath, void *location) {
   memfile->path = filepath;
   memfile->descriptor = fd;
   memfile->prop = fs_getProp(filepath);
-  memfile->content =
-      mmap(location, memfile->prop.size, PROT_READ, MAP_PRIVATE, fd, 0);
+  memfile->content = str8(mmap(location, memfile->prop.size, PROT_READ, MAP_PRIVATE, fd, 0), memfile->prop.size);
 
   (void)close(fd);
   return memfile;
@@ -184,12 +191,12 @@ inline fn void fs_sync(File *file, usize offset, usize size) {
     size = file->prop.size;
   }
 
-  (void)msync(file->content + ClampTop(offset, file->prop.size), size, MS_ASYNC | MS_INVALIDATE);
+  (void)msync(file->content.str + ClampTop(offset, file->prop.size), size, MS_ASYNC | MS_INVALIDATE);
 }
 
 inline fn void fs_close(File *file) {
   Assert(file);
-  (void)munmap(file->content, file->prop.size);
+  (void)munmap(file->content.str, file->prop.size);
   (void)close(file->descriptor);
 }
 

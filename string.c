@@ -130,14 +130,9 @@ fn void stringstreamAppend(Arena *arena, StringStream *strlist, String8 other) {
   Assert(strlist);
   ++strlist->size;
 
-  if (!strlist->last) {
-    strlist->first = strlist->last = New(arena, StringNode);
-    strlist->last->value = other;
-  } else {
-    strlist->last->next = New(arena, StringNode);
-    strlist->last = strlist->last->next;
-    strlist->last->value = other;
-  }
+  StringNode *new = New(arena, StringNode);
+  new->value = other;
+  DLLPushBack(strlist->first, strlist->last, new);
 }
 
 inline fn String8 str8(char *chars, usize len) {
@@ -399,8 +394,10 @@ fn String8 strPrefix(String8 s, usize end) {
 }
 
 fn String8 strPostfix(String8 s, usize start) {
-  String8 res = {.str = s.str + start, .size = s.size};
-  return res;
+  return (String8) {
+    .str = s.str + start,
+    .size = (s.size >= start ? s.size - start : 0)
+  };
 }
 
 fn String8 substr(String8 s, usize end) {
@@ -501,6 +498,16 @@ fn StringStream strSplit(Arena *arena, String8 s, char ch) {
 
   stringstreamAppend(arena, &res, strRange(s, prev, s.size));
   return res;
+}
+
+fn usize strFindFirst(String8 s, char ch) {
+  for (u8 *curr = s.str; curr < s.str + s.size + 1; ++curr) {
+    if (*curr == ch) {
+      return curr - s.str;
+    }
+  }
+
+  return s.size;
 }
 
 fn bool strContains(String8 s, char ch) {

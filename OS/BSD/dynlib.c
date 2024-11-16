@@ -1,7 +1,9 @@
 #ifndef OS_LINUX_DYNLIB
 #define OS_LINUX_DYNLIB
 
-#include "dynlib.h"
+#include "../dynlib.h"
+
+#include <dlfcn.h>
 
 inline fn void *dynlib_open(String8 path) {
   return dlopen((char *)path.str, RTLD_LAZY);

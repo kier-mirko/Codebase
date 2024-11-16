@@ -42,7 +42,6 @@ inline fn bool arenaFree(Arena *arena) {
 #endif
 }
 
-
 fn void *arenaPush(Arena *arena, usize size, usize align) {
   Assert(arena);
 
@@ -54,6 +53,7 @@ fn void *arenaPush(Arena *arena, usize size, usize align) {
 
   void *res = arena->head + padding;
   arena->head = arena->head + padding + size;
+
   return res;
 }
 

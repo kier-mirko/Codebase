@@ -1,20 +1,12 @@
 #pragma once
 
-#include "../../base.h"
-#include "../../list.h"
+#include "../base.h"
+#include "../list.h"
 
-#include "../../arena.h"
-#include "../../string.h"
+#include "../arena.h"
+#include "../string.h"
 
-#include "../file_properties.h"
-
-#include <fcntl.h>
-#include <stdio.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
-#include <dirent.h>
-#include <sys/types.h>
+#include "file_properties.h"
 
 // =============================================================================
 // File reading and writing/appending
@@ -34,7 +26,7 @@ typedef struct {
   i32 descriptor;
   String8 path;
   FileProperties prop;
-  u8 *content;
+  String8 content;
 } File;
 
        fn File *fs_open(Arena *arena, String8 filepath, void *location);
