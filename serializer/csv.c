@@ -1,34 +1,19 @@
 #include "csv.h"
 
-fn StringStream csv_header(Arena *arena, CSV *config) {
-  usize line_ends = strFindFirst(config->file->content, '\n');
-  String8 header_line = strPrefix(config->file->content, line_ends);
-  StringStream res = {0};
-
-  config->offset += line_ends + 1;
-
-  while (header_line.size) {
-    usize i = strFindFirst(header_line, config->delimiter);
-    stringstreamAppend(arena, &res, strPrefix(header_line, i));
-    header_line = strPostfix(header_line, i + 1);
-  }
-
-  return res;
+inline fn StringStream csv_header(Arena *arena, CSV *config) {
+  return csv_nextRow(arena, config);
 }
 
 fn StringStream csv_nextRow(Arena *arena, CSV *config) {
+  if (config->file->content.size <= config->offset) {
+    return (StringStream) {0};
+  }
+
   String8 content = strPostfix(config->file->content, config->offset);
   usize line_ends = strFindFirst(content, '\n');
-  String8 header_line = strPrefix(content, line_ends);
-  StringStream res = {0};
+  String8 row = strPrefix(content, line_ends);
 
   config->offset += line_ends + 1;
 
-  while (header_line.size) {
-    usize i = strFindFirst(header_line, config->delimiter);
-    stringstreamAppend(arena, &res, strPrefix(header_line, i));
-    header_line = strPostfix(header_line, i + 1);
-  }
-
-  return res;
+  return strSplit(arena, row, config->delimiter);
 }

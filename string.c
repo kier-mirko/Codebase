@@ -388,29 +388,35 @@ fn String8 strFormatVa(Arena *arena, const char *fmt, va_list args) {
   return res;
 }
 
-fn String8 strPrefix(String8 s, usize end) {
-  String8 res = {.str = s.str, .size = ClampTop(s.size, end)};
-  return res;
+inline fn String8 strPrefix(String8 s, usize end) {
+  return (String8) {
+    .str = s.str,
+    .size = ClampTop(s.size, end)
+  };
 }
 
-fn String8 strPostfix(String8 s, usize start) {
+inline fn String8 strPostfix(String8 s, usize start) {
   return (String8) {
     .str = s.str + start,
     .size = (s.size >= start ? s.size - start : 0)
   };
 }
 
-fn String8 substr(String8 s, usize end) {
-  String8 res = {.str = s.str, .size = ClampTop(s.size, end)};
-  return res;
+inline fn String8 substr(String8 s, usize end) {
+  return (String8) {
+    .str = s.str,
+    .size = ClampTop(s.size, end)
+  };
 }
 
-fn String8 strRange(String8 s, usize start, usize end) {
-  String8 res = {.str = s.str + start, .size = ClampTop(end, s.size) - start};
-  return res;
+inline fn String8 strRange(String8 s, usize start, usize end) {
+  return (String8) {
+    .str = s.str + start,
+    .size = ClampTop(end, s.size) - start
+  };
 }
 
-fn bool strEndsWith(String8 s, char ch) { return s.str[s.size - 1] == ch; }
+inline fn bool strEndsWith(String8 s, char ch) { return s.str[s.size - 1] == ch; }
 
 fn String8 longestCommonSubstring(Arena *arena, String8 s1, String8 s2) {
   String8 res = {0};
