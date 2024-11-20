@@ -170,7 +170,7 @@ fn File *fs_open(Arena *arena, String8 filepath, void *location) {
     return 0;
   }
 
-  i32 fd = open((char *)filepath.str, O_RDONLY);
+  i32 fd = open((char *)filepath.str, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if (fd < 0) {
     (void)close(fd);
     return 0;
@@ -180,7 +180,7 @@ fn File *fs_open(Arena *arena, String8 filepath, void *location) {
   memfile->path = filepath;
   memfile->descriptor = fd;
   memfile->prop = fs_getProp(filepath);
-  memfile->content = str8(mmap(location, memfile->prop.size, PROT_READ, MAP_PRIVATE, fd, 0), memfile->prop.size);
+  memfile->content = str8(mmap(location, memfile->prop.size, PROT_READ, MAP_SHARED, fd, 0), memfile->prop.size);
 
   (void)close(fd);
   return memfile;
@@ -189,6 +189,8 @@ fn File *fs_open(Arena *arena, String8 filepath, void *location) {
 inline fn void fs_sync(File *file, usize offset, usize size) {
   if (!size) {
     size = file->prop.size;
+  } else if (size > file->prop.size) {
+    (void)ftruncate(file->descriptor, size);
   }
 
   (void)msync(file->content.str + ClampTop(offset, file->prop.size), size, MS_ASYNC | MS_INVALIDATE);

@@ -19,5 +19,6 @@ typedef struct {
 
        fn Arena *arenaBuild(usize size, void *base_addr);
 inline fn void arenaPop(Arena *arena, usize bytes);
+inline fn void arenaReset(Arena *arena);
 inline fn bool arenaFree(Arena *arena);
        fn void *arenaPush(Arena *arena, usize size, usize align);

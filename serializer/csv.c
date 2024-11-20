@@ -17,3 +17,6 @@ fn StringStream csv_nextRow(Arena *arena, CSV *config) {
 
   return strSplit(arena, row, config->delimiter);
 }
+
+// TODO: write to CSV file
+fn void csv_write(String8 path, char delimiter, ...);

@@ -32,6 +32,10 @@ inline fn void arenaPop(Arena *arena, usize bytes) {
   arena->head = ClampBot(arena->head - bytes, arena->base_addr);
 }
 
+inline fn void arenaReset(Arena *arena) {
+  arena->head = arena->base_addr;
+}
+
 inline fn bool arenaFree(Arena *arena) {
 #if OS_LINUX || OS_BSD
   return munmap(arena->base_addr, arena->total_size + sizeof(Arena));

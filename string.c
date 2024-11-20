@@ -258,6 +258,10 @@ fn bool strIsFloating(String8 s) {
   return true;
 }
 
+inline fn bool strIsNumerical(String8 s) {
+  return strIsFloating(s) || strIsInteger(s);
+}
+
 fn i64 i64FromStr(String8 s) {
   i64 res = 0, decimal = 1;
 
@@ -424,6 +428,7 @@ fn String8 longestCommonSubstring(Arena *arena, String8 s1, String8 s2) {
     return res;
   }
 
+  // TODO: don't use variable length arrays
   usize(*memo)[s2.size + 1] =
       arenaPush(arena, sizeof(usize[s1.size + 1][s2.size + 1]), alignof(usize[s1.size + 1][s2.size + 1]));
 

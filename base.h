@@ -186,4 +186,16 @@ typedef i32 isize;
 #define I64_MAX 0x7FFFFFFFFFFFFFFF
 #define I64_MIN (-0x8000000000000000)
 
+#if defined(ARCH_X64) || defined(ARCH_ARM64)
+#define USIZE_MAX U64_MAX
+#define USIZE_MIN U64_MIN
+#define ISIZE_MAX I64_MAX
+#define ISIZE_MIN I64_MIN
+#else
+#define USIZE_MAX U32_MAX
+#define USIZE_MIN U32_MIN
+#define ISIZE_MAX I32_MAX
+#define ISIZE_MIN I32_MIN
+#endif
+
 #endif
