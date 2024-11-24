@@ -4,15 +4,15 @@
 #include "base.h"
 #include "arena.h"
 
-fn Arena *arenaBuild(usize size, void *base_addr) {
+fn Arena *arenaBuild(usize size, usize base_addr) {
 #if OS_LINUX || OS_BSD
   void *fail_state = MAP_FAILED;
-  void *mem = mmap(base_addr, size, PROT_READ | PROT_WRITE,
+  void *mem = mmap((void *)base_addr, size, PROT_READ | PROT_WRITE,
                    MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 #elif OS_WINDOWS
   void *fail_state = 0;
   void *mem =
-      VirtualAlloc(base_addr, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+      VirtualAlloc((void *)base_addr, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 #endif
 
   if (mem == fail_state) {

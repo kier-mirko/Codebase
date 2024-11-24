@@ -500,14 +500,24 @@ fn StringStream strSplit(Arena *arena, String8 s, char ch) {
   StringStream res = {0};
 
   usize prev = 0;
-  for (usize i = 0; i < s.size; ++i) {
+  for (usize i = 0; i < s.size;) {
     if (s.str[i] == ch) {
-      stringstreamAppend(arena, &res, strRange(s, prev, i));
-      prev = i + 1;
+      if (prev != i) {
+	stringstreamAppend(arena, &res, strRange(s, prev, i));
+      }
+
+      do {
+	prev = ++i;
+      } while (s.str[i] == ch);
+    } else {
+      ++i;
     }
   }
 
-  stringstreamAppend(arena, &res, strRange(s, prev, s.size));
+  if (prev != s.size) {
+    stringstreamAppend(arena, &res, strRange(s, prev, s.size));
+  }
+
   return res;
 }
 

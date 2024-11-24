@@ -17,7 +17,7 @@ typedef struct {
   usize total_size;
 } Arena;
 
-       fn Arena *arenaBuild(usize size, void *base_addr);
+       fn Arena *arenaBuild(usize size, usize base_addr);
 inline fn void arenaPop(Arena *arena, usize bytes);
 inline fn void arenaReset(Arena *arena);
 inline fn bool arenaFree(Arena *arena);

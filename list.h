@@ -52,11 +52,18 @@
                      : ((Nodeptr)->prev->next = (Nodeptr)->next,               \
                         (Nodeptr)->next->prev = (Nodeptr)->prev))))
 
-#define DLLPop(Head, Last)                                                     \
+#define DLLPop(Head, Last) DLLPopBack(Head, Last)
+#define DLLPopBack(Head, Last)                                                 \
   (!(Last)                                                                     \
        ? 0                                                                     \
        : (!(Last)->prev ? (Head) = (Last) = 0                                  \
                         : ((Last)->prev->next = 0, (Last) = (Last)->prev)))
+
+#define DLLPopFront(Head, Last)                                                \
+  (!(Head)                                                                     \
+       ? 0                                                                     \
+       : (!(Head)->next ? (Head) = (Last) = 0                                  \
+                        : ((Head)->next->prev = 0, (Head) = (Head)->next)))
 
 // =============================================================================
 // Heaps
