@@ -180,7 +180,7 @@ fn File *fs_open(Arena *arena, String8 filepath, void *location) {
   memfile->path = filepath;
   memfile->descriptor = fd;
   memfile->prop = fs_getProp(filepath);
-  memfile->content = str8(mmap(location, memfile->prop.size, PROT_READ, MAP_SHARED, fd, 0), memfile->prop.size);
+  memfile->content = str8((char *)mmap(location, memfile->prop.size, PROT_READ, MAP_SHARED, fd, 0), memfile->prop.size);
 
   (void)close(fd);
   return memfile;
@@ -272,7 +272,7 @@ fn FilenameList fs_iterFiles(Arena *arena, String8 dirname) {
 fn bool fs_rmIter(Arena *temp_arena, String8 dirname) {
   const String8 currdir = Strlit(".");
   const String8 parentdir = Strlit("..");
-  void *prev_head = temp_arena->head;
+  usize prev_head = temp_arena->head;
 
   FilenameList dirstack = {0};
   FilenameList deletable = {0};

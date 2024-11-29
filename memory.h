@@ -3,4 +3,5 @@
 #include "base.h"
 #include "arena.h"
 
-void *memcopy(Arena *arena, void *dest, void *src, usize size);
+void *memCopy(void *dest, void *src, usize size);
+void memZero(void *dest, usize size);

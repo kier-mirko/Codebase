@@ -22,7 +22,7 @@ inline fn DateTime localCurrentDateTime(i8 utc_offset) {
 }
 
 DateTime dateTimeFromUnix(u64 timestamp) {
-    DateTime dt = {.year = 1970, .day = 1, .month = 1};
+    DateTime dt = {.year = 1970, .month = 1, .day = 1};
 
     for (u64 secondsXyear = 0;
 	 !(timestamp < secondsXyear);

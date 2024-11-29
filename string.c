@@ -130,9 +130,9 @@ fn void stringstreamAppend(Arena *arena, StringStream *strlist, String8 other) {
   Assert(strlist);
   ++strlist->size;
 
-  StringNode *new = New(arena, StringNode);
-  new->value = other;
-  DLLPushBack(strlist->first, strlist->last, new);
+  StringNode *str = New(arena, StringNode);
+  str->value = other;
+  DLLPushBack(strlist->first, strlist->last, str);
 }
 
 inline fn String8 str8(char *chars, usize len) {
@@ -429,7 +429,7 @@ fn String8 longestCommonSubstring(Arena *arena, String8 s1, String8 s2) {
   }
 
   // TODO: don't use variable length arrays
-  usize(*memo)[s2.size + 1] =
+  usize(*memo)[s2.size + 1] = (usize(*)[s2.size + 1])
       arenaPush(arena, sizeof(usize[s1.size + 1][s2.size + 1]), alignof(usize[s1.size + 1][s2.size + 1]));
 
   for (i32 i = s1.size - 1; i >= 0; --i) {

@@ -22,6 +22,10 @@
 #error "Unsupported compiler"
 #endif
 
+#if defined(__cplusplus)
+#define CPP 1
+#endif
+
 #if defined(__gnu_linux__)
 #define OS_LINUX 1
 #elif defined(__unix__)
@@ -54,6 +58,10 @@
 #endif
 #if !defined(COMPILER_CL)
 #define COMPILER_CL 0
+#endif
+
+#if !defined(CPP)
+#define CPP 0
 #endif
 
 #if !defined(OS_LINUX)
@@ -122,8 +130,16 @@
 
 #define DeferLoop(...) for(u8 __i_ = 1; __i_; --__i_, __VA_ARGS__)
 
-#define kiB(BYTES) ((BYTES)*1024)
-#define MB(BYTES) (kiB((BYTES)) * 1024)
+#define Not(A) (~A)
+#define And(A, B) (A & B)
+#define Or(A, B) (A | B)
+#define Nand(A, B) (~(A && B))
+#define Nor(A, B) (~(A || B))
+#define Xor(A, B) (A ^ B)
+#define Xnor(A, B) (~(A ^ B))
+
+#define KiB(BYTES) ((BYTES)*1024)
+#define MB(BYTES) (KiB((BYTES)) * 1024)
 #define GB(BYTES) (MB((BYTES)) * 1024UL)
 #define TB(BYTES) (GB((BYTES)) * 1024UL)
 
@@ -131,14 +147,14 @@
 #define local static
 #define fn static
 
-#define export_c extern "C"
-#define begin_export_c extern "C" {
-#define end_export_c }
+#define CExport extern "C"
+#define CExportBegin extern "C" {
+#define CExportEnd }
 
 #if COMPILER_GCC || COMPILER_CLANG
-#define shared_export export_c __attribute__((visibility("default")))
+#define DLLExport export_c __attribute__((visibility("default")))
 #elif COMPILER_CL
-#define shared_export export_c __declspec(dllexport)
+#define DLLExport export_c __declspec(dllexport)
 #endif
 
 #include <stdint.h>
@@ -155,10 +171,12 @@ typedef uint32_t u32;
 typedef int64_t i64;
 typedef uint64_t u64;
 
+#if !CPP
 typedef enum {
   false,
   true
 } bool;
+#endif
 
 #if defined(ARCH_X64) || defined(ARCH_ARM64)
 typedef u64 usize;
@@ -167,6 +185,8 @@ typedef i64 isize;
 typedef u32 usize;
 typedef i32 isize;
 #endif
+
+#define DefaultAlignment (2 * sizeof(void*))
 
 #define U8_MAX 0xFF
 #define U8_MIN 0

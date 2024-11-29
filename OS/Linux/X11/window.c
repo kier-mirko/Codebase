@@ -69,10 +69,10 @@ fn Viewport viewport_create(String8 name,
     return (Viewport){0};
   }
 
-  XSetWindowAttributes swa = {.colormap = cmap,
-                              .event_mask = ExposureMask |
+  XSetWindowAttributes swa = {.event_mask = ExposureMask |
 					    KeyPressMask |
-					    ButtonPressMask | PointerMotionMask};
+					    ButtonPressMask | PointerMotionMask,
+			      .colormap = cmap};
   /* ============================================================================= */
 
   viewport.xwindow = XCreateWindow(viewport.xdisplay, viewport.xroot,
@@ -84,7 +84,7 @@ fn Viewport viewport_create(String8 name,
 				      &swa);
 
   /* Set the window name */
-  XStoreName(viewport.xdisplay, viewport.xwindow, name.str);
+  XStoreName(viewport.xdisplay, viewport.xwindow, (char *)name.str);
 
   /* Display the window */
   if (!XMapWindow(viewport.xdisplay, viewport.xwindow)) {

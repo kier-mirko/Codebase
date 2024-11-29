@@ -12,13 +12,15 @@
 #define Newarr(arenaptr, type, count) (type *)arenaPush(arenaptr, (count) * sizeof(type), alignof(type))
 
 typedef struct {
-  void *base_addr;
-  void *head;
+  void *base;
+  usize head;
   usize total_size;
 } Arena;
 
+inline fn void *forwardAlign(void *ptr, usize align);
+inline fn bool isPowerOfTwo(usize value);
+
        fn Arena *arenaBuild(usize size, usize base_addr);
 inline fn void arenaPop(Arena *arena, usize bytes);
-inline fn void arenaReset(Arena *arena);
 inline fn bool arenaFree(Arena *arena);
        fn void *arenaPush(Arena *arena, usize size, usize align);

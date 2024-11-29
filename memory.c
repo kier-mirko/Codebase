@@ -4,14 +4,14 @@
 #include "base.h"
 #include "arena.h"
 
-void *memcopy(Arena *arena, void *dest, void *src, usize size) {
-  if (!arena || !dest || !src) {
+void *memCopy(void *dest, void *src, usize size) {
+  if (!dest || !src) {
     return 0;
   } else if (size == 0) {
     return dest;
   }
 
-  u8 *dest_byte = dest, *src_byte = src;
+  u8 *dest_byte = (u8 *)dest, *src_byte = (u8 *)src;
   for (usize i = 0; i < size; ++i) {
     if (!(dest_byte[i] = src_byte[i])) {
       return 0;
@@ -19,6 +19,13 @@ void *memcopy(Arena *arena, void *dest, void *src, usize size) {
   }
 
   return dest;
+}
+
+void memZero(void *dest, usize size) {
+  u8 *dest_bytes = (u8 *)dest;
+  for (usize i = 0; i < size; ++i) {
+    *(dest_bytes + i) = 0;
+  }
 }
 
 #endif
