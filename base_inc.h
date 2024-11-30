@@ -12,17 +12,17 @@
 #if OS_LINUX
   #include "OS/Linux/thread.h"
 
-  /* #if GXF_X11 */
+  /* #if GFX_X11 */
   /*   #include "OS/Linux/X11/window.h" */
-  /* #elif GXF_WAYLAND */
+  /* #elif GFX_WAYLAND */
   /*   #include "OS/Linux/Wayland/window.h" */
   /* #endif */
 #elif OS_BSD
   #include "OS/BSD/thread.h"
 
-  /* #if GXF_X11 */
+  /* #if GFX_X11 */
   /*   #include "OS/BSD/X11/window.h" */
-  /* #elif GXF_WAYLAND */
+  /* #elif GFX_WAYLAND */
   /*   #include "OS/BSD/Wayland/window.h" */
   /* #endif */
 #elif OS_WINDOWS

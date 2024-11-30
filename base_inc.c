@@ -8,9 +8,9 @@
   #include "OS/Linux/dynlib.c"
   #include "OS/Linux/thread.c"
 
-  #if GXF_X11
+  #if GFX_X11
     #include "OS/Linux/X11/window.c"
-  #elif GXF_WAYLAND
+  #elif GFX_WAYLAND
     #include "OS/Linux/Wayland/window.c"
   #endif
 #elif OS_BSD
@@ -18,9 +18,9 @@
   #include "OS/BSD/dynlib.c"
   #include "OS/BSD/thread.c"
 
-  #if GXF_X11
+  #if GFX_X11
     #include "OS/BSD/X11/window.c"
-  #elif GXF_WAYLAND
+  #elif GFX_WAYLAND
     #include "OS/BSD/Wayland/window.c"
   #endif
 #elif OS_WINDOWS
