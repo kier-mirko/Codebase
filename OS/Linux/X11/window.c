@@ -1,44 +1,5 @@
-#include <X11/Xlib.h>
-
-#include<GL/gl.h>
-#include<GL/glx.h>
-#include<GL/glu.h>
-
 #include "string.h"
-
-typedef struct {
-  String8 name;
-  usize width;
-  usize height;
-
-  Display *xdisplay;
-  u32 xscreen;
-  u32 xroot;
-  u32 xwindow;
-
-  GLXContext glx_context;
-
-  union {
-    u32 xatoms[13];
-
-    struct {
-      u32 xatom_close;
-
-      u32 xatom_dndAware;
-      u32 xatom_dndTypeList;
-      u32 xatom_dndSelection;
-      u32 xatom_dndEnter;
-      u32 xatom_dndPosition;
-      u32 xatom_dndDrop;
-      u32 xatom_dndStatus;
-      u32 xatom_dndLeave;
-      u32 xatom_dndFinished;
-      u32 xatom_dndActionCopy;
-      u32 xatom_dndUriList;
-      u32 xatom_dndPlainText;
-    };
-  };
-} Viewport;
+#include "window.h"
 
 fn Viewport viewport_create(String8 name,
 			    usize initial_width, usize initial_height) {
@@ -70,7 +31,7 @@ fn Viewport viewport_create(String8 name,
   }
 
   XSetWindowAttributes swa = {.event_mask = ExposureMask |
-					    KeyPressMask | KeyReleaseMask |
+					    KeyPressMask |
 					    ButtonPressMask | PointerMotionMask,
 			      .colormap = cmap};
   /* ============================================================================= */
@@ -129,37 +90,8 @@ fn Viewport viewport_create(String8 name,
   return viewport;
 }
 
-typedef struct {
-  enum {
-    Show,
-    KbdPress,
-    BtnPress,
-    PtrMotion,
-  } type;
-
-  union {
-    struct {
-      Codepoint key;
-
-      union {
-	u8 modifiers;
-	struct {
-	  bool shift;
-	  bool caps_lock;
-	  bool ctrl;
-	  bool meta;
-	  bool mod2;
-	  bool mod3;
-	  bool mod4;
-	  bool super;
-	};
-      };
-    } kbd;
-  };
-} ViewportEvent;
-
 // TODO: This is temporary
-void viewport_echoKbdEvent(Viewport *viewport, void (*on_expose)()) {
+ViewportEvent viewport_echoKbdEvent(Viewport *viewport, void (*on_expose)()) {
   XEvent event = {0};
   XWindowAttributes gwa = {0};
 
@@ -170,31 +102,32 @@ void viewport_echoKbdEvent(Viewport *viewport, void (*on_expose)()) {
 
     switch (event.type) {
     case Expose: {
+      res.type = SHOW;
+
+      /* This stuff shouldn't be here. */
       XGetWindowAttributes(viewport->xdisplay, viewport->xwindow, &gwa);
       glViewport(0, 0, gwa.width, gwa.height);
       on_expose();
       glXSwapBuffers(viewport->xdisplay, viewport->xwindow);
     } break;
-    case KeyRelease: {
-    } break;
     case KeyPress: {
-      u32 keycode = event.xkey.keycode;
+      res.type = KBD_PRESS;
       res.kbd.modifiers = event.xkey.state;
-      KeySym keysym = XLookupKeysym(&event.xkey,
-				    Xor(res.kbd.shift,
-					res.kbd.caps_lock >> 1));
-
-      printf("\t%03b\n", Xor(res.kbd.shift, res.kbd.caps_lock >> 1));
-      printf("Key press: %d, Modifiers: %08b (%c)\n", keycode, res.kbd.modifiers, (char)keysym);
+      res.kbd.key =
+	codepointFromKeySym(XLookupKeysym(&event.xkey,
+					  Xor(ShiftMod(res.kbd.modifiers),
+					      CapsLockMod(res.kbd.modifiers))));
     } break;
     case ButtonPress: {
       u32 keycode = event.xbutton.button;
       printf("Button press: %d\n", keycode);
     } break;
     case MotionNotify: {
-      i32 x = event.xmotion.x;
-      i32 y = event.xmotion.y;
-      printf("Pointer motion: (%d, %d)\n", x, y);
+      res.type = PTR_MOTION;
+      res.motion.x = ClampBot(event.xmotion.x, 0);
+      res.motion.y = event.xmotion.y <= viewport->height
+		     ? viewport->height - event.xmotion.y
+		     : 0;
     } break;
     case ClientMessage: {
       /* Make sure we aren't consuming the `window close` message */
@@ -232,6 +165,8 @@ void viewport_echoKbdEvent(Viewport *viewport, void (*on_expose)()) {
     } break;
     }
   }
+
+  return res;
 }
 
 fn bool viewport_shouldClose(Viewport *viewport) {
@@ -256,4 +191,44 @@ inline fn void viewport_close(Viewport *viewport) {
   (void)glXDestroyContext(viewport->xdisplay, viewport->glx_context);
   (void)XDestroyWindow(viewport->xdisplay, viewport->xwindow);
   (void)XCloseDisplay(viewport->xdisplay);
+}
+
+fn Codepoint codepointFromKeySym(KeySym sym) {
+  i32 min = 0;
+  i32 max = Arrsize(keysymtab);
+  i32 mid;
+
+  /* first check for Latin-1 characters (1:1 mapping) */
+  if ((sym >= 0x0020 && sym <= 0x007e) ||
+      (sym >= 0x00a0 && sym <= 0x00ff))
+    return (Codepoint) {
+      .codepoint = sym,
+      .size = 1,
+    };
+
+  /* also check for directly encoded 24-bit UCS characters */
+  if ((sym & 0xff000000) == 0x01000000)
+    return (Codepoint) {
+      .codepoint = sym & 0x00ffffff,
+      .size = 3,
+    };
+
+  /* binary search in table */
+  while (max >= min) {
+    mid = (min + max) / 2;
+    if (keysymtab[mid].keysym < sym)
+      min = mid + 1;
+    else if (keysymtab[mid].keysym > sym)
+      max = mid - 1;
+    else {
+      /* found it */
+      return (Codepoint) {
+	.codepoint = keysymtab[mid].ucs,
+	.size = 4,
+      };
+    }
+  }
+
+  /* no matching Codepoint value found */
+  return (Codepoint) {0};
 }

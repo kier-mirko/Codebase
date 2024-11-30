@@ -12,22 +12,22 @@
 #if OS_LINUX
   #include "OS/Linux/thread.h"
 
-  /* #if GFX_X11 */
-  /*   #include "OS/Linux/X11/window.h" */
-  /* #elif GFX_WAYLAND */
-  /*   #include "OS/Linux/Wayland/window.h" */
-  /* #endif */
+  #if GFX_X11
+    #include "OS/Linux/X11/window.h"
+  #elif GFX_WAYLAND
+    #include "OS/Linux/Wayland/window.h"
+  #endif
 #elif OS_BSD
   #include "OS/BSD/thread.h"
 
-  /* #if GFX_X11 */
-  /*   #include "OS/BSD/X11/window.h" */
-  /* #elif GFX_WAYLAND */
-  /*   #include "OS/BSD/Wayland/window.h" */
-  /* #endif */
+  #if GFX_X11
+    #include "OS/BSD/X11/window.h"
+  #elif GFX_WAYLAND
+    #include "OS/BSD/Wayland/window.h"
+  #endif
 #elif OS_WINDOWS
 #include "OS/Windows/thread.h"
-/* #include "OS/Windows/D3D/window.h" */
+#include "OS/Windows/D3D/window.h"
 #endif
 
 #include "serializer/csv.h"
