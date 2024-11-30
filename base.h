@@ -130,13 +130,13 @@
 
 #define DeferLoop(...) for(u8 __i_ = 1; __i_; --__i_, __VA_ARGS__)
 
-#define Not(A) (~A)
-#define And(A, B) (A & B)
-#define Or(A, B) (A | B)
-#define Nand(A, B) (~(A && B))
-#define Nor(A, B) (~(A || B))
-#define Xor(A, B) (A ^ B)
-#define Xnor(A, B) (~(A ^ B))
+#define Not(A) (~(A))
+#define And(A, B) ((A) & (B))
+#define Or(A, B) ((A) | (B))
+#define Nand(A, B) (~((A) && (B)))
+#define Nor(A, B) (~((A) || (B)))
+#define Xor(A, B) ((A) ^ (B))
+#define Xnor(A, B) (~(A) ^ (B))
 
 #define KiB(BYTES) ((BYTES)*1024)
 #define MB(BYTES) (KiB((BYTES)) * 1024)

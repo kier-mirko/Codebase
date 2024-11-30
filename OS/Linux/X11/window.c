@@ -70,7 +70,7 @@ fn Viewport viewport_create(String8 name,
   }
 
   XSetWindowAttributes swa = {.event_mask = ExposureMask |
-					    KeyPressMask |
+					    KeyPressMask | KeyReleaseMask |
 					    ButtonPressMask | PointerMotionMask,
 			      .colormap = cmap};
   /* ============================================================================= */
@@ -129,10 +129,41 @@ fn Viewport viewport_create(String8 name,
   return viewport;
 }
 
+typedef struct {
+  enum {
+    Show,
+    KbdPress,
+    BtnPress,
+    PtrMotion,
+  } type;
+
+  union {
+    struct {
+      Codepoint key;
+
+      union {
+	u8 modifiers;
+	struct {
+	  bool shift;
+	  bool caps_lock;
+	  bool ctrl;
+	  bool meta;
+	  bool mod2;
+	  bool mod3;
+	  bool mod4;
+	  bool super;
+	};
+      };
+    } kbd;
+  };
+} ViewportEvent;
+
 // TODO: This is temporary
 void viewport_echoKbdEvent(Viewport *viewport, void (*on_expose)()) {
   XEvent event = {0};
   XWindowAttributes gwa = {0};
+
+  ViewportEvent res = {0};
 
   if (XPending(viewport->xdisplay)) {
     XNextEvent(viewport->xdisplay, &event);
@@ -144,9 +175,17 @@ void viewport_echoKbdEvent(Viewport *viewport, void (*on_expose)()) {
       on_expose();
       glXSwapBuffers(viewport->xdisplay, viewport->xwindow);
     } break;
+    case KeyRelease: {
+    } break;
     case KeyPress: {
       u32 keycode = event.xkey.keycode;
-      printf("Key press: %d\n", keycode);
+      res.kbd.modifiers = event.xkey.state;
+      KeySym keysym = XLookupKeysym(&event.xkey,
+				    Xor(res.kbd.shift,
+					res.kbd.caps_lock >> 1));
+
+      printf("\t%03b\n", Xor(res.kbd.shift, res.kbd.caps_lock >> 1));
+      printf("Key press: %d, Modifiers: %08b (%c)\n", keycode, res.kbd.modifiers, (char)keysym);
     } break;
     case ButtonPress: {
       u32 keycode = event.xbutton.button;
