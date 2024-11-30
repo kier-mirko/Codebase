@@ -30,10 +30,11 @@ fn Viewport viewport_create(String8 name,
     return (Viewport){0};
   }
 
-  XSetWindowAttributes swa = {.event_mask = ExposureMask |
-					    KeyPressMask |
-					    ButtonPressMask | PointerMotionMask,
-			      .colormap = cmap};
+  XSetWindowAttributes swa = { .colormap = cmap,
+                               .event_mask = ExposureMask |
+					     KeyPressMask |
+					     ButtonPressMask |
+					     PointerMotionMask };
   /* ============================================================================= */
 
   viewport.xwindow = XCreateWindow(viewport.xdisplay, viewport.xroot,
@@ -90,11 +91,13 @@ fn Viewport viewport_create(String8 name,
   return viewport;
 }
 
-// TODO: This is temporary
-ViewportEvent viewport_echoKbdEvent(Viewport *viewport, void (*on_expose)()) {
+inline fn void viewport_swapBuffers(Viewport *viewport) {
+  glXSwapBuffers(viewport->xdisplay, viewport->xwindow);
+}
+
+ViewportEvent viewport_getNextEvent(Viewport *viewport) {
   XEvent event = {0};
   XWindowAttributes gwa = {0};
-
   ViewportEvent res = {0};
 
   if (XPending(viewport->xdisplay)) {
@@ -104,11 +107,8 @@ ViewportEvent viewport_echoKbdEvent(Viewport *viewport, void (*on_expose)()) {
     case Expose: {
       res.type = SHOW;
 
-      /* This stuff shouldn't be here. */
       XGetWindowAttributes(viewport->xdisplay, viewport->xwindow, &gwa);
       glViewport(0, 0, gwa.width, gwa.height);
-      on_expose();
-      glXSwapBuffers(viewport->xdisplay, viewport->xwindow);
     } break;
     case KeyPress: {
       res.type = KBD_PRESS;
@@ -119,8 +119,12 @@ ViewportEvent viewport_echoKbdEvent(Viewport *viewport, void (*on_expose)()) {
 					      CapsLockMod(res.kbd.modifiers))));
     } break;
     case ButtonPress: {
-      u32 keycode = event.xbutton.button;
-      printf("Button press: %d\n", keycode);
+      res.mouse.modifiers = event.xbutton.state;
+      res.mouse.kind = event.xbutton.button;
+      res.mouse.x = event.xbutton.x;
+      res.mouse.y = event.xbutton.y <= viewport->height
+		    ? viewport->height - event.xbutton.y
+		    : 0;
     } break;
     case MotionNotify: {
       res.type = PTR_MOTION;
@@ -221,7 +225,6 @@ fn Codepoint codepointFromKeySym(KeySym sym) {
     else if (keysymtab[mid].keysym > sym)
       max = mid - 1;
     else {
-      /* found it */
       return (Codepoint) {
 	.codepoint = keysymtab[mid].ucs,
 	.size = 4,

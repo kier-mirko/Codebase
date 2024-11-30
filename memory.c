@@ -11,7 +11,7 @@ void *memCopy(void *dest, void *src, usize size) {
     return dest;
   }
 
-  u8 *dest_byte = (u8 *)dest, *src_byte = (u8 *)src;
+  u8 *dest_byte = dest, *src_byte = src;
   for (usize i = 0; i < size; ++i) {
     if (!(dest_byte[i] = src_byte[i])) {
       return 0;
@@ -22,7 +22,7 @@ void *memCopy(void *dest, void *src, usize size) {
 }
 
 void memZero(void *dest, usize size) {
-  u8 *dest_bytes = (u8 *)dest;
+  u8 *dest_bytes = dest;
   for (usize i = 0; i < size; ++i) {
     *(dest_bytes + i) = 0;
   }

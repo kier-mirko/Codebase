@@ -11,10 +11,9 @@ inline fn bool isPowerOfTwo(usize value) {
 inline fn void *forwardAlign(void *ptr, usize align) {
   Assert(isPowerOfTwo(align));
 
-  usize uptr = (usize)ptr;
-  usize mod = uptr & (align - 1);
-  return (void *)(mod ? uptr += align - mod
-		      : uptr);
+  usize mod = (usize)ptr & (align - 1);
+  return (mod ? ptr += align - mod
+	      : ptr);
 }
 
 fn Arena *arenaBuild(usize size, usize base) {
@@ -32,7 +31,7 @@ fn Arena *arenaBuild(usize size, usize base) {
   if (mem == fail_state) {
     return 0;
   } else {
-    Arena *arena = (Arena *)mem;
+    Arena *arena = mem;
     arena->base = arena + sizeof(Arena);
     arena->total_size = size - sizeof(Arena);
     arena->head = 0;
@@ -60,8 +59,7 @@ fn void *arenaPush(Arena *arena, usize size, usize align) {
   void *aligned_head = forwardAlign(arena->base + arena->head, align);
   usize offset = aligned_head - arena->base;
 
-  if ((usize)aligned_head + size >
-      (usize)arena->base + arena->total_size) {
+  if (aligned_head + size > arena->base + arena->total_size) {
     return 0;
   }
 

@@ -9,6 +9,10 @@
 #include "clock.h"
 #include "string.h"
 
+#include "OS/dynlib.h"
+#include "OS/file_properties.h"
+#include "OS/file.h"
+
 #if OS_LINUX
   #include "OS/Linux/thread.h"
 
@@ -26,8 +30,8 @@
     #include "OS/BSD/Wayland/window.h"
   #endif
 #elif OS_WINDOWS
-#include "OS/Windows/thread.h"
-#include "OS/Windows/D3D/window.h"
+  #include "OS/Windows/thread.h"
+  #include "OS/Windows/D3D/window.h"
 #endif
 
 #include "serializer/csv.h"

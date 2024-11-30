@@ -180,7 +180,7 @@ fn File *fs_open(Arena *arena, String8 filepath, void *location) {
   memfile->path = filepath;
   memfile->descriptor = fd;
   memfile->prop = fs_getProp(filepath);
-  memfile->content = str8((char *)mmap(location, memfile->prop.size, PROT_READ, MAP_SHARED, fd, 0), memfile->prop.size);
+  memfile->content = str8(mmap(location, memfile->prop.size, PROT_READ, MAP_SHARED, fd, 0), memfile->prop.size);
 
   (void)close(fd);
   return memfile;

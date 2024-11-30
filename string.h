@@ -26,7 +26,8 @@ inline fn u8 encodeUTF32(u32 *res, Codepoint cp);
 
 // =============================================================================
 // UTF-8 string
-typedef struct {
+
+typedef struct String8 {
   u8 *str;
   usize size;
 } String8;
@@ -37,7 +38,7 @@ typedef struct StringNode {
   String8 value;
 } StringNode;
 
-typedef struct {
+typedef struct StringStream {
   StringNode *first;
   StringNode *last;
   usize size;

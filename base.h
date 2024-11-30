@@ -22,10 +22,6 @@
 #error "Unsupported compiler"
 #endif
 
-#if defined(__cplusplus)
-#define CPP 1
-#endif
-
 #if defined(__gnu_linux__)
 #define OS_LINUX 1
 #elif defined(__unix__)
@@ -58,10 +54,6 @@
 #endif
 #if !defined(COMPILER_CL)
 #define COMPILER_CL 0
-#endif
-
-#if !defined(CPP)
-#define CPP 0
 #endif
 
 #if !defined(OS_LINUX)
@@ -171,12 +163,10 @@ typedef uint32_t u32;
 typedef int64_t i64;
 typedef uint64_t u64;
 
-#if !CPP
 typedef enum {
   false,
   true
 } bool;
-#endif
 
 #if defined(ARCH_X64) || defined(ARCH_ARM64)
 typedef u64 usize;

@@ -66,10 +66,30 @@ typedef struct {
       Codepoint key;
       u8 modifiers;
     } kbd;
+
     struct {
       usize x;
       usize y;
     } motion;
+
+    struct {
+      u8 modifiers;
+      usize x;
+      usize y;
+
+      enum {
+	UNKNOWN,
+	LEFT_MOUSE,
+	MIDDLE_MOUSE,
+	RIGHT_MOUSE,
+	SCROLL_UP,
+	SCROLL_DOWN,
+	SCROLL_RIGHT,
+	SCROLL_LEFT,
+	BACK_MOUSE,
+	FORWARD_MOUSE,
+      } kind;
+    } mouse;
   };
 } ViewportEvent;
 

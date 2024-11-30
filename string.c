@@ -121,8 +121,8 @@ fn String8 str8FromStream(Arena *arena, StringStream *stream) {
       *(final_chars + (offset++)) = curr->value.str[i];
     }
   }
-  String8 res = {.str = final_chars, .size = final_len};
-  return res;
+
+  return (String8) {.str = final_chars, .size = final_len};
 }
 
 fn void stringstreamAppend(Arena *arena, StringStream *strlist, String8 other) {
@@ -130,9 +130,9 @@ fn void stringstreamAppend(Arena *arena, StringStream *strlist, String8 other) {
   Assert(strlist);
   ++strlist->size;
 
-  StringNode *str = New(arena, StringNode);
-  str->value = other;
-  DLLPushBack(strlist->first, strlist->last, str);
+  StringNode *new = New(arena, StringNode);
+  new->value = other;
+  DLLPushBack(strlist->first, strlist->last, new);
 }
 
 inline fn String8 str8(char *chars, usize len) {
@@ -319,11 +319,11 @@ fn String8 stringifyI64(Arena *arena, i64 n) {
   }
 
   arenaPop(arena, approx - i);
-  String8 res = {
-      .str = str,
-      .size = i,
+
+  return (String8) {
+    .str = str,
+    .size = i,
   };
-  return res;
 }
 
 fn String8 stringifyU64(Arena *arena, u64 n) {
@@ -340,11 +340,11 @@ fn String8 stringifyU64(Arena *arena, u64 n) {
   }
 
   arenaPop(arena, approx - i);
-  String8 res = {
-      .str = str,
-      .size = i,
+
+  return (String8) {
+    .str = str,
+    .size = i,
   };
-  return res;
 }
 
 fn String8 stringifyF64(Arena *arena, f64 n) {
@@ -354,11 +354,11 @@ fn String8 stringifyF64(Arena *arena, f64 n) {
   // TODO: maybe implement `sprintf`?
   size = sprintf((char *)str, "%f", n);
   arenaPop(arena, approx - size);
-  String8 res = {
-      .str = str,
-      .size = size,
+
+  return (String8) {
+    .str = str,
+    .size = size,
   };
-  return res;
 }
 
 fn usize str8len(char *chars) {
@@ -383,7 +383,7 @@ fn String8 strFormatVa(Arena *arena, const char *fmt, va_list args) {
   va_copy(args2, args);
   u32 needed_bytes = vsnprintf(0, 0, fmt, args2) + 1;
 
-  String8 res = {0};
+  String8 res;
   res.str = Newarr(arena, u8, needed_bytes);
   res.size = vsnprintf((char *)res.str, needed_bytes, fmt, args);
   res.str[res.size] = 0;
@@ -423,13 +423,13 @@ inline fn String8 strRange(String8 s, usize start, usize end) {
 inline fn bool strEndsWith(String8 s, char ch) { return s.str[s.size - 1] == ch; }
 
 fn String8 longestCommonSubstring(Arena *arena, String8 s1, String8 s2) {
-  String8 res = {0};
+  String8 res;
   if (s1.size == 0 || s2.size == 0) {
     return res;
   }
 
   // TODO: don't use variable length arrays
-  usize(*memo)[s2.size + 1] = (usize(*)[s2.size + 1])
+  usize(*memo)[s2.size + 1] =
       arenaPush(arena, sizeof(usize[s1.size + 1][s2.size + 1]), alignof(usize[s1.size + 1][s2.size + 1]));
 
   for (i32 i = s1.size - 1; i >= 0; --i) {
@@ -611,8 +611,7 @@ fn String8 UTF8From16(Arena *arena, String16 *in) {
   }
 
   arenaPop(arena, (approx_size - res_size));
-  String8 res = {.str = bytes, .size = res_size};
-  return res;
+  return (String8) {.str = bytes, .size = res_size};
 }
 
 fn String8 UTF8From32(Arena *arena, String32 *in) {
@@ -630,8 +629,7 @@ fn String8 UTF8From32(Arena *arena, String32 *in) {
   }
 
   arenaPop(arena, (approx_size - res_size));
-  String8 res = {.str = bytes, .size = res_size};
-  return res;
+  return (String8) {.str = bytes, .size = res_size};
 }
 
 fn String16 UTF16From8(Arena *arena, String8 *in) {
