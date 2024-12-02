@@ -10,10 +10,11 @@
 
 // =============================================================================
 // File reading and writing/appending
-fn String8 *fs_read(Arena *arena, String8 filepath);
+fn String8 fs_read(Arena *arena, String8 filepath);
 
 fn bool fs_write(String8 filepath, String8 content);
 fn bool fs_writeStream(String8 filepath, StringStream content);
+fn String8 fs_writeTempFile();
 
 fn bool fs_append(String8 filepath, String8 content);
 fn bool fs_appendStream(String8 filepath, StringStream content);
@@ -30,7 +31,7 @@ typedef struct {
 } File;
 
        fn File *fs_open(Arena *arena, String8 filepath, void *location);
-inline fn void fs_sync(File *file, usize offset, usize size);
+inline fn void fs_sync(File *file, usize size);
 inline fn void fs_close(File *file);
 
 inline fn bool fs_hasChanged(File *file);

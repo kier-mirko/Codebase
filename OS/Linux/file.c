@@ -13,27 +13,26 @@
 
 // =============================================================================
 // File reading and writing/appending
-fn String8 *fs_read(Arena *arena, String8 filepath) {
+fn String8 fs_read(Arena *arena, String8 filepath) {
   Assert(arena);
   if (filepath.size == 0) {
-    return 0;
+    return (String8) {0};
   }
 
   i32 fd = open((char *)filepath.str, O_RDONLY);
   if (fd < 0) {
     (void)close(fd);
-    return 0;
+    return (String8) {0};
   }
 
   struct stat file_stat;
   if (stat((char *)filepath.str, &file_stat) < 0) {
     (void)close(fd);
-    return 0;
+    return (String8) {0};
   }
 
-  String8 *res = New(arena, String8);
-  res->str = Newarr(arena, u8, file_stat.st_size);
-  res->size = read(fd, res->str, file_stat.st_size);
+  String8 res = { .str = Newarr(arena, u8, file_stat.st_size) };
+  res.size = read(fd, res.str, file_stat.st_size);
 
   (void)close(fd);
   return res;
@@ -73,6 +72,17 @@ fn bool fs_writeStream(String8 filepath, StringStream content) {
   }
 
   return true;
+}
+
+fn String8 fs_writeTmpFile(String8 content) {
+  char path[] = "/tmp/base-XXXXXX";
+
+  i32 fd = mkstemp(path);
+
+  (void)write(fd, content.str, content.size);
+  (void)close(fd);
+
+  return Strlit(path);
 }
 
 fn bool fs_append(String8 filepath, String8 content) {
@@ -180,20 +190,18 @@ fn File *fs_open(Arena *arena, String8 filepath, void *location) {
   memfile->path = filepath;
   memfile->descriptor = fd;
   memfile->prop = fs_getProp(filepath);
-  memfile->content = str8(mmap(location, memfile->prop.size, PROT_READ, MAP_SHARED, fd, 0), memfile->prop.size);
+  memfile->content = str8(mmap(location, memfile->prop.size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0), memfile->prop.size);
 
-  (void)close(fd);
   return memfile;
 }
 
-inline fn void fs_sync(File *file, usize offset, usize size) {
-  if (!size) {
-    size = file->prop.size;
-  } else if (size > file->prop.size) {
-    (void)ftruncate(file->descriptor, size);
+inline fn void fs_sync(File *file, usize newsize) {
+  if (!newsize) {
+    newsize = file->content.size;
   }
 
-  (void)msync(file->content.str + ClampTop(offset, file->prop.size), size, MS_ASYNC | MS_INVALIDATE);
+  (void)ftruncate(file->descriptor, newsize);
+  (void)msync(file->content.str, newsize, MS_ASYNC | MS_INVALIDATE);
 }
 
 inline fn void fs_close(File *file) {
