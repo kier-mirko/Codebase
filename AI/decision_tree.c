@@ -1,5 +1,8 @@
 #include "decision_tree.h"
 
+/* implement log2? */
+#include <math.h>
+
 #define TableSize 20
 
 struct OccSlot {
@@ -46,11 +49,77 @@ fn bool occmapInsert(Arena *arena, struct OccSlot map[TableSize],
   return true;
 }
 
+inline fn f64 ai_entropy(f64 val) {
+  return val ? -val * log2(val) : 0;
+}
+
+fn f64 ai_computeEntropy(struct OccSlot map[TableSize], usize row_count) {
+  Assert(row_count > 0);
+
+  f64 res = 0;
+  for (usize i = 0; i < TableSize; ++i) {
+    for (struct HashNode *curr = map[i].first; curr; curr = curr->next) {
+      res += ai_entropy((f64)curr->count / (f64)row_count);
+    }
+  }
+
+  return res;
+}
+
+fn usize ai_maxInformationGain(struct OccSlot(*maps)[TableSize],
+			       usize n_features, usize target_idx,
+			       usize row_count) {
+  f64 max_gain = 0;
+  usize max_gain_idx = 0;
+  f64 target_entropy = ai_computeEntropy(maps[target_idx], row_count);
+  printf("\t\tTarget entropy: %.16lf\n\n", target_entropy);
+
+  for (usize feature = 0; feature < n_features; ++feature) {
+    if (feature == target_idx) { continue; }
+
+    f64 entropy = 0;
+    printf("\t");
+    for (usize slot = 0; slot < TableSize; ++slot) {
+      for (struct HashNode *curr = maps[feature][slot].first; curr;
+           curr = curr->next) {
+
+	printf("%ld/%ld * entropy(", curr->count, row_count);
+	for (usize target_category = 0; target_category < TableSize;
+	     ++target_category) {
+	  for (struct HashNode *currf = curr->targets[target_category].first;
+	       currf; currf = currf->next) {
+	    printf("%ld/%ld ", currf->count, curr->count);
+	    entropy += (f64)curr->count/(f64)row_count
+		       * ai_entropy((f64)currf->count/(f64)curr->count);
+	  }
+	}
+
+	printf("\b)");
+      }
+      if (maps[feature][slot].first)
+	printf(" + ");
+    }
+
+    f64 gain = target_entropy - entropy;
+    printf("\b\b\n\t\tentropy: %.16lf\n", entropy);
+    printf("\t\tgain: %.16lf\n\n", gain);
+
+    if (max_gain < gain) {
+      max_gain = gain;
+      max_gain_idx = feature;
+    }
+  }
+
+  printf("\tMax gain: %.16lf\n", max_gain);
+  return max_gain_idx;
+}
+
 fn DecisionTreeNode ai_makeDTNode(Arena *arena, CSV config,
 				  struct OccSlot(*maps)[TableSize],
 				  usize n_features, usize target_idx) {
   usize row_count = 0;
 
+  /* Occurrences counter */
   for (StringStream row = csv_nextRow(arena, &config);
        row.size != 0;
        row = csv_header(arena, &config), ++row_count) {
@@ -71,17 +140,18 @@ fn DecisionTreeNode ai_makeDTNode(Arena *arena, CSV config,
 
       if (i != target_idx) {
 	struct HashNode *node = occmapSearch(maps[i], row_entries[i]);
-	struct HashNode *tnode = occmapSearch(node->targets, row_entries[target_idx]);
+	struct HashNode *tnode = occmapSearch(node->targets,
+					      row_entries[target_idx]);
 	if (tnode) {
 	  tnode->count++;
-	} else if (!occmapInsert(arena, node->targets, row_entries[target_idx])) {
+	} else if (!occmapInsert(arena, node->targets,
+				 row_entries[target_idx])) {
 	  /* TODO: write to tmp file maybe? */
           Assert(false);
         }
       }
     }
   }
-  /* TODO: write to tmp file here too? */
 
   /* Print table */
   for (usize i = 0; i < n_features; ++i) {
@@ -101,6 +171,10 @@ fn DecisionTreeNode ai_makeDTNode(Arena *arena, CSV config,
     }
     printf("\n");
   }
+
+  usize best_split = ai_maxInformationGain(maps, n_features, target_idx,
+					   row_count);
+  printf("\tBest split by: %ld\n", best_split);
 
   return (DecisionTreeNode) {0};
 }

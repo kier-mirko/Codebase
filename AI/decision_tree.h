@@ -27,14 +27,4 @@ struct FeatureData {
   } domain;
 };
 
-fn usize ai_indexFromCategory(String8 *domain, usize size, String8 needle);
-
-inline fn f64 ai_computeEntropy(f64 value);
-       fn f64 ai_entropy(struct FeatureData *data, usize *occurrences);
-       fn usize ai_maxInformationGain(struct FeatureData *data, usize *feature_table);
-
-fn DecisionTreeNode ai_buildDecisionTree(Arena *arena, CSV config, String8 *header,
-					 usize n_features, usize target_feature_idx,
-					 f64 treshold);
-
 #endif
