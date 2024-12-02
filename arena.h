@@ -8,8 +8,8 @@
 #include <windows.h>
 #endif
 
-#define New(arenaptr, type) (type *)arenaPush(arenaptr, sizeof(type), alignof(type))
-#define Newarr(arenaptr, type, count) (type *)arenaPush(arenaptr, (count) * sizeof(type), alignof(type))
+#define New(arenaptr, type) arenaPush(arenaptr, sizeof(type), alignof(type))
+#define Newarr(arenaptr, type, count) arenaPush(arenaptr, (count) * sizeof(type), alignof(type))
 
 typedef struct {
   void *base;

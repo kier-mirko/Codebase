@@ -64,6 +64,8 @@ fn i64 i64FromStr(String8 s);
 fn u64 u64FromStr(String8 s);
 fn f64 f64FromStr(String8 s);
 
+fn usize strHash(String8 s);
+
 fn String8 stringifyI64(Arena *arena, i64 n);
 fn String8 stringifyU64(Arena *arena, u64 n);
 fn String8 stringifyF64(Arena *arena, f64 n);

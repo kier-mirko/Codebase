@@ -296,6 +296,16 @@ fn f64 f64FromStr(String8 s) {
   return strtod((char *)s.str, (char **)&end);
 }
 
+/* Djb2: http://www.cse.yorku.ca/~oz/hash.html */
+fn usize strHash(String8 s) {
+  usize hash = 5381;
+  for (usize i = 0; i < s.size; ++i) {
+    hash = (hash << 5) + hash + s.str[i];
+  }
+
+  return hash;
+}
+
 fn String8 stringifyI64(Arena *arena, i64 n) {
   i64 sign = n;
   if (n < 0) {

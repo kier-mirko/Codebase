@@ -6,7 +6,7 @@
 
 #include <math.h>
 
-typedef struct {
+typedef struct DecisionTreeNode {
   /* The label is:
    * - a boolean condition when the current node isn't a leaf
    * - the predicted target feature label */
@@ -15,21 +15,26 @@ typedef struct {
   struct DecisionTreeNode *branches;
 } DecisionTreeNode;
 
+struct FeatureData {
+  f64 entropy_threshold;
+  usize max_domain_size, n_features, n_rows, target_feature;
+
+  String8 **categories;
+
+  struct {
+    String8 *names;
+    usize *sizes;
+  } domain;
+};
+
 fn usize ai_indexFromCategory(String8 *domain, usize size, String8 needle);
 
 inline fn f64 ai_computeEntropy(f64 value);
-       fn f64 ai_entropy(usize max_domain_size, usize n_features, usize n_rows,
-			 usize feature_idx, usize feature_size, usize *feature_table);
-       fn usize ai_maxInformationGain(f64 threshold, usize max_domain_size,
-				      usize n_features, usize n_rows,
-				      usize target_feature_idx, usize *domain_sizes,
-				      usize *feature_table);
+       fn f64 ai_entropy(struct FeatureData *data, usize *occurrences);
+       fn usize ai_maxInformationGain(struct FeatureData *data, usize *feature_table);
 
-/* If `is_first_row_header` is T, the value of `header` is discarded
- * and will be read from the CSV file. */
 fn DecisionTreeNode ai_buildDecisionTree(Arena *arena, CSV config, String8 *header,
-					 bool is_first_row_header, usize n_features,
-					 usize target_feature_idx, f64 treshold,
-					 String8 **domains, usize *domain_sizes);
+					 usize n_features, usize target_feature_idx,
+					 f64 treshold);
 
 #endif
