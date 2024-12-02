@@ -14,12 +14,16 @@ fn String8 fs_read(Arena *arena, String8 filepath);
 
 fn bool fs_write(String8 filepath, String8 content);
 fn bool fs_writeStream(String8 filepath, StringStream content);
-fn String8 fs_writeTempFile();
 
 fn bool fs_append(String8 filepath, String8 content);
 fn bool fs_appendStream(String8 filepath, StringStream content);
 
 fn FileProperties fs_getProp(String8 filepath);
+
+// =============================================================================
+// Temporary files
+fn String8 fs_writeTmpFile(String8 content);
+fn String8 fs_makeTempFile();
 
 // =============================================================================
 // Memory mapping files for easier and faster handling

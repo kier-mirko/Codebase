@@ -74,17 +74,6 @@ fn bool fs_writeStream(String8 filepath, StringStream content) {
   return true;
 }
 
-fn String8 fs_writeTmpFile(String8 content) {
-  char path[] = "/tmp/base-XXXXXX";
-
-  i32 fd = mkstemp(path);
-
-  (void)write(fd, content.str, content.size);
-  (void)close(fd);
-
-  return Strlit(path);
-}
-
 fn bool fs_append(String8 filepath, String8 content) {
   if (filepath.size == 0) {
     return false;
@@ -169,6 +158,28 @@ fn FileProperties fs_getProp(String8 filepath) {
   }
 
   return res;
+}
+
+// =============================================================================
+// Temporary files
+
+#define TMP_FILE_TEMPLATE "/tmp/base-XXXXXX"
+
+fn String8 fs_writeTmpFile(String8 content) {
+  char path[] = TMP_FILE_TEMPLATE;
+
+  i32 fd = mkstemp(path);
+
+  (void)write(fd, content.str, content.size);
+  (void)close(fd);
+
+  return Strlit(path);
+}
+
+fn String8 fs_makeTmpFile() {
+  char path[] = TMP_FILE_TEMPLATE;
+  (void)close(mkstemp(path));
+  return Strlit(path);
 }
 
 // =============================================================================
