@@ -8,6 +8,8 @@
 struct OccSlot {
   struct HashNode *first;
   struct HashNode *last;
+
+  usize size;
 };
 
 struct HashNode {
@@ -44,6 +46,8 @@ fn bool occmapInsert(Arena *arena, struct OccSlot map[TableSize],
 
   new_node->name = category;
   new_node->count = 1;
+
+  map[idx].size += 1;
   DLLPushBack(map[idx].first, map[idx].last, new_node);
 
   return true;
@@ -172,9 +176,16 @@ fn DecisionTreeNode ai_makeDTNode(Arena *arena, CSV config,
     printf("\n");
   }
 
-  usize best_split = ai_maxInformationGain(maps, n_features, target_idx,
-					   row_count);
-  printf("\tBest split by: %ld\n", best_split);
+  usize feature2split_by = ai_maxInformationGain(maps, n_features, target_idx,
+						 row_count);
+  printf("\tFeature to split by: %ld\n", feature2split_by);
+
+  usize branches = 0;
+  for (usize j = 0; j < TableSize; ++j) {
+    branches += maps[feature2split_by][j].size;
+  }
+
+  printf("\tThe dataset will be split into %ld branches\n", branches);
 
   return (DecisionTreeNode) {0};
 }
