@@ -34,6 +34,12 @@
 #error "Unsupported OS"
 #endif
 
+#if defined(__cplusplus)
+#define CPP 1
+#else
+#define CPP 0
+#endif
+
 #if defined(__i386__)
 #define ARCH_X86 1
 #elif defined(__x86_64__)
@@ -163,10 +169,12 @@ typedef uint32_t u32;
 typedef int64_t i64;
 typedef uint64_t u64;
 
+#if !CPP
 typedef enum {
   false,
   true
 } bool;
+#endif
 
 #if defined(ARCH_X64) || defined(ARCH_ARM64)
 typedef u64 usize;

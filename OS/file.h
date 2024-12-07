@@ -22,8 +22,8 @@ fn FileProperties fs_getProp(String8 filepath);
 
 // =============================================================================
 // Temporary files
-fn String8 fs_writeTmpFile(String8 content);
-fn String8 fs_makeTempFile();
+fn String8 fs_makeTmpFile(Arena *arena);
+fn String8 fs_writeTmpFile(Arena* arena, String8 content);
 
 // =============================================================================
 // Memory mapping files for easier and faster handling

@@ -130,9 +130,9 @@ fn void stringstreamAppend(Arena *arena, StringStream *strlist, String8 other) {
   Assert(strlist);
   ++strlist->size;
 
-  StringNode *new = New(arena, StringNode);
-  new->value = other;
-  DLLPushBack(strlist->first, strlist->last, new);
+  StringNode *str = (StringNode *)New(arena, StringNode);
+  str->value = other;
+  DLLPushBack(strlist->first, strlist->last, str);
 }
 
 inline fn String8 str8(char *chars, usize len) {

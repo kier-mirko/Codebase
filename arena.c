@@ -12,7 +12,7 @@ inline fn void *forwardAlign(void *ptr, usize align) {
   Assert(isPowerOfTwo(align));
 
   usize mod = (usize)ptr & (align - 1);
-  return (mod ? ptr += align - mod
+  return (mod ? ptr = (u8 *)ptr + align - mod
 	      : ptr);
 }
 
@@ -56,10 +56,10 @@ inline fn bool arenaFree(Arena *arena) {
 
 fn void *arenaPush(Arena *arena, usize size, usize align) {
   if (!align) {align = DefaultAlignment;}
-  void *aligned_head = forwardAlign(arena->base + arena->head, align);
-  usize offset = aligned_head - arena->base;
+  void *aligned_head = forwardAlign((u8 *)arena->base + arena->head, align);
+  usize offset = (u8 *)aligned_head - (u8 *)arena->base;
 
-  if (aligned_head + size > arena->base + arena->total_size) {
+  if ((u8 *)aligned_head + size > (u8 *)arena->base + arena->total_size) {
     return 0;
   }
 

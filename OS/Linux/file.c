@@ -75,10 +75,7 @@ fn bool fs_writeStream(String8 filepath, StringStream content) {
 }
 
 fn bool fs_append(String8 filepath, String8 content) {
-  if (filepath.size == 0) {
-    return false;
-  }
-
+  Assert(filepath.size);
   i32 fd = open((char *)filepath.str, O_WRONLY | O_CREAT | O_APPEND,
                 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if (fd < 0) {
@@ -165,21 +162,31 @@ fn FileProperties fs_getProp(String8 filepath) {
 
 #define TMP_FILE_TEMPLATE "/tmp/base-XXXXXX"
 
-fn String8 fs_writeTmpFile(String8 content) {
+fn String8 fs_makeTmpFile(Arena *arena) {
   char path[] = TMP_FILE_TEMPLATE;
+  (void)close(mkstemp(path));
 
+  u8 *pathstr = Newarr(arena, u8, Arrsize(path));
+  memCopy(pathstr, path, Arrsize(path));
+  return (String8) {
+    .str = pathstr,
+    .size = Arrsize(path),
+  };
+}
+
+fn String8 fs_writeTmpFile(Arena* arena, String8 content) {
+  char path[] = TMP_FILE_TEMPLATE;
   i32 fd = mkstemp(path);
 
   (void)write(fd, content.str, content.size);
   (void)close(fd);
 
-  return Strlit(path);
-}
-
-fn String8 fs_makeTmpFile() {
-  char path[] = TMP_FILE_TEMPLATE;
-  (void)close(mkstemp(path));
-  return Strlit(path);
+  u8 *pathstr = Newarr(arena, u8, Arrsize(path));
+  memCopy(pathstr, path, Arrsize(path));
+  return (String8) {
+    .str = pathstr,
+    .size = Arrsize(path),
+  };
 }
 
 // =============================================================================

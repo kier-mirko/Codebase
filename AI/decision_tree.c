@@ -121,6 +121,7 @@ fn usize ai_maxInformationGain(struct OccSlot(*maps)[TableSize],
 fn DecisionTreeNode ai_makeDTNode(Arena *arena, CSV config,
 				  struct OccSlot(*maps)[TableSize],
 				  usize n_features, usize target_idx) {
+  usize data_row_start_at = config.offset;
   usize row_count = 0;
 
   /* Occurrences counter */
@@ -185,7 +186,46 @@ fn DecisionTreeNode ai_makeDTNode(Arena *arena, CSV config,
     branches += maps[feature2split_by][j].size;
   }
 
-  printf("\tThe dataset will be split into %ld branches\n", branches);
+  printf("\tThe dataset will be split into %ld branches\n\n", branches);
+
+  /* Create `branches` tmp files */
+  String8 *tmp_files = Newarr(arena, String8, branches);
+  for (usize i = 0; i < branches; ++i) {
+    tmp_files[i] = fs_makeTmpFile(arena);
+  }
+
+  /* Iterator over the entire CSV file and write into the corresponding tmp */
+  /*   file the CSV row. */
+  config.offset = data_row_start_at;
+  for (StringStream row = csv_nextRow(arena, &config);
+       row.size != 0;
+       row = csv_header(arena, &config), ++row_count) {
+    usize i = 0;
+    String8 *row_entries = Newarr(arena, String8, row.size);
+    for (StringNode *r = row.first; r && i < n_features; r = r->next, ++i) {
+      row_entries[i] = r->value;
+    }
+
+    usize file = strHash(row_entries[feature2split_by]) % branches;
+    printf("%.*s = tmp_file[%ld]\n", Strexpand(row_entries[feature2split_by]), file);
+
+    i = (feature2split_by == 0 ? 1 : 0);
+    fs_append(tmp_files[file], row_entries[i++]);
+    for (; i < row.size; ++i) {
+      if (i == feature2split_by) { continue; }
+      fs_append(tmp_files[file], Strlit(","));
+      fs_append(tmp_files[file], row_entries[i]);
+    }
+    fs_append(tmp_files[file], Strlit("\n"));
+  }
+
+  printf("\n");
+  for (usize i = 0; i < branches; ++i) {
+    String8 content = fs_read(arena, tmp_files[i]);
+    printf("=== tmp_files[%ld] ===\n%.*s\n", i, Strexpand(content));
+  }
+
+  /* Call recursively to create the decision tree child nodes. */
 
   return (DecisionTreeNode) {0};
 }
