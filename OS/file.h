@@ -11,18 +11,21 @@
 // =============================================================================
 // File reading and writing/appending
 fn String8 fs_read(Arena *arena, String8 filepath);
+fn String8 fs_fread(Arena *arena, isize fd);
 
-fn bool fs_write(String8 filepath, String8 content);
-fn bool fs_writeStream(String8 filepath, StringStream content);
+fn isize fs_write(String8 filepath, String8 content);
+fn isize fs_writeStream(String8 filepath, StringStream content);
 
-fn bool fs_append(String8 filepath, String8 content);
-fn bool fs_appendStream(String8 filepath, StringStream content);
+fn isize fs_append(String8 filepath, String8 content);
+fn bool fs_fappend(isize fd, String8 content);
+fn isize fs_appendStream(String8 filepath, StringStream content);
 
 fn FileProperties fs_getProp(String8 filepath);
 
 // =============================================================================
 // Temporary files
-fn String8 fs_makeTmpFile(Arena *arena);
+inline fn isize fs_makeTmpFd();
+fn String8 fs_makeTmpFile(Arena *arena, isize *fd);
 fn String8 fs_writeTmpFile(Arena* arena, String8 content);
 
 // =============================================================================

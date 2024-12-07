@@ -38,69 +38,97 @@ fn String8 fs_read(Arena *arena, String8 filepath) {
   return res;
 }
 
-fn bool fs_write(String8 filepath, String8 content) {
+fn String8 fs_fread(Arena *arena, isize fd) {
+  Assert(arena);
+
+  struct stat file_stat;
+  if (fstat(fd, &file_stat) < 0) {
+    (void)close(fd);
+    return (String8) {0};
+  }
+
+  String8 res = { .str = Newarr(arena, u8, file_stat.st_size) };
+  res.size = read(fd, res.str, file_stat.st_size);
+
+  (void)close(fd);
+  return res;
+}
+
+fn isize fs_write(String8 filepath, String8 content) {
   if (filepath.size == 0) {
-    return false;
+    return -1;
   }
 
   i32 fd = open((char *)filepath.str, O_WRONLY | O_CREAT | O_TRUNC,
                 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if (fd < 0) {
     (void)close(fd);
-    return false;
+    return -1;
   }
 
   if (write(fd, content.str, content.size) != content.size) {
     (void)close(fd);
-    return false;
+    return -1;
   }
 
-  (void)close(fd);
-  return true;
+  return fd;
 }
 
-fn bool fs_writeStream(String8 filepath, StringStream content) {
+fn isize fs_writeStream(String8 filepath, StringStream content) {
   StringNode *start = content.first++;
-  if (!fs_write(filepath, start->value)) {
-    return false;
+  isize fd = fs_write(filepath, start->value);
+  if (fd < 0) {
+    return -1;
   }
 
   for (; start < content.first + content.size; ++start) {
-    if (!fs_append(filepath, start->value)) {
-      return false;
+    if (!fs_fappend(fd, start->value)) {
+      (void)close(fd);
+      return -1;
     }
   }
 
-  return true;
+  return fd;
 }
 
-fn bool fs_append(String8 filepath, String8 content) {
+fn isize fs_append(String8 filepath, String8 content) {
   Assert(filepath.size);
   i32 fd = open((char *)filepath.str, O_WRONLY | O_CREAT | O_APPEND,
                 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if (fd < 0) {
     (void)close(fd);
-    return false;
+    return -1;
   }
 
+  if (write(fd, content.str, content.size) != content.size) {
+    (void)close(fd);
+    return -1;
+  }
+
+  return fd;
+}
+
+fn bool fs_fappend(isize fd, String8 content) {
   if (write(fd, content.str, content.size) != content.size) {
     (void)close(fd);
     return false;
   }
 
-  (void)close(fd);
   return true;
 }
 
-fn bool fs_appendStream(String8 filepath, StringStream content) {
-  for (StringNode *start = content.first; start < content.first + content.size;
-       ++start) {
-    if (!fs_append(filepath, start->value)) {
-      return false;
+fn isize fs_appendStream(String8 filepath, StringStream content) {
+  StringNode *start = content.first;
+  isize fd = fs_append(filepath, start->value);
+
+  for (start = start->next; start; start = start->next) {
+    if (!fs_fappend(fd, start->value)) {
+      (void)close(fd);
+      return -1;
     }
   }
 
-  return true;
+  return fd;
 }
 
 fn FileProperties fs_getProp(String8 filepath) {
@@ -162,9 +190,22 @@ fn FileProperties fs_getProp(String8 filepath) {
 
 #define TMP_FILE_TEMPLATE "/tmp/base-XXXXXX"
 
-fn String8 fs_makeTmpFile(Arena *arena) {
+inline fn isize fs_makeTmpFd() {
   char path[] = TMP_FILE_TEMPLATE;
-  (void)close(mkstemp(path));
+  isize res = mkstemp(path);
+  printf("\t\t%s\n", path);
+  return res;
+}
+
+fn String8 fs_makeTmpFile(Arena *arena, isize *fd) {
+  char path[] = TMP_FILE_TEMPLATE;
+  isize _fd = mkstemp(path);
+
+  if (!fd) {
+    (void)close(_fd);
+  } else {
+    *fd = _fd;
+  }
 
   u8 *pathstr = Newarr(arena, u8, Arrsize(path));
   memCopy(pathstr, path, Arrsize(path));

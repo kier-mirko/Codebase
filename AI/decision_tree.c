@@ -189,9 +189,9 @@ fn DecisionTreeNode ai_makeDTNode(Arena *arena, CSV config,
   printf("\tThe dataset will be split into %ld branches\n\n", branches);
 
   /* Create `branches` tmp files */
-  String8 *tmp_files = Newarr(arena, String8, branches);
+  isize *fds = Newarr(arena, isize, branches);
   for (usize i = 0; i < branches; ++i) {
-    tmp_files[i] = fs_makeTmpFile(arena);
+    fds[i] = fs_makeTmpFd();
   }
 
   /* Iterator over the entire CSV file and write into the corresponding tmp */
@@ -206,23 +206,15 @@ fn DecisionTreeNode ai_makeDTNode(Arena *arena, CSV config,
       row_entries[i] = r->value;
     }
 
-    usize file = strHash(row_entries[feature2split_by]) % branches;
-    printf("%.*s = tmp_file[%ld]\n", Strexpand(row_entries[feature2split_by]), file);
-
     i = (feature2split_by == 0 ? 1 : 0);
-    fs_append(tmp_files[file], row_entries[i++]);
+    usize file = strHash(row_entries[feature2split_by]) % branches;
+    fs_fappend(fds[file], row_entries[i++]);
     for (; i < row.size; ++i) {
       if (i == feature2split_by) { continue; }
-      fs_append(tmp_files[file], Strlit(","));
-      fs_append(tmp_files[file], row_entries[i]);
+      fs_fappend(fds[file], Strlit(","));
+      fs_fappend(fds[file], row_entries[i]);
     }
-    fs_append(tmp_files[file], Strlit("\n"));
-  }
-
-  printf("\n");
-  for (usize i = 0; i < branches; ++i) {
-    String8 content = fs_read(arena, tmp_files[i]);
-    printf("=== tmp_files[%ld] ===\n%.*s\n", i, Strexpand(content));
+    fs_fappend(fds[file], Strlit("\n"));
   }
 
   /* Call recursively to create the decision tree child nodes. */
