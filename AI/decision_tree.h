@@ -12,19 +12,11 @@ typedef struct DecisionTreeNode {
    * - the predicted target feature label */
   String8 label;
 
-  struct DecisionTreeNode *branches;
+  struct DecisionTreeNode *first;
+  struct DecisionTreeNode *last;
+
+  struct DecisionTreeNode *next;
+  struct DecisionTreeNode *prev;
 } DecisionTreeNode;
-
-struct FeatureData {
-  f64 entropy_threshold;
-  usize max_domain_size, n_features, n_rows, target_feature;
-
-  String8 **categories;
-
-  struct {
-    String8 *names;
-    usize *sizes;
-  } domain;
-};
 
 #endif
