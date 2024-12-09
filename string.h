@@ -102,6 +102,16 @@ fn u8 charToUpper(u8 ch);
 fn u8 charToLower(u8 ch);
 fn u8 getCorrectPathSeparator();
 
+#if CPP
+inline fn bool operator==(String8 s1, String8 s2) {
+  return strEq(s1, s2);
+}
+
+inline fn bool operator!=(String8 s1, String8 s2) {
+  return !strEq(s1, s2);
+}
+#endif
+
 // =============================================================================
 // Other UTF strings
 

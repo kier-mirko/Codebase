@@ -30,11 +30,11 @@ fn Viewport viewport_create(String8 name,
     return (Viewport){0};
   }
 
-  XSetWindowAttributes swa = { .colormap = cmap,
-                               .event_mask = ExposureMask |
+  XSetWindowAttributes swa = {.event_mask = ExposureMask |
 					     KeyPressMask |
 					     ButtonPressMask |
-					     PointerMotionMask };
+					     PointerMotionMask,
+                              .colormap = cmap };
   /* ============================================================================= */
 
   viewport.xwindow = XCreateWindow(viewport.xdisplay, viewport.xroot,
@@ -98,7 +98,7 @@ inline fn void viewport_swapBuffers(Viewport *viewport) {
 ViewportEvent viewport_getNextEvent(Viewport *viewport) {
   XEvent event = {0};
   XWindowAttributes gwa = {0};
-  ViewportEvent res = {0};
+  ViewportEvent res = {};
 
   if (XPending(viewport->xdisplay)) {
     XNextEvent(viewport->xdisplay, &event);
@@ -120,7 +120,7 @@ ViewportEvent viewport_getNextEvent(Viewport *viewport) {
     } break;
     case ButtonPress: {
       res.mouse.modifiers = event.xbutton.state;
-      res.mouse.kind = event.xbutton.button;
+      res.mouse.kind = (ViewportMouseBtnType)event.xbutton.button;
       res.mouse.x = event.xbutton.x;
       res.mouse.y = event.xbutton.y <= viewport->height
 		    ? viewport->height - event.xbutton.y
@@ -206,14 +206,14 @@ fn Codepoint codepointFromKeySym(KeySym sym) {
   if ((sym >= 0x0020 && sym <= 0x007e) ||
       (sym >= 0x00a0 && sym <= 0x00ff))
     return (Codepoint) {
-      .codepoint = sym,
+      .codepoint = (u32)sym,
       .size = 1,
     };
 
   /* also check for directly encoded 24-bit UCS characters */
   if ((sym & 0xff000000) == 0x01000000)
     return (Codepoint) {
-      .codepoint = sym & 0x00ffffff,
+      .codepoint = (u32)sym & 0x00ffffff,
       .size = 3,
     };
 

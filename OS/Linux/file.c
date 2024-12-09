@@ -31,7 +31,7 @@ fn String8 fs_read(Arena *arena, String8 filepath) {
     return (String8) {0};
   }
 
-  String8 res = { .str = Newarr(arena, u8, file_stat.st_size) };
+  String8 res = { .str = (u8 *)Newarr(arena, u8, file_stat.st_size) };
   res.size = read(fd, res.str, file_stat.st_size);
 
   (void)close(fd);
@@ -47,7 +47,7 @@ fn String8 fs_fread(Arena *arena, isize fd) {
     return (String8) {0};
   }
 
-  String8 res = { .str = Newarr(arena, u8, file_stat.st_size) };
+  String8 res = { .str = (u8 *)Newarr(arena, u8, file_stat.st_size) };
   res.size = read(fd, res.str, file_stat.st_size);
 
   (void)close(fd);
@@ -207,7 +207,7 @@ fn String8 fs_makeTmpFile(Arena *arena, isize *fd) {
     *fd = _fd;
   }
 
-  u8 *pathstr = Newarr(arena, u8, Arrsize(path));
+  u8 *pathstr = (u8 *)Newarr(arena, u8, Arrsize(path));
   memCopy(pathstr, path, Arrsize(path));
   return (String8) {
     .str = pathstr,
@@ -222,7 +222,7 @@ fn String8 fs_writeTmpFile(Arena* arena, String8 content) {
   (void)write(fd, content.str, content.size);
   (void)close(fd);
 
-  u8 *pathstr = Newarr(arena, u8, Arrsize(path));
+  u8 *pathstr = (u8 *)Newarr(arena, u8, Arrsize(path));
   memCopy(pathstr, path, Arrsize(path));
   return (String8) {
     .str = pathstr,
@@ -239,17 +239,20 @@ fn File *fs_open(Arena *arena, String8 filepath, void *location) {
     return 0;
   }
 
-  i32 fd = open((char *)filepath.str, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+  i32 fd = open((char *)filepath.str, O_RDWR | O_CREAT,
+		S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if (fd < 0) {
     (void)close(fd);
     return 0;
   }
 
-  File *memfile = New(arena, File);
+  File *memfile = (File *)New(arena, File);
   memfile->path = filepath;
   memfile->descriptor = fd;
   memfile->prop = fs_getProp(filepath);
-  memfile->content = str8(mmap(location, memfile->prop.size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0), memfile->prop.size);
+  memfile->content = str8((char *)mmap(location, memfile->prop.size,
+				       PROT_READ | PROT_WRITE,
+				       MAP_SHARED, fd, 0), memfile->prop.size);
 
   return memfile;
 }
@@ -327,7 +330,7 @@ fn FilenameList fs_iterFiles(Arena *arena, String8 dirname) {
       continue;
     }
 
-    FilenameNode *node = New(arena, FilenameNode);
+    FilenameNode *node = (FilenameNode *)New(arena, FilenameNode);
     node->value = str;
     DLLPushBack(res.first, res.last, node);
   }
@@ -343,7 +346,7 @@ fn bool fs_rmIter(Arena *temp_arena, String8 dirname) {
 
   FilenameList dirstack = {0};
   FilenameList deletable = {0};
-  FilenameNode *root = New(temp_arena, FilenameNode);
+  FilenameNode *root = (FilenameNode *)New(temp_arena, FilenameNode);
   root->value = dirname;
   StackPush(dirstack.first, root);
 
@@ -367,7 +370,7 @@ fn bool fs_rmIter(Arena *temp_arena, String8 dirname) {
                                    Strexpand(current->value), Strexpand(str));
 
       if (entry->d_type == DT_DIR) {
-        FilenameNode *childdir = New(temp_arena, FilenameNode);
+        FilenameNode *childdir = (FilenameNode *)New(temp_arena, FilenameNode);
         childdir->value = fullpath;
         StackPush(dirstack.first, childdir);
       } else {

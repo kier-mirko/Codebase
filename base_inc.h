@@ -9,6 +9,12 @@
 #include "clock.h"
 #include "string.h"
 
+#if CPP
+  #include "array.h"
+  #include "dynarray.h"
+  #include "hashmap.h"
+#endif
+
 #include "OS/dynlib.h"
 #include "OS/file_properties.h"
 #include "OS/file.h"

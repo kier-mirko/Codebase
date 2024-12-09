@@ -33,4 +33,6 @@
 
 #include "serializer/csv.c"
 
-#include "AI/decision_tree.c"
+#if CPP
+  #include "AI/decision_tree.cpp"
+#endif

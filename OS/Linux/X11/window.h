@@ -52,14 +52,29 @@ typedef struct {
   };
 } Viewport;
 
+typedef enum {
+  UNKNOWN,
+  LEFT_MOUSE,
+  MIDDLE_MOUSE,
+  RIGHT_MOUSE,
+  SCROLL_UP,
+  SCROLL_DOWN,
+  SCROLL_RIGHT,
+  SCROLL_LEFT,
+  BACK_MOUSE,
+  FORWARD_MOUSE,
+} ViewportMouseBtnType;
+
+typedef enum {
+  NO_EVENT,
+  SHOW,
+  KBD_PRESS,
+  BTN_PRESS,
+  PTR_MOTION,
+} ViewportEventType;
+
 typedef struct {
-  enum {
-    NO_EVENT,
-    SHOW,
-    KBD_PRESS,
-    BTN_PRESS,
-    PTR_MOTION,
-  } type;
+  ViewportEventType type;
 
   union {
     struct {
@@ -77,18 +92,7 @@ typedef struct {
       usize x;
       usize y;
 
-      enum {
-	UNKNOWN,
-	LEFT_MOUSE,
-	MIDDLE_MOUSE,
-	RIGHT_MOUSE,
-	SCROLL_UP,
-	SCROLL_DOWN,
-	SCROLL_RIGHT,
-	SCROLL_LEFT,
-	BACK_MOUSE,
-	FORWARD_MOUSE,
-      } kind;
+      ViewportMouseBtnType kind;
     } mouse;
   };
 } ViewportEvent;

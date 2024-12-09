@@ -31,7 +31,7 @@ fn Arena *arenaBuild(usize size, usize base) {
   if (mem == fail_state) {
     return 0;
   } else {
-    Arena *arena = mem;
+    Arena *arena = (Arena *)mem;
     arena->base = arena + sizeof(Arena);
     arena->total_size = size - sizeof(Arena);
     arena->head = 0;
