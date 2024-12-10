@@ -135,6 +135,8 @@
 #define Nor(A, B) (~((A) || (B)))
 #define Xor(A, B) ((A) ^ (B))
 #define Xnor(A, B) (~(A) ^ (B))
+#define GetBit(NUM, I) ((NUM & (1 << I)) >> I)
+#define SetBit(NUM, I, BIT) (NUM | (1 << (BIT - 1)))
 
 #define KiB(BYTES) ((BYTES)*1024)
 #define MB(BYTES) (KiB((BYTES)) * 1024)

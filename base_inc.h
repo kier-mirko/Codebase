@@ -42,6 +42,10 @@
 
 #include "serializer/csv.h"
 
-#include "AI/decision_tree.h"
+#if CPP
+  #include "vector.h"
+  #include "matrix.h"
+  #include "AI/decision_tree.h"
+#endif
 
 #endif
