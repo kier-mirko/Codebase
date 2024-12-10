@@ -13,6 +13,9 @@
   #include "array.h"
   #include "dynarray.h"
   #include "hashmap.h"
+  #include "dsu.h"
+  #include "vector.h"
+  #include "matrix.h"
 #endif
 
 #include "OS/dynlib.h"
@@ -43,8 +46,6 @@
 #include "serializer/csv.h"
 
 #if CPP
-  #include "vector.h"
-  #include "matrix.h"
   #include "AI/decision_tree.h"
 #endif
 

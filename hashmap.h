@@ -6,70 +6,55 @@
 
 namespace Base {
   template <typename T, typename U>
-  struct Slot {
-    T key;
-    U value;
-    usize size = 0;
-
-    Slot *next = 0;
-    Slot *first = 0;
-    Slot *last = 0;
-  };
-
-  template <typename T, typename U>
   struct HashMap {
     usize size;
     usize (*hasher)(T);
-    DynArray<Slot<T, U>> slots;
+
+    struct Slot {
+      T key;
+      U value;
+      Slot *next;
+    };
+    DynArray<Slot> slots;
 
     HashMap(Arena *arena, usize (*hasher)(T), usize size = 128) :
       size(size), hasher(hasher), slots(arena, size) {}
 
-    Slot<T, U>* operator[](usize i) {
-      return &slots[i];
+    bool insert(Arena *arena, const T &key, const U &value) {
+      usize idx = hasher(key) % slots.size;
+      Slot *curr = &slots[idx];
+
+      // TODO: can i use a tree instead?
+      for (; curr->next; curr = curr->next) {
+	if (curr->next->key == key) {
+	  curr->next->value = value;
+	  return true;
+	}
+      }
+
+      curr = curr->next = (Slot *) New(arena, Slot);
+      curr->key = key;
+      curr->value = value;
+
+      size += 1;
+      return true;
+    }
+
+    U* search(const T &key) {
+      usize idx = hasher(key) % slots.size;
+      for (Slot *curr = slots[idx].next; curr; curr = curr->next) {
+	if (key == curr->key) {
+	  return &curr->value;
+	}
+      }
+
+      return 0;
+    }
+
+    inline U& operator[](const T &key) {
+      return *search(key);
     }
   };
-
-  template <typename T, typename U>
-  fn bool hashInsert(Arena *arena, HashMap<T, U> *map,
-		     const T &key, const U &value) {
-    usize idx = map->hasher(key) % map->slots.size;
-    Slot<T, U> &s = map->slots[idx];
-
-    if (s.first) {
-      using Slot = Slot<T, U>;
-      auto new_slot = (Slot *) New(arena, Slot);
-      new_slot->key = key;
-      new_slot->value = value;
-
-      s.first->size += 1;
-      QueuePush(s.first, s.last, new_slot);
-    } else {
-      s.key = key;
-      s.value = value;
-      s.first = &s;
-      s.last = &s;
-      s.size = 1;
-    }
-
-    map->size += 1;
-    return true;
-  }
-
-  template <typename T, typename U>
-  fn U* hashSearch(HashMap<T, U> *map, const T &key) {
-    usize idx = map->hasher(key) % map->slots.size;
-    Slot<T, U> &s = map->slots[idx];
-
-    for (Slot<T, U> *curr = s.first; curr; curr = curr->next) {
-      if (key == curr->key) {
-	return &curr->value;
-      }
-    }
-
-    return 0;
-  }
-
 }
 
 #endif

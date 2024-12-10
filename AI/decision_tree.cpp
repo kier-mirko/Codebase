@@ -22,8 +22,8 @@ fn f64 ai_computeEntropy(Base::HashMap<String8, Occurrence> *map, usize row_coun
   Assert(row_count > 0);
 
   f64 res = 0;
-  for (Base::Slot<String8, Occurrence> &slot : map->slots) {
-    for (Base::Slot<String8, Occurrence> *curr = slot.first;
+  for (Base::HashMap<String8, Occurrence>::Slot slot : map->slots) {
+    for (Base::HashMap<String8, Occurrence>::Slot *curr = &slot;
          curr; curr = curr->next) {
       res += ai_entropy((f64)curr->value.count / (f64)row_count);
     }
@@ -45,13 +45,13 @@ fn usize ai_maxInformationGain(Base::HashMap<String8, Occurrence> *maps,
 
     f64 entropy = 0;
     printf("\t");
-    for (Base::Slot<String8, Occurrence> &slot : maps[feature].slots) {
-      Base::Slot<String8, Occurrence> *curr = slot.first;
+    for (Base::HashMap<String8, Occurrence>::Slot slot : maps[feature].slots) {
+      Base::HashMap<String8, Occurrence>::Slot *curr = slot.next;
       for (; curr; curr = curr->next) {
 	printf("%ld/%ld * entropy(", curr->value.count, row_count);
 
-	for (Base::Slot<String8, Occurrence> &fslot : curr->value.targets.slots) {
-	  for (Base::Slot<String8, Occurrence> *currf = &fslot;
+	for (Base::HashMap<String8, Occurrence>::Slot fslot : curr->value.targets.slots) {
+	  for (Base::HashMap<String8, Occurrence>::Slot *currf = fslot.next;
 	       currf; currf = currf->next) {
 	    if (currf->value.count == 0) { continue; }
 	    printf("%ld/%ld ", currf->value.count, curr->value.count);
@@ -62,8 +62,9 @@ fn usize ai_maxInformationGain(Base::HashMap<String8, Occurrence> *maps,
 
 	printf("\b)");
       }
-      if (slot.first)
+      if (curr) {
 	printf(" + ");
+      }
     }
 
     f64 gain = target_entropy - entropy;
@@ -97,22 +98,20 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, CSV config,
     }
 
     for (i = 0; i < n_features; ++i) {
-      Occurrence *node = hashSearch(&maps[i], row_entries[i]);
+      Occurrence *node = maps[i].search(row_entries[i]);
       if (node) {
 	node->count++;
-      } else if (!hashInsert(arena, &maps[i], row_entries[i], Occurrence(arena))) {
+      } else if (!maps[i].insert(arena, row_entries[i], Occurrence(arena))) {
 	/* TODO: write to tmp file maybe? */
 	Assert(false);
       }
 
       if (i != target_idx) {
-	Occurrence *node = Base::hashSearch(&maps[i], row_entries[i]);
-	Occurrence *tnode = Base::hashSearch(&node->targets,
-					     row_entries[target_idx]);
+	Occurrence *node = maps[i].search(row_entries[i]);
+	Occurrence *tnode = node->targets.search(row_entries[target_idx]);
 	if (tnode) {
 	  tnode->count++;
-	} else if (!hashInsert(arena, &node->targets,
-			       row_entries[target_idx], Occurrence(arena))) {
+	} else if (!node->targets.insert(arena, row_entries[target_idx], Occurrence(arena))) {
 	  /* TODO: write to tmp file maybe? */
           Assert(false);
         }
@@ -122,16 +121,17 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, CSV config,
 
   /* Print table */
   for (usize i = 0; i < n_features; ++i) {
-    for (Base::Slot<String8, Occurrence> &slot : maps[i].slots) {
-      if (slot.first == 0) { continue; }
+    for (Base::HashMap<String8, Occurrence>::Slot slot : maps[i].slots) {
+      if (slot.next == 0) { continue; }
 
-      for (Base::Slot<String8, Occurrence> *curr = &slot; curr; curr = curr->next) {
+      for (Base::HashMap<String8, Occurrence>::Slot *curr = slot.next;
+	   curr; curr = curr->next) {
 	printf("`%.*s`: %ld\t", Strexpand(curr->key), curr->value.count);
 
-	for (Base::Slot<String8, Occurrence> &fslot : curr->value.targets.slots) {
-	  if (fslot.first == 0) { continue; }
+	for (Base::HashMap<String8, Occurrence>::Slot fslot : curr->value.targets.slots) {
+	  if (fslot.next == 0) { continue; }
 
-	  for (Base::Slot<String8, Occurrence> *currf = &fslot;
+	  for (Base::HashMap<String8, Occurrence>::Slot *currf = fslot.next;
 	       currf; currf = currf->next) {
 	    printf("`%.*s`: %ld, ", Strexpand(currf->key), currf->value.count);
 	  }
@@ -151,8 +151,11 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, CSV config,
   }
 
   usize branches = 0;
-  for (Base::Slot<String8, Occurrence> &slot: maps[feature2split_by].slots) {
-    branches += slot.size;
+  for (Base::HashMap<String8, Occurrence>::Slot &slot: maps[feature2split_by].slots) {
+    for (Base::HashMap<String8, Occurrence>::Slot *curr = slot.next;
+	 curr; curr = curr->next) {
+      branches += 1;
+    }
   }
 
   printf("\tThe dataset will be split into %ld branches\n\n", branches);
