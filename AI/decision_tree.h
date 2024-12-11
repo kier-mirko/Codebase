@@ -7,10 +7,9 @@
 #include <math.h>
 
 typedef struct DecisionTreeNode {
-  /* The label is:
-   * - a boolean condition when the current node isn't a leaf
-   * - the predicted target feature label */
+  /* The predicted target feature label. */
   String8 label;
+  u64 should_split_by;
 
   struct DecisionTreeNode *first;
   struct DecisionTreeNode *last;

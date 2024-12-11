@@ -3,15 +3,13 @@
 /* implement log2? */
 #include <math.h>
 
-#define TableSize 20
-
 struct Occurrence {
   String8 name;
   usize count;
 
   Base::HashMap<String8, Occurrence> targets;
 
-  Occurrence(Arena *arena) : count(1), targets(arena, strHash, TableSize) {}
+  Occurrence(Arena *arena) : count(1), targets(arena, strHash) {}
 };
 
 inline fn f64 ai_entropy(f64 val) {
@@ -81,9 +79,10 @@ fn usize ai_maxInformationGain(Base::HashMap<String8, Occurrence> *maps,
   return max_gain < threshold ? -1 : max_gain_idx;
 }
 
-fn DecisionTreeNode *ai_makeDTNode(Arena *arena, CSV config,
-				  Base::HashMap<String8, Occurrence> *maps,
-				  usize n_features, usize target_idx, f64 threshold) {
+fn DecisionTreeNode *ai_makeDTNode(Arena *arena, CSV config, String8 *header,
+				   Base::HashMap<String8, Occurrence> *maps,
+				   usize n_features, usize target_idx,
+				   f64 threshold) {
   usize data_row_start_at = config.offset;
   usize row_count = 0;
 
@@ -147,7 +146,20 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, CSV config,
 						 row_count, threshold);
   printf("\tFeature to split by: %ld\n", feature2split_by);
   if (feature2split_by == -1) {
-    return 0;
+    auto res = (DecisionTreeNode *) New(arena, DecisionTreeNode);
+    usize count = 0;
+    for (Base::HashMap<String8, Occurrence>::Slot &slot: maps[target_idx].slots) {
+      for (Base::HashMap<String8, Occurrence>::Slot *curr = slot.next;
+	   curr; curr = curr->next) {
+	if (curr->value.count > count) {
+	  count = curr->value.count;
+	  res->label = curr->key;
+	}
+      }
+    }
+
+    res->should_split_by = -1;
+    return res;
   }
 
   usize branches = 0;
@@ -160,15 +172,10 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, CSV config,
 
   printf("\tThe dataset will be split into %ld branches\n\n", branches);
 
-  /* Create `branches` tmp files */
-  isize *fds = (isize *)Newarr(arena, isize, branches);
-  for (usize i = 0; i < branches; ++i) {
-    fds[i] = fs_makeTmpFd();
-  }
-
   /* Iterator over the entire CSV file and write into the corresponding tmp */
   /*   file the CSV row. */
   config.offset = data_row_start_at;
+  Base::HashMap<String8, isize> fd_map(arena, strHash, branches);
   for (StringStream row = csv_nextRow(arena, &config);
        row.size != 0;
        row = csv_header(arena, &config), ++row_count) {
@@ -179,20 +186,27 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, CSV config,
     }
 
     i = (feature2split_by == 0 ? 1 : 0);
-    /* TODO: what if there's a collision? */
-    usize file = strHash(row_entries[feature2split_by]) % branches;
-    fs_fappend(fds[file], row_entries[i++]);
+    isize *fd = fd_map.search(row_entries[feature2split_by]);
+    if (!fd) {
+      fd_map.insert(arena, row_entries[feature2split_by], fs_makeTmpFd());
+      fd = fd_map.search(row_entries[feature2split_by]);
+    }
+
+    fs_fappend(*fd, row_entries[i++]);
     for (; i < row.size; ++i) {
       if (i == feature2split_by) { continue; }
-      fs_fappend(fds[file], Strlit(","));
-      fs_fappend(fds[file], row_entries[i]);
+      fs_fappend(*fd, Strlit(","));
+      fs_fappend(*fd, row_entries[i]);
     }
-    fs_fappend(fds[file], Strlit("\n"));
+    fs_fappend(*fd, Strlit("\n"));
   }
 
   /* Call recursively to create the decision tree child nodes. */
+  auto dt = (DecisionTreeNode *) New(arena, DecisionTreeNode);
+  dt->label = header[feature2split_by];
+  dt->should_split_by = feature2split_by;
 
-  return 0;
+  return dt;
 }
 
 fn DecisionTreeNode *ai_buildDecisionTree(Arena *arena, CSV config,
@@ -209,6 +223,7 @@ fn DecisionTreeNode *ai_buildDecisionTree(Arena *arena, CSV config,
     for (StringNode *col = h.first; col && i < n_features;
          col = col->next, ++i) {
       header[i] = col->value;
+      printf("header[i]: %.*s\n", Strexpand(header[i]));
     }
   }
 
@@ -216,8 +231,9 @@ fn DecisionTreeNode *ai_buildDecisionTree(Arena *arena, CSV config,
   auto maps = (Base::HashMap<String8, Occurrence> *) Newarr(arena, HashMap,
 							    n_features);
   for (usize i = 0; i < n_features; ++i) {
-    maps[i] = Base::HashMap<String8, Occurrence>(arena, strHash, TableSize);
+    maps[i] = Base::HashMap<String8, Occurrence>(arena, strHash);
   }
 
-  return ai_makeDTNode(arena, config, maps, n_features, --target_feature, threshold);
+  return ai_makeDTNode(arena, config, header, maps, n_features,
+		       --target_feature, threshold);
 }
