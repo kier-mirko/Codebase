@@ -7,11 +7,12 @@
 
 namespace Base {
   template <typename T>
-  struct DSU {
+  struct UnionFindSet {
     HashMap<T, T> parent;
     HashMap<T, i64> rank;
 
-    DSU(Arena *arena, usize (*hashfn)(T)) : parent(arena, hashfn), rank(arena, hashfn) {}
+    UnionFindSet(Arena *arena, usize (*hashfn)(T))
+      : parent(arena, hashfn), rank(arena, hashfn) {}
 
     bool make(Arena *arena, T x) {
       return parent.insert(arena, x, x) && rank.insert(arena, x, 0L);
