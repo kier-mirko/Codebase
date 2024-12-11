@@ -39,22 +39,6 @@ fn String8 fs_read(Arena *arena, String8 filepath) {
   return res;
 }
 
-fn String8 fs_fread(Arena *arena, isize fd) {
-  Assert(arena);
-
-  struct stat file_stat;
-  if (fstat(fd, &file_stat) < 0) {
-    (void)close(fd);
-    return (String8) {0};
-  }
-
-  String8 res = { .str = (u8 *)Newarr(arena, u8, file_stat.st_size) };
-  res.size = read(fd, res.str, file_stat.st_size);
-
-  (void)close(fd);
-  return res;
-}
-
 fn isize fs_write(String8 filepath, String8 content) {
   if (filepath.size == 0) {
     return -1;
@@ -75,7 +59,7 @@ fn isize fs_write(String8 filepath, String8 content) {
   return fd;
 }
 
-fn isize fs_writeStream(String8 filepath, StringStream content) {
+fn isize fs_write(String8 filepath, StringStream content) {
   StringNode *start = content.first++;
   isize fd = fs_write(filepath, start->value);
   if (fd < 0) {
@@ -83,7 +67,7 @@ fn isize fs_writeStream(String8 filepath, StringStream content) {
   }
 
   for (; start < content.first + content.size; ++start) {
-    if (!fs_fappend(fd, start->value)) {
+    if (!write(fd, start->value.str, start->value.size)) {
       (void)close(fd);
       return -1;
     }
@@ -109,21 +93,12 @@ fn isize fs_append(String8 filepath, String8 content) {
   return fd;
 }
 
-fn bool fs_fappend(isize fd, String8 content) {
-  if (write(fd, content.str, content.size) != content.size) {
-    (void)close(fd);
-    return false;
-  }
-
-  return true;
-}
-
-fn isize fs_appendStream(String8 filepath, StringStream content) {
+fn isize fs_append(String8 filepath, StringStream content) {
   StringNode *start = content.first;
   isize fd = fs_append(filepath, start->value);
 
   for (start = start->next; start; start = start->next) {
-    if (!fs_fappend(fd, start->value)) {
+    if (!write(fd, start->value.str, start->value.size)) {
       (void)close(fd);
       return -1;
     }
@@ -186,182 +161,94 @@ fn FileProperties fs_getProp(String8 filepath) {
   return res;
 }
 
-fn FileProperties fs_fgetProp(isize fd) {
-  FileProperties res = {0};
-
-  struct stat file_stat;
-  if (fstat(fd, &file_stat) < 0) {
-    return res;
-  }
-
-  res.ownerID = file_stat.st_uid;
-  res.groupID = file_stat.st_gid;
-  res.size = (usize)file_stat.st_size;
-  res.last_access_time = (u64)file_stat.st_atime;
-  res.last_modification_time = (u64)file_stat.st_mtime;
-  res.last_status_change_time = (u64)file_stat.st_ctime;
-
-  res.user = ACF_Unknown;
-  if (file_stat.st_mode & S_IRUSR) {
-    res.user = ACF_Read;
-  }
-  if (file_stat.st_mode & S_IWUSR) {
-    res.user = (AccessFlag)(res.user | ACF_Write);
-  }
-  if (file_stat.st_mode & S_IXUSR) {
-    res.user = (AccessFlag)(res.user | ACF_Execute);
-  }
-
-  res.group = ACF_Unknown;
-  if (file_stat.st_mode & S_IRGRP) {
-    res.group = ACF_Read;
-  }
-  if (file_stat.st_mode & S_IWGRP) {
-    res.group = (AccessFlag)(res.group | ACF_Write);
-  }
-  if (file_stat.st_mode & S_IXGRP) {
-    res.group = (AccessFlag)(res.group | ACF_Execute);
-  }
-
-  res.other = ACF_Unknown;
-  if (file_stat.st_mode & S_IROTH) {
-    res.other = ACF_Read;
-  }
-  if (file_stat.st_mode & S_IWOTH) {
-    res.other = (AccessFlag)(res.other | ACF_Write);
-  }
-  if (file_stat.st_mode & S_IXOTH) {
-    res.other = (AccessFlag)(res.other | ACF_Execute);
-  }
-
-  return res;
-}
-
-// =============================================================================
-// Temporary files
-
-#define TMP_FILE_TEMPLATE "/tmp/base-XXXXXX"
-
-inline fn isize fs_makeTmpFd() {
-  char path[] = TMP_FILE_TEMPLATE;
-  isize res = mkstemp(path);
-  return res;
-}
-
-fn String8 fs_makeTmpFile(Arena *arena, isize *fd) {
-  char path[] = TMP_FILE_TEMPLATE;
-  isize _fd = mkstemp(path);
-
-  if (!fd) {
-    (void)close(_fd);
-  } else {
-    *fd = _fd;
-  }
-
-  u8 *pathstr = (u8 *)Newarr(arena, u8, Arrsize(path));
-  memCopy(pathstr, path, Arrsize(path));
-  return (String8) {
-    .str = pathstr,
-    .size = Arrsize(path),
-  };
-}
-
-fn String8 fs_writeTmpFile(Arena* arena, String8 content) {
-  char path[] = TMP_FILE_TEMPLATE;
-  i32 fd = mkstemp(path);
-
-  (void)write(fd, content.str, content.size);
-  (void)close(fd);
-
-  u8 *pathstr = (u8 *)Newarr(arena, u8, Arrsize(path));
-  memCopy(pathstr, path, Arrsize(path));
-  return (String8) {
-    .str = pathstr,
-    .size = Arrsize(path),
-  };
-}
-
 // =============================================================================
 // Memory mapping files for easier and faster handling
 
-fn File *fs_open(Arena *arena, String8 filepath, void *location) {
+fn File fs_open(Arena *arena, void *location) {
+  char path[] = "/tmp/base-XXXXXX";
+  i32 fd = mkstemp(path);
+
+  String8 pathstr = {
+    .str = (u8 *)Newarr(arena, u8, Arrsize(path)),
+    .size = Arrsize(path),
+  };
+  memCopy(pathstr.str, path, Arrsize(path));
+
+  return (File) {
+    .descriptor = fd,
+    .path = pathstr,
+    .prop = fs_getProp(pathstr),
+    .content = str8((char *)mmap(location, 0,
+				 PROT_READ | PROT_WRITE,
+				 MAP_SHARED, fd, 0), 0),
+  };
+}
+
+fn File fs_open(Arena *arena, String8 filepath, void *location) {
   Assert(arena);
   if (filepath.size == 0) {
-    return 0;
+    return (File) {0};
   }
 
   i32 fd = open((char *)filepath.str, O_RDWR | O_CREAT,
 		S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if (fd < 0) {
     (void)close(fd);
-    return 0;
+    return (File) {0};
   }
 
-  File *memfile = (File *)New(arena, File);
-  memfile->path = filepath;
-  memfile->descriptor = fd;
-  memfile->prop = fs_getProp(filepath);
-  memfile->content = str8((char *)mmap(location, memfile->prop.size,
-				       PROT_READ | PROT_WRITE,
-				       MAP_SHARED, fd, 0), memfile->prop.size);
-
-  return memfile;
-}
-
-fn File *fs_fopen(Arena *arena, isize fd, void *location) {
-  if (fcntl(fd, F_GETFD) != -1 || errno != EBADF) {
-    if (!fs_fflush(fd)) {
-      return 0;
-    }
-  }
-
-  lseek(fd, 0, SEEK_SET);
-
-  String8 fdfile = strFormat(arena, "/proc/self/fd/%ld", fd);
-  char name[128];
-  usize size = readlink((char *)fdfile.str, name, 128);
-
-  String8 filepath = {
-    .str = (u8 *) Newarr(arena, u8, size),
-    .size = size,
+  FileProperties prop = fs_getProp(filepath);
+  return (File) {
+    .descriptor = fd,
+    .path = filepath,
+    .prop = prop,
+    .content = str8((char *)mmap(location, prop.size,
+				 PROT_READ | PROT_WRITE,
+				 MAP_SHARED, fd, 0), prop.size),
   };
-  memCopy(filepath.str, name, size);
-
-  File *memfile = (File *)New(arena, File);
-  memfile->path = filepath;
-  memfile->descriptor = fd;
-  memfile->prop = fs_fgetProp(fd);
-  memfile->content = str8((char *)mmap(location, memfile->prop.size,
-				       PROT_READ | PROT_WRITE,
-				       MAP_SHARED, fd, 0), memfile->prop.size);
-
-  return memfile;
 }
 
-inline fn void fs_sync(File *file, usize newsize) {
-  if (!newsize) {
-    newsize = file->content.size;
+bool File::write(const String8 &content) {
+  return ::write(descriptor, content.str, content.size) != content.size;
+}
+
+bool File::write(const StringStream &content) {
+  for (StringNode *curr = content.first; curr; curr = curr->next) {
+    if (!write(curr->value)) { return false; }
   }
 
-  (void)ftruncate(file->descriptor, newsize);
-  (void)msync(file->content.str, newsize, MS_ASYNC | MS_INVALIDATE);
+  return true;
 }
 
-inline fn void fs_close(File *file) {
-  Assert(file);
-  (void)munmap(file->content.str, file->prop.size);
-  (void)close(file->descriptor);
+bool File::close() {
+  return ::msync(content.str, prop.size, MS_SYNC) >= 0 &&
+	 ::munmap(content.str, prop.size) >= 0 &&
+	 ::close(descriptor) >= 0;
 }
 
-inline fn bool fs_fflush(isize fd) {
-  return fsync(fd) >= 0;
+bool File::hasChanged() {
+  FileProperties prop = fs_getProp(path);
+  return (prop.last_access_time != prop.last_access_time) ||
+	 (prop.last_modification_time != prop.last_modification_time) ||
+	 (prop.last_status_change_time != prop.last_status_change_time);
 }
 
-inline fn bool fs_hasChanged(File *file) {
-  FileProperties prop = fs_getProp(file->path);
-  return (prop.last_access_time != file->prop.last_access_time) ||
-	 (prop.last_modification_time != file->prop.last_modification_time) ||
-	 (prop.last_status_change_time != file->prop.last_status_change_time);
+bool File::erase() {
+  return ::unlink((char *) path.str) >= 0 && close();
+}
+
+bool File::rename(String8 to) {
+  return ::rename((char *) path.str, (char *) to.str) >= 0;
+}
+
+void File::sync() {
+  if (!hasChanged()) { return; }
+
+  (void)::munmap(content.str, prop.size);
+  prop = fs_getProp(path);
+  content = str8((char *)::mmap(0, prop.size,
+				PROT_READ | PROT_WRITE,
+				MAP_SHARED, descriptor, 0), prop.size);
 }
 
 // =============================================================================
@@ -371,19 +258,9 @@ inline fn bool fs_delete(String8 filepath) {
   return unlink((char *)filepath.str) >= 0;
 }
 
-inline fn bool fs_deleteFile(File *f) {
-  Assert(f && f->path.size != 0);
-  return unlink((char *)f->path.str) >= 0;
-}
-
 inline fn bool fs_rename(String8 filepath, String8 to) {
   Assert(filepath.size != 0 && to.size != 0);
   return rename((char *)filepath.str, (char *)to.str) >= 0;
-}
-
-inline fn bool fs_renameFile(File *f, String8 to) {
-  Assert(f && f->path.size != 0 && to.size != 0);
-  return rename((char *)f->path.str, (char *)to.str) >= 0;
 }
 
 fn bool fs_mkdir(String8 path) {
@@ -398,8 +275,8 @@ fn bool fs_rmdir(String8 path) {
 }
 
 fn FilenameList fs_iterFiles(Arena *arena, String8 dirname) {
-  const String8 currdir = Strlit(".");
-  const String8 parentdir = Strlit("..");
+  local const String8 currdir = Strlit(".");
+  local const String8 parentdir = Strlit("..");
 
   FilenameList res = {0};
 

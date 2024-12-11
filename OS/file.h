@@ -14,20 +14,12 @@ fn String8 fs_read(Arena *arena, String8 filepath);
 fn String8 fs_fread(Arena *arena, isize fd);
 
 fn isize fs_write(String8 filepath, String8 content);
-fn isize fs_writeStream(String8 filepath, StringStream content);
+fn isize fs_write(String8 filepath, StringStream content);
 
 fn isize fs_append(String8 filepath, String8 content);
-fn bool fs_fappend(isize fd, String8 content);
-fn isize fs_appendStream(String8 filepath, StringStream content);
+fn isize fs_append(String8 filepath, StringStream content);
 
 fn FileProperties fs_getProp(String8 filepath);
-fn FileProperties fs_fgetProp(isize fd);
-
-// =============================================================================
-// Temporary files
-inline fn isize fs_makeTmpFd();
-fn String8 fs_makeTmpFile(Arena *arena, isize *fd);
-fn String8 fs_writeTmpFile(Arena* arena, String8 content);
 
 // =============================================================================
 // Memory mapping files for easier and faster handling
@@ -36,23 +28,25 @@ typedef struct {
   String8 path;
   FileProperties prop;
   String8 content;
+
+  bool write(const String8 &content);
+  bool write(const StringStream &content);
+  bool close();
+
+  bool hasChanged();
+  bool erase();
+  bool rename(String8 to);
+
+  void sync();
 } File;
 
-       fn File *fs_open(Arena *arena, String8 filepath, void *location);
-       fn File *fs_fopen(Arena *arena, isize fd, void *location);
-inline fn void fs_sync(File *file, usize size);
-inline fn void fs_close(File *file);
-inline fn bool fs_fflush(isize fd);
-
-inline fn bool fs_hasChanged(File *file);
+fn File fs_open(Arena *arena, void *location = 0);
+fn File fs_open(Arena *arena, String8 filepath, void *location = 0);
 
 // =============================================================================
 // Misc operation on the filesystem
 inline fn bool fs_delete(String8 filepath);
-inline fn bool fs_deleteFile(File *f);
-
 inline fn bool fs_rename(String8 filepath, String8 to);
-inline fn bool fs_renameFile(File *f, String8 to);
 
 fn bool fs_mkdir(String8 path);
 fn bool fs_rmdir(String8 path);
@@ -71,5 +65,4 @@ typedef struct {
 } FilenameList;
 
 fn FilenameList fs_iterFiles(Arena *arena, String8 dirname);
-
 fn bool fs_rmIter(Arena *temp_arena, String8 dirname);
