@@ -8,7 +8,7 @@
 
 typedef struct {
   char delimiter;
-  File *file;
+  File file;
 
   usize offset;
 } CSV;

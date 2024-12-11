@@ -5,11 +5,11 @@ inline fn StringStream csv_header(Arena *arena, CSV *config) {
 }
 
 fn StringStream csv_nextRow(Arena *arena, CSV *config) {
-  if (config->file->content.size <= config->offset) {
+  if (config->file.content.size <= config->offset) {
     return (StringStream) {0};
   }
 
-  String8 content = strPostfix(config->file->content, config->offset);
+  String8 content = strPostfix(config->file.content, config->offset);
   usize line_ends = strFindFirst(content, '\n');
   String8 row = strPrefix(content, line_ends);
 

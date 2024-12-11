@@ -37,7 +37,7 @@ typedef struct {
   bool erase();
   bool rename(String8 to);
 
-  void sync();
+  void sync(bool force_it = false);
 } File;
 
 fn File fs_open(Arena *arena, void *location = 0);

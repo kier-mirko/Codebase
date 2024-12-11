@@ -241,8 +241,8 @@ bool File::rename(String8 to) {
   return ::rename((char *) path.str, (char *) to.str) >= 0;
 }
 
-void File::sync() {
-  if (!hasChanged()) { return; }
+void File::sync(bool force_it) {
+  if (!force_it && !hasChanged()) { return; }
 
   (void)::munmap(content.str, prop.size);
   prop = fs_getProp(path);
