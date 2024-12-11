@@ -16,6 +16,20 @@ typedef struct DecisionTreeNode {
 
   struct DecisionTreeNode *next;
   struct DecisionTreeNode *prev;
+
+  void print() {
+    if (first) {
+      printf("`%.*s` childrens: [ ", Strexpand(label));
+      for (DecisionTreeNode *child = first; child; child = child->next) {
+	printf("`%.*s`, ", Strexpand(child->label));
+      }
+
+      printf("\b\b]\n");
+      for (DecisionTreeNode *child = first; child; child = child->next) {
+	child->print();
+      }
+    }
+  }
 } DecisionTreeNode;
 
 #endif

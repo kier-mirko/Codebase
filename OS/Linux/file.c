@@ -4,6 +4,7 @@
 #include "../file.h"
 
 #include <fcntl.h>
+#include <errno.h>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -185,6 +186,57 @@ fn FileProperties fs_getProp(String8 filepath) {
   return res;
 }
 
+fn FileProperties fs_fgetProp(isize fd) {
+  FileProperties res = {0};
+
+  struct stat file_stat;
+  if (fstat(fd, &file_stat) < 0) {
+    return res;
+  }
+
+  res.ownerID = file_stat.st_uid;
+  res.groupID = file_stat.st_gid;
+  res.size = (usize)file_stat.st_size;
+  res.last_access_time = (u64)file_stat.st_atime;
+  res.last_modification_time = (u64)file_stat.st_mtime;
+  res.last_status_change_time = (u64)file_stat.st_ctime;
+
+  res.user = ACF_Unknown;
+  if (file_stat.st_mode & S_IRUSR) {
+    res.user = ACF_Read;
+  }
+  if (file_stat.st_mode & S_IWUSR) {
+    res.user = (AccessFlag)(res.user | ACF_Write);
+  }
+  if (file_stat.st_mode & S_IXUSR) {
+    res.user = (AccessFlag)(res.user | ACF_Execute);
+  }
+
+  res.group = ACF_Unknown;
+  if (file_stat.st_mode & S_IRGRP) {
+    res.group = ACF_Read;
+  }
+  if (file_stat.st_mode & S_IWGRP) {
+    res.group = (AccessFlag)(res.group | ACF_Write);
+  }
+  if (file_stat.st_mode & S_IXGRP) {
+    res.group = (AccessFlag)(res.group | ACF_Execute);
+  }
+
+  res.other = ACF_Unknown;
+  if (file_stat.st_mode & S_IROTH) {
+    res.other = ACF_Read;
+  }
+  if (file_stat.st_mode & S_IWOTH) {
+    res.other = (AccessFlag)(res.other | ACF_Write);
+  }
+  if (file_stat.st_mode & S_IXOTH) {
+    res.other = (AccessFlag)(res.other | ACF_Execute);
+  }
+
+  return res;
+}
+
 // =============================================================================
 // Temporary files
 
@@ -193,7 +245,6 @@ fn FileProperties fs_getProp(String8 filepath) {
 inline fn isize fs_makeTmpFd() {
   char path[] = TMP_FILE_TEMPLATE;
   isize res = mkstemp(path);
-  printf("\t\t%s\n", path);
   return res;
 }
 
@@ -257,6 +308,36 @@ fn File *fs_open(Arena *arena, String8 filepath, void *location) {
   return memfile;
 }
 
+fn File *fs_fopen(Arena *arena, isize fd, void *location) {
+  if (fcntl(fd, F_GETFD) != -1 || errno != EBADF) {
+    if (!fs_fflush(fd)) {
+      return 0;
+    }
+  }
+
+  lseek(fd, 0, SEEK_SET);
+
+  String8 fdfile = strFormat(arena, "/proc/self/fd/%ld", fd);
+  char name[128];
+  usize size = readlink((char *)fdfile.str, name, 128);
+
+  String8 filepath = {
+    .str = (u8 *) Newarr(arena, u8, size),
+    .size = size,
+  };
+  memCopy(filepath.str, name, size);
+
+  File *memfile = (File *)New(arena, File);
+  memfile->path = filepath;
+  memfile->descriptor = fd;
+  memfile->prop = fs_fgetProp(fd);
+  memfile->content = str8((char *)mmap(location, memfile->prop.size,
+				       PROT_READ | PROT_WRITE,
+				       MAP_SHARED, fd, 0), memfile->prop.size);
+
+  return memfile;
+}
+
 inline fn void fs_sync(File *file, usize newsize) {
   if (!newsize) {
     newsize = file->content.size;
@@ -270,6 +351,10 @@ inline fn void fs_close(File *file) {
   Assert(file);
   (void)munmap(file->content.str, file->prop.size);
   (void)close(file->descriptor);
+}
+
+inline fn bool fs_fflush(isize fd) {
+  return fsync(fd) >= 0;
 }
 
 inline fn bool fs_hasChanged(File *file) {

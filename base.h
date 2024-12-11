@@ -88,6 +88,15 @@
 #define ARCH_ARM64 0
 #endif
 
+#if defined(DEBUG)
+  #undef DEBUG
+  #define DEBUG 1
+  #define NDEBUG 0
+#else
+  #define DEBUG 0
+  #define NDEBUG 1
+#endif
+
 #if COMPILER_GCC
 #define alignof(TYPE) __alignof__(TYPE)
 #elif COMPILER_CLANG

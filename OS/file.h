@@ -21,6 +21,7 @@ fn bool fs_fappend(isize fd, String8 content);
 fn isize fs_appendStream(String8 filepath, StringStream content);
 
 fn FileProperties fs_getProp(String8 filepath);
+fn FileProperties fs_fgetProp(isize fd);
 
 // =============================================================================
 // Temporary files
@@ -38,8 +39,10 @@ typedef struct {
 } File;
 
        fn File *fs_open(Arena *arena, String8 filepath, void *location);
+       fn File *fs_fopen(Arena *arena, isize fd, void *location);
 inline fn void fs_sync(File *file, usize size);
 inline fn void fs_close(File *file);
+inline fn bool fs_fflush(isize fd);
 
 inline fn bool fs_hasChanged(File *file);
 
