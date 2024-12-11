@@ -59,7 +59,7 @@ namespace Base {
     };
 
     Iterator begin() { return Iterator(first, 0); }
-    Iterator end() { return Iterator(last, last->block.size - 1); }
+    Iterator end() { return Iterator(0, 0); }
   };
 
   template <typename T>

@@ -17,24 +17,19 @@ namespace Base {
     };
     DynArray<Slot> slots;
 
-    HashMap(Arena *arena, usize (*hasher)(T), usize size = 128) :
+    HashMap(Arena *arena, usize (*hasher)(T), usize size = 16) :
       size(size), hasher(hasher), slots(arena, size) {}
 
     bool insert(Arena *arena, const T &key, const U &value) {
       usize idx = hasher(key) % slots.size;
-      Slot *curr = &slots[idx];
 
-      // TODO: can i use a tree instead?
-      for (; curr->next; curr = curr->next) {
-	if (curr->next->key == key) {
-	  curr->next->value = value;
-	  return true;
-	}
-      }
+      Slot *new_slot = (Slot *) New(arena, Slot);
+      if (!new_slot) { return false; }
 
-      curr = curr->next = (Slot *) New(arena, Slot);
-      curr->key = key;
-      curr->value = value;
+      new_slot->key = key;
+      new_slot->value = value;
+      new_slot->next = slots[idx].next;
+      slots[idx].next = new_slot;
 
       size += 1;
       return true;
@@ -49,6 +44,19 @@ namespace Base {
       }
 
       return 0;
+    }
+
+    bool remove(const T &key) {
+      usize idx = hasher(key) % slots.size;
+      for (Slot *curr = slots[idx].next, *prev = &slots[idx];
+	   curr; curr = curr->next, prev = prev->next) {
+	if (key == curr->key) {
+	  prev->next = curr->next;
+	  return true;
+	}
+      }
+
+      return false;
     }
 
     inline U& operator[](const T &key) {
