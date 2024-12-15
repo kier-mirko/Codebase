@@ -1,6 +1,3 @@
-#ifndef BASE_OS_FILE
-#define BASE_OS_FILE
-
 #include "../file.h"
 
 #include <fcntl.h>
@@ -39,72 +36,72 @@ fn String8 fs_read(Arena *arena, String8 filepath) {
   return res;
 }
 
-fn isize fs_write(String8 filepath, String8 content) {
+fn bool fs_write(String8 filepath, String8 content) {
   if (filepath.size == 0) {
-    return -1;
+    return false;
   }
 
   i32 fd = open((char *)filepath.str, O_WRONLY | O_CREAT | O_TRUNC,
                 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if (fd < 0) {
     (void)close(fd);
-    return -1;
+    return false;
   }
 
   if (write(fd, content.str, content.size) != content.size) {
     (void)close(fd);
-    return -1;
+    return false;
   }
 
-  return fd;
+  return true;
 }
 
-fn isize fs_write(String8 filepath, StringStream content) {
+fn bool fs_write(String8 filepath, StringStream content) {
   StringNode *start = content.first++;
   isize fd = fs_write(filepath, start->value);
   if (fd < 0) {
-    return -1;
+    return false;
   }
 
   for (; start < content.first + content.size; ++start) {
     if (!write(fd, start->value.str, start->value.size)) {
       (void)close(fd);
-      return -1;
+      return false;
     }
   }
 
-  return fd;
+  return true;
 }
 
-fn isize fs_append(String8 filepath, String8 content) {
+fn bool fs_append(String8 filepath, String8 content) {
   Assert(filepath.size);
   i32 fd = open((char *)filepath.str, O_WRONLY | O_CREAT | O_APPEND,
                 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if (fd < 0) {
     (void)close(fd);
-    return -1;
+    return false;
   }
 
   if (write(fd, content.str, content.size) != content.size) {
     (void)close(fd);
-    return -1;
+    return false;
   }
 
-  return fd;
+  return true;
 }
 
-fn isize fs_append(String8 filepath, StringStream content) {
+fn bool fs_append(String8 filepath, StringStream content) {
   StringNode *start = content.first;
   isize fd = fs_append(filepath, start->value);
 
   for (start = start->next; start; start = start->next) {
     if (!write(fd, start->value.str, start->value.size)) {
       (void)close(fd);
-      return -1;
+      return false;
     }
   }
 
-  return fd;
+  return true;
 }
 
 fn FileProperties fs_getProp(String8 filepath) {
@@ -357,5 +354,3 @@ fn bool fs_rmIter(Arena *temp_arena, String8 dirname) {
   temp_arena->head = prev_head;
   return res;
 }
-
-#endif

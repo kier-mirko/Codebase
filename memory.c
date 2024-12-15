@@ -1,6 +1,3 @@
-#ifndef BASE_MEMORY
-#define BASE_MEMORY
-
 #include "base.h"
 #include "arena.h"
 
@@ -27,5 +24,3 @@ void memZero(void *dest, usize size) {
     *(dest_bytes + i) = 0;
   }
 }
-
-#endif

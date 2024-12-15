@@ -31,6 +31,7 @@ namespace Base {
       }
 
       Assert(false);
+      return first->block[0];
     }
 
     struct Iterator {

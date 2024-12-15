@@ -1,4 +1,5 @@
-#pragma once
+#ifndef BASE_STRING
+#define BASE_STRING
 
 #include "arena.h"
 #include "base.h"
@@ -141,3 +142,5 @@ fn String32 UTF32From8(Arena *arena, String8 *in);
 fn String32 UTF32From16(Arena *arena, String16 *in);
 
 // =============================================================================
+
+#endif

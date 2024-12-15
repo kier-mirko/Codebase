@@ -1,4 +1,5 @@
-#pragma once
+#ifndef BASE_OS_LINUX_THREAD
+#define BASE_OS_LINUX_THREAD
 
 #include "../../base.h"
 
@@ -12,3 +13,5 @@ inline fn Thread threadSpawn(void *(*thread_main)(void *));
 
 inline fn void threadJoin(Thread id);
        fn void threadJoinReturn(Thread id, void **save_return_value_in);
+
+#endif

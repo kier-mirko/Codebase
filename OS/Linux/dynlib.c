@@ -1,6 +1,3 @@
-#ifndef OS_LINUX_DYNLIB
-#define OS_LINUX_DYNLIB
-
 #include "../dynlib.h"
 
 #include <dlfcn.h>
@@ -24,5 +21,3 @@ inline fn void dynlib_close(void *handle) {
   i8 res = dlclose(handle);
   Assert(!res);
 }
-
-#endif

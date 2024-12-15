@@ -1,6 +1,3 @@
-#ifndef BASE_OS_FILE
-#define BASE_OS_FILE
-
 #include "../file.h"
 
 #include <fcntl.h>
@@ -13,27 +10,26 @@
 
 // =============================================================================
 // File reading and writing/appending
-fn String8 *fs_read(Arena *arena, String8 filepath) {
+fn String8 fs_read(Arena *arena, String8 filepath) {
   Assert(arena);
   if (filepath.size == 0) {
-    return 0;
+    return (String8) {0};
   }
 
   i32 fd = open((char *)filepath.str, O_RDONLY);
   if (fd < 0) {
     (void)close(fd);
-    return 0;
+    return (String8) {0};
   }
 
   struct stat file_stat;
   if (stat((char *)filepath.str, &file_stat) < 0) {
     (void)close(fd);
-    return 0;
+    return (String8) {0};
   }
 
-  String8 *res = New(arena, String8);
-  res->str = Newarr(arena, u8, file_stat.st_size);
-  res->size = read(fd, res->str, file_stat.st_size);
+  String8 res = { .str = (u8 *)Newarr(arena, u8, file_stat.st_size) };
+  res.size = read(fd, res.str, file_stat.st_size);
 
   (void)close(fd);
   return res;
@@ -60,7 +56,7 @@ fn bool fs_write(String8 filepath, String8 content) {
   return true;
 }
 
-fn bool fs_writeStream(String8 filepath, StringStream content) {
+fn bool fs_write(String8 filepath, StringStream content) {
   StringNode *start = content.first++;
   if (!fs_write(filepath, start->value)) {
     return false;
@@ -96,7 +92,7 @@ fn bool fs_append(String8 filepath, String8 content) {
   return true;
 }
 
-fn bool fs_appendStream(String8 filepath, StringStream content) {
+fn bool fs_append(String8 filepath, StringStream content) {
   for (StringNode *start = content.first; start < content.first + content.size;
        ++start) {
     if (!fs_append(filepath, start->value)) {
@@ -164,34 +160,91 @@ fn FileProperties fs_getProp(String8 filepath) {
 // =============================================================================
 // Memory mapping files for easier and faster handling
 
-fn File *fs_open(Arena *arena, String8 filepath, void *location) {
-  Assert(arena);
-  if (filepath.size == 0) {
-    return 0;
-  }
+fn File fs_open(Arena *arena, void *location) {
+  char path[] = "/tmp/base-XXXXXX";
+  i32 fd = mkstemp(path);
 
-  i32 fd = open((char *)filepath.str, O_RDONLY);
-  if (fd < 0) {
-    (void)close(fd);
-    return 0;
-  }
+  String8 pathstr = {
+    .str = (u8 *)Newarr(arena, u8, Arrsize(path)),
+    .size = Arrsize(path),
+  };
+  memCopy(pathstr.str, path, Arrsize(path));
 
-  File *memfile = New(arena, File);
-  memfile->path = filepath;
-  memfile->descriptor = fd;
-  memfile->prop = fs_getProp(filepath);
-  memfile->content = str8(mmap(location, memfile->prop.size, PROT_READ, MAP_PRIVATE, fd, 0), memfile->prop.size);
-
-  (void)close(fd);
-  return memfile;
+  return (File) {
+    .descriptor = fd,
+    .path = pathstr,
+    .prop = fs_getProp(pathstr),
+    .content = str8((char *)mmap(location, 0,
+				 PROT_READ | PROT_WRITE,
+				 MAP_SHARED, fd, 0), 0),
+  };
 }
 
-inline fn void fs_sync(File *file, usize offset, usize size) {
-  if (!size) {
-    size = file->prop.size;
+fn File fs_open(Arena *arena, String8 filepath, void *location) {
+  Assert(arena);
+  if (filepath.size == 0) {
+    return (File) {0};
   }
 
-  (void)msync(file->content.str + ClampTop(offset, file->prop.size), size, MS_ASYNC | MS_INVALIDATE);
+  i32 fd = open((char *)filepath.str, O_RDWR | O_CREAT,
+		S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+  if (fd < 0) {
+    (void)close(fd);
+    return (File) {0};
+  }
+
+  FileProperties prop = fs_getProp(filepath);
+  return (File) {
+    .descriptor = fd,
+    .path = filepath,
+    .prop = prop,
+    .content = str8((char *)mmap(location, prop.size,
+				 PROT_READ | PROT_WRITE,
+				 MAP_SHARED, fd, 0), prop.size),
+  };
+}
+
+bool File::write(const String8 &content) {
+  return ::write(descriptor, content.str, content.size) != content.size;
+}
+
+bool File::write(const StringStream &content) {
+  for (StringNode *curr = content.first; curr; curr = curr->next) {
+    if (!write(curr->value)) { return false; }
+  }
+
+  return true;
+}
+
+bool File::close() {
+  return ::msync(content.str, prop.size, MS_SYNC) >= 0 &&
+	 ::munmap(content.str, prop.size) >= 0 &&
+	 ::close(descriptor) >= 0;
+}
+
+bool File::hasChanged() {
+  FileProperties prop = fs_getProp(path);
+  return (prop.last_access_time != prop.last_access_time) ||
+	 (prop.last_modification_time != prop.last_modification_time) ||
+	 (prop.last_status_change_time != prop.last_status_change_time);
+}
+
+bool File::erase() {
+  return ::unlink((char *) path.str) >= 0 && close();
+}
+
+bool File::rename(String8 to) {
+  return ::rename((char *) path.str, (char *) to.str) >= 0;
+}
+
+void File::sync(bool force_it) {
+  if (!force_it && !hasChanged()) { return; }
+
+  (void)::munmap(content.str, prop.size);
+  prop = fs_getProp(path);
+  content = str8((char *)::mmap(0, prop.size,
+				PROT_READ | PROT_WRITE,
+				MAP_SHARED, descriptor, 0), prop.size);
 }
 
 inline fn void fs_close(File *file) {
@@ -214,19 +267,9 @@ inline fn bool fs_delete(String8 filepath) {
   return unlink((char *)filepath.str) >= 0;
 }
 
-inline fn bool fs_deleteFile(File *f) {
-  Assert(f && f->path.size != 0);
-  return unlink((char *)f->path.str) >= 0;
-}
-
 inline fn bool fs_rename(String8 filepath, String8 to) {
   Assert(filepath.size != 0 && to.size != 0);
   return rename((char *)filepath.str, (char *)to.str) >= 0;
-}
-
-inline fn bool fs_renameFile(File *f, String8 to) {
-  Assert(f && f->path.size != 0 && to.size != 0);
-  return rename((char *)f->path.str, (char *)to.str) >= 0;
 }
 
 fn bool fs_mkdir(String8 path) {
@@ -240,6 +283,8 @@ fn bool fs_rmdir(String8 path) {
   return rmdir((char *)path.str) >= 0;
 }
 
+// =============================================================================
+// File iteration
 fn FilenameList fs_iterFiles(Arena *arena, String8 dirname) {
   const String8 currdir = Strlit(".");
   const String8 parentdir = Strlit("..");
@@ -258,7 +303,7 @@ fn FilenameList fs_iterFiles(Arena *arena, String8 dirname) {
       continue;
     }
 
-    FilenameNode *node = New(arena, FilenameNode);
+    FilenameNode *node = (FilenameNode *) New(arena, FilenameNode);
     node->value = str;
     DLLPushBack(res.first, res.last, node);
   }
@@ -270,11 +315,11 @@ fn FilenameList fs_iterFiles(Arena *arena, String8 dirname) {
 fn bool fs_rmIter(Arena *temp_arena, String8 dirname) {
   const String8 currdir = Strlit(".");
   const String8 parentdir = Strlit("..");
-  void *prev_head = temp_arena->head;
+  usize prev_head = temp_arena->head;
 
   FilenameList dirstack = {0};
   FilenameList deletable = {0};
-  FilenameNode *root = New(temp_arena, FilenameNode);
+  FilenameNode *root = (FilenameNode *) New(temp_arena, FilenameNode);
   root->value = dirname;
   StackPush(dirstack.first, root);
 
@@ -298,7 +343,7 @@ fn bool fs_rmIter(Arena *temp_arena, String8 dirname) {
                                    Strexpand(current->value), Strexpand(str));
 
       if (entry->d_type == DT_DIR) {
-        FilenameNode *childdir = New(temp_arena, FilenameNode);
+        FilenameNode *childdir = (FilenameNode *) New(temp_arena, FilenameNode);
         childdir->value = fullpath;
         StackPush(dirstack.first, childdir);
       } else {
@@ -323,5 +368,3 @@ fn bool fs_rmIter(Arena *temp_arena, String8 dirname) {
   temp_arena->head = prev_head;
   return res;
 }
-
-#endif

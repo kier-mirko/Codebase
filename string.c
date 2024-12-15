@@ -1,6 +1,3 @@
-#ifndef BASE_STRING
-#define BASE_STRING
-
 #include "string.h"
 #include "time.h"
 
@@ -711,5 +708,3 @@ fn String32 UTF32From16(Arena *arena, String16 *in) {
   String32 res = {.str = dwords, .size = res_size};
   return res;
 }
-
-#endif

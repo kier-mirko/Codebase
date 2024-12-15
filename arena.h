@@ -1,4 +1,5 @@
-#pragma once
+#ifndef BASE_ARENA
+#define BASE_ARENA
 
 #include "base.h"
 
@@ -24,3 +25,5 @@ inline fn bool isPowerOfTwo(usize value);
 inline fn void arenaPop(Arena *arena, usize bytes);
 inline fn bool arenaFree(Arena *arena);
        fn void *arenaPush(Arena *arena, usize size, usize align);
+
+#endif

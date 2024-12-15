@@ -1,4 +1,5 @@
-#pragma once
+#ifndef BASE_OS_BSD_THREAD
+#define BASE_OS_BSD_THREAD
 
 #include "../../base.h"
 
@@ -12,3 +13,5 @@ inline fn Thread *threadSpawn(void *(*thread_main)(void *));
 
 inline fn void threadJoin(Thread *tcb);
        fn void threadJoinReturn(Thread *tcb, void **save_return_value_in);
+
+#endif

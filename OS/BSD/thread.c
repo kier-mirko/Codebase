@@ -1,6 +1,3 @@
-#ifndef BASE_OS_THREAD
-#define BASE_OS_THREAD
-
 #include "thread.h"
 
 inline fn Thread *threadSpawn(void *(*thread_main)(void *)) {
@@ -27,5 +24,3 @@ inline fn void threadJoin(Thread *tcb) {
 fn void threadJoinReturn(Thread *tcb, void **save_return_value_in) {
   (void)pthread_join(tcb, save_return_value_in);
 }
-
-#endif

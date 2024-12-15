@@ -1,6 +1,3 @@
-#ifndef BASE_ARENA
-#define BASE_ARENA
-
 #include "base.h"
 #include "arena.h"
 
@@ -69,5 +66,3 @@ fn void *arenaPush(Arena *arena, usize size, usize align) {
   memZero(res, size);
   return res;
 }
-
-#endif

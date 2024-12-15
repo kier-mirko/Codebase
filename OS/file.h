@@ -1,4 +1,5 @@
-#pragma once
+#ifndef BASE_OS_FILE
+#define BASE_OS_FILE
 
 #include "../base.h"
 #include "../list.h"
@@ -11,13 +12,12 @@
 // =============================================================================
 // File reading and writing/appending
 fn String8 fs_read(Arena *arena, String8 filepath);
-fn String8 fs_fread(Arena *arena, isize fd);
 
-fn isize fs_write(String8 filepath, String8 content);
-fn isize fs_write(String8 filepath, StringStream content);
+fn bool fs_write(String8 filepath, String8 content);
+fn bool fs_write(String8 filepath, StringStream content);
 
-fn isize fs_append(String8 filepath, String8 content);
-fn isize fs_append(String8 filepath, StringStream content);
+fn bool fs_append(String8 filepath, String8 content);
+fn bool fs_append(String8 filepath, StringStream content);
 
 fn FileProperties fs_getProp(String8 filepath);
 
@@ -66,3 +66,5 @@ typedef struct {
 
 fn FilenameList fs_iterFiles(Arena *arena, String8 dirname);
 fn bool fs_rmIter(Arena *temp_arena, String8 dirname);
+
+#endif
