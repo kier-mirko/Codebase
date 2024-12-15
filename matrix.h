@@ -97,7 +97,7 @@ struct Matrix {
     return res;
   }
 
-  Matrix<T, R-1, C-1> submatrix(usize r, usize c) {
+  Matrix<T, R-1, C-1> minor(usize r, usize c) {
     Assert(r < R && c < C);
     Matrix<T, R-1, C-1> res = {0};
 
@@ -126,7 +126,7 @@ struct Matrix {
     return res;
   }
 
-  T det() {
+  i32 det() {
     Assert(R == C);
 
     if constexpr (R == 1) {
@@ -135,10 +135,10 @@ struct Matrix {
       return (*this)[0, 0] * (*this)[1, 1]
 	     - (*this)[0, 1] * (*this)[1, 0];
     } else {
-      T res = 0;
+      i32 res = 0;
       for (usize i = 0; i < R; ++i) {
 	res += pow(-1, i) * (*this)[0, i]
-	       * this->submatrix(0, i).det();
+	       * this->minor(0, i).det();
       }
 
       return res;
@@ -147,13 +147,14 @@ struct Matrix {
 
   usize rank() {
     constexpr local f64 eps (1E-9);
+    Matrix tmp = *this;
     usize rank = 0;
 
     u32 selected = 0;
     for (usize i = 0; i < C; ++i) {
       usize j = 0;
       for (; j < R; ++j) {
-	if (!GetBit(selected, j) && Abs(((*this)[j, i])) > eps) {
+	if (!GetBit(selected, j) && Abs((tmp[j, i])) > eps) {
 	  break;
 	}
       }
@@ -162,13 +163,13 @@ struct Matrix {
 	++rank;
 	SetBit(selected, j, 1);
 	for (usize p = i + 1; p < C; ++p) {
-	  (*this)[j, p] /= (*this)[j, i];
+	  tmp[j, p] /= tmp[j, i];
 	}
 
 	for (usize k = 0; k < R; ++k) {
-	  if (k != j && Abs(((*this)[k, i])) > eps) {
+	  if (k != j && Abs((tmp[k, i])) > eps) {
 	    for (usize p = i + 1; p < C; ++p) {
-	      (*this)[k, p] -= (*this)[j, p] * (*this)[k, i];
+	      tmp[k, p] -= tmp[j, p] * tmp[k, i];
 	    }
 	  }
 	}
@@ -178,9 +179,34 @@ struct Matrix {
     return rank;
   }
 
+  Matrix inverse() {
+    i32 det = this->det();
+    Assert(det != 0);
+
+    if constexpr (R == 2) {
+      Matrix res = {0};
+      res[0, 0] = (*this)[1, 1] / det;
+      res[0, 1] = -(*this)[0, 1] / det;
+      res[1, 0] = -(*this)[1, 0] / det;
+      res[1, 1] = (*this)[0, 0] / det;
+
+      return res;
+    }
+
+    Matrix cofactors = {0};
+    for (usize r = 0; r < R; ++r) {
+      for (usize c = 0; c < R; ++c) {
+	Matrix<T, R-1, C-1> minor = this->minor(r, c);
+	cofactors[c, r] = (::pow(-1, r + c) * minor.det()) / det;
+      }
+    }
+
+    return cofactors;
+  }
+
   // =======================================================
   // Operations on rows
-  Matrix exchange(usize r1, usize r2) {
+  Matrix swap(usize r1, usize r2) {
     Assert(r1 < R && r2 < R);
     Matrix res = {0};
 
@@ -243,7 +269,7 @@ struct Matrix {
 
   // =======================================================
   // Samething but for columns
-  Matrix exchangeColumn(usize r1, usize r2) {
+  Matrix swapColumn(usize r1, usize r2) {
     Assert(r1 < C && r2 < C);
     Matrix res = {0};
 
