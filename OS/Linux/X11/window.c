@@ -21,12 +21,14 @@ fn Viewport viewport_create(String8 name,
   /* OpenGL stuff */
   XVisualInfo *vi = glXChooseVisual(viewport.xdisplay, 0, att);
   if(!vi) {
+    printf("\tglXChooseVisual\n");
     return (Viewport){0};
   }
 
   Colormap cmap;
   if (!(cmap = XCreateColormap(viewport.xdisplay, viewport.xroot,
 			       vi->visual, AllocNone))) {
+    printf("\tXCreateColormap\n");
     return (Viewport){0};
   }
 
@@ -50,38 +52,46 @@ fn Viewport viewport_create(String8 name,
 
   /* Display the window */
   if (!XMapWindow(viewport.xdisplay, viewport.xwindow)) {
+    printf("\tXMapWindow\n");
     return (Viewport){0};
   }
 
   viewport.xatom_close = XInternAtom(viewport.xdisplay, "WM_DELETE_WINDOW", False);
 
-  viewport.xatom_dndAware = XInternAtom(viewport.xdisplay, "XdndAware", False);
   viewport.xatom_dndTypeList = XInternAtom(viewport.xdisplay, "XdndTypeList", False);
   viewport.xatom_dndSelection = XInternAtom(viewport.xdisplay, "XdndSelection", False);
+
   viewport.xatom_dndEnter = XInternAtom(viewport.xdisplay, "XdndEnter", False);
   viewport.xatom_dndPosition = XInternAtom(viewport.xdisplay, "XdndPosition", False);
-  viewport.xatom_dndDrop = XInternAtom(viewport.xdisplay, "XdndDrop", False);
   viewport.xatom_dndStatus = XInternAtom(viewport.xdisplay, "XdndStatus", False);
   viewport.xatom_dndLeave = XInternAtom(viewport.xdisplay, "XdndLeave", False);
+  viewport.xatom_dndDrop = XInternAtom(viewport.xdisplay, "XdndDrop", False);
   viewport.xatom_dndFinished = XInternAtom(viewport.xdisplay, "XdndFinished", False);
+
   viewport.xatom_dndActionCopy = XInternAtom(viewport.xdisplay, "XdndActionCopy", False);
+
   viewport.xatom_dndUriList = XInternAtom(viewport.xdisplay, "text/uri-list", False);
   viewport.xatom_dndPlainText = XInternAtom(viewport.xdisplay, "text/plain", False);
+
+  viewport.xatom_dndAware = XInternAtom(viewport.xdisplay, "XdndAware", False);
 
   if (!XChangeProperty(viewport.xdisplay, viewport.xwindow,
 		       viewport.xatom_dndAware, 4, 32,
 		       PropModeReplace, &xdnd_version, 1)) {
+    printf("\tXChangeProperty\n");
     return (Viewport){0};
   }
 
   if (!XSetWMProtocols(viewport.xdisplay, viewport.xwindow,
 		       (Atom *)&viewport.xatom_close, 1)) {
+    printf("\tXSetWMProtocols\n");
     return (Viewport){0};
   }
 
   /* More OpenGL stuff */
   viewport.glx_context = glXCreateContext(viewport.xdisplay, vi, NULL, GL_TRUE);
   if (!glXMakeCurrent(viewport.xdisplay, viewport.xwindow, viewport.glx_context)) {
+    printf("\tglXMakeCurrent\n");
     return (Viewport){0};
   }
 
@@ -127,6 +137,7 @@ ViewportEvent viewport_getNextEvent(Viewport *viewport) {
 		    : 0;
     } break;
     case MotionNotify: {
+      printf("Motion\n");
       res.type = PTR_MOTION;
       res.motion.x = ClampBot(event.xmotion.x, 0);
       res.motion.y = event.xmotion.y <= viewport->height
@@ -139,32 +150,32 @@ ViewportEvent viewport_getNextEvent(Viewport *viewport) {
 	XPutBackEvent(viewport->xdisplay, &event);
       }
 
-      if (!viewport->xatom_close) {
-	printf("close: %d\n", !viewport->xatom_close);
-      } else if (!viewport->xatom_dndAware) {
-	printf("dndAware: %d\n", !viewport->xatom_dndAware);
-      } else if (!viewport->xatom_dndTypeList) {
-	printf("dndTypeList: %d\n", viewport->xatom_dndTypeList);
-      } else if (!viewport->xatom_dndSelection) {
-	printf("dndSelection: %d\n", viewport->xatom_dndSelection);
-      } else if (!viewport->xatom_dndEnter) {
-	printf("dndEnter: %d\n", viewport->xatom_dndEnter);
-      } else if (!viewport->xatom_dndPosition) {
-	printf("dndPosition: %d\n", viewport->xatom_dndPosition);
-      } else if (!viewport->xatom_dndDrop) {
-	printf("dndDrop: %d\n", viewport->xatom_dndDrop);
-      } else if (!viewport->xatom_dndStatus) {
-	printf("dndStatus: %d\n", viewport->xatom_dndStatus);
-      } else if (!viewport->xatom_dndLeave) {
-	printf("dndLeave: %d\n", viewport->xatom_dndLeave);
-      } else if (!viewport->xatom_dndFinished) {
-	printf("dndFinished: %d\n", viewport->xatom_dndFinished);
-      } else if (!viewport->xatom_dndActionCopy) {
-	printf("dndActionCopy: %d\n", viewport->xatom_dndActionCopy);
-      } else if (!viewport->xatom_dndUriList) {
-	printf("dndUriList: %d\n", viewport->xatom_dndUriList);
-      } else if (!viewport->xatom_dndPlainText) {
-	printf("dndPlainText: %d\n", viewport->xatom_dndPlainText);
+      if (event.xclient.message_type == viewport->xatom_close) {
+	printf("dndClose\n");
+      } else if (event.xclient.message_type == viewport->xatom_dndAware) {
+	printf("dndAware\n");
+      } else if (event.xclient.message_type == viewport->xatom_dndTypeList) {
+	printf("dndTypeList\n");
+      } else if (event.xclient.message_type == viewport->xatom_dndSelection) {
+	printf("dndSelection\n");
+      } else if (event.xclient.message_type == viewport->xatom_dndEnter) {
+	printf("dndEnter\n");
+      } else if (event.xclient.message_type == viewport->xatom_dndPosition) {
+	printf("dndPosition\n");
+      } else if (event.xclient.message_type == viewport->xatom_dndDrop) {
+	printf("dndDrop\n");
+      } else if (event.xclient.message_type == viewport->xatom_dndStatus) {
+	printf("dndStatus\n");
+      } else if (event.xclient.message_type == viewport->xatom_dndLeave) {
+	printf("dndLeave\n");
+      } else if (event.xclient.message_type == viewport->xatom_dndFinished) {
+	printf("dndFinished\n");
+      } else if (event.xclient.message_type == viewport->xatom_dndActionCopy) {
+	printf("dndActionCopy\n");
+      } else if (event.xclient.message_type == viewport->xatom_dndUriList) {
+	printf("dndUriList\n");
+      } else if (event.xclient.message_type == viewport->xatom_dndPlainText) {
+	printf("dndPlainText\n");
       }
     } break;
     }
