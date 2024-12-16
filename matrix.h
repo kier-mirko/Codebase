@@ -97,7 +97,7 @@ struct Matrix {
     return res;
   }
 
-  Matrix<T, R-1, C-1> minor(usize r, usize c) {
+  Matrix<T, R-1, C-1> submatrix(usize r, usize c) {
     Assert(r < R && c < C);
     Matrix<T, R-1, C-1> res = {0};
 
@@ -138,7 +138,7 @@ struct Matrix {
       i32 res = 0;
       for (usize i = 0; i < R; ++i) {
 	res += pow(-1, i) * (*this)[0, i]
-	       * this->minor(0, i).det();
+	       * this->submatrix(0, i).det();
       }
 
       return res;
@@ -196,7 +196,7 @@ struct Matrix {
     Matrix cofactors = {0};
     for (usize r = 0; r < R; ++r) {
       for (usize c = 0; c < R; ++c) {
-	Matrix<T, R-1, C-1> minor = this->minor(r, c);
+	Matrix<T, R-1, C-1> minor = this->submatrix(r, c);
 	cofactors[c, r] = (::pow(-1, r + c) * minor.det()) / det;
       }
     }
