@@ -18,40 +18,6 @@
 #define SuperMod(MODIFIERS)    (((MODIFIERS) & 0x40) >> 6)
 #define Mod5Mod(MODIFIERS)     ((MODIFIERS) >> 7)
 
-typedef struct {
-  String8 name;
-  usize width;
-  usize height;
-
-  Display *xdisplay;
-  u32 xscreen;
-  u32 xroot;
-  u32 xwindow;
-
-  GLXContext glx_context;
-
-  union {
-    u32 xatoms[13];
-
-    struct {
-      u32 xatom_close;
-
-      u32 xatom_dndAware;
-      u32 xatom_dndTypeList;
-      u32 xatom_dndSelection;
-      u32 xatom_dndEnter;
-      u32 xatom_dndPosition;
-      u32 xatom_dndDrop;
-      u32 xatom_dndStatus;
-      u32 xatom_dndLeave;
-      u32 xatom_dndFinished;
-      u32 xatom_dndActionCopy;
-      u32 xatom_dndUriList;
-      u32 xatom_dndPlainText;
-    };
-  };
-} Viewport;
-
 typedef enum {
   UNKNOWN,
   LEFT_MOUSE,
@@ -97,15 +63,56 @@ typedef struct {
   };
 } ViewportEvent;
 
-fn Viewport viewport_create(String8 name, usize initial_width,
-			    usize initial_height);
-fn ViewportEvent viewport_getNextEvent(Viewport *viewport);
-       fn bool viewport_shouldClose(Viewport *viewport);
-inline fn void viewport_close(Viewport *viewport);
+struct Viewport {
+  String8 name;
+  usize width;
+  usize height;
+
+  Display *xdisplay;
+  u32 xscreen;
+  u32 xroot;
+  u32 xwindow;
+
+  union {
+    u32 xatoms[13];
+
+    struct {
+      u32 xatom_close;
+
+      u32 xatom_dndAware;
+      u32 xatom_dndTypeList;
+      u32 xatom_dndSelection;
+      u32 xatom_dndEnter;
+      u32 xatom_dndPosition;
+      u32 xatom_dndDrop;
+      u32 xatom_dndStatus;
+      u32 xatom_dndLeave;
+      u32 xatom_dndFinished;
+      u32 xatom_dndActionCopy;
+      u32 xatom_dndUriList;
+      u32 xatom_dndPlainText;
+    };
+  };
+
+  GLXContext opengl_context;
+
+  static Viewport opengl(String8 name, usize initial_width, usize initial_height);
+  static Viewport vulkan(String8 name, usize initial_width, usize initial_height);
+
+  void close();
+  bool shouldClose();
+
+  ViewportEvent getEvent();
+
+  bool setWindowIcon(Arena *arena, String8 path);
+  void setWindowTitle(String8 title);
+
+  inline void swapBuffers();
+};
 
 fn Codepoint codepointFromKeySym(KeySym sym);
 
-global struct codepair {
+global constexpr struct codepair {
   unsigned short keysym;
   unsigned short ucs;
 } keysymtab[] = {
@@ -883,5 +890,11 @@ global struct codepair {
   { 0x13be, 0x0178 }, /*                  Ydiaeresis Ÿ LATIN CAPITAL LETTER Y WITH DIAERESIS */
   { 0x20ac, 0x20ac }, /*                    EuroSign € EURO SIGN */
 };
+
+typedef GLXContext
+        (*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig,
+					  GLXContext, bool, const int*);
+
+fn bool opengl_isExtensionSupported(String8 ext_list, String8 extension);
 
 #endif

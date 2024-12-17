@@ -535,7 +535,29 @@ fn usize strFindFirst(String8 s, char ch) {
     }
   }
 
-  return s.size;
+  return 0;
+}
+
+fn usize strFindFirst(String8 haystack, String8 needle) {
+  if (haystack.size < needle.size) {
+    return 0;
+  }
+
+  for (usize i = 0; i < haystack.size; ++i) {
+    if (haystack[i] == needle[0]) {
+      for (usize j = 0; i < needle.size; ++j) {
+	if (haystack[i + j] != needle[j]) {
+	  goto outer;
+	}
+      }
+
+      return i;
+    }
+
+    outer:
+  }
+
+  return 0;
 }
 
 fn bool strContains(String8 s, char ch) {

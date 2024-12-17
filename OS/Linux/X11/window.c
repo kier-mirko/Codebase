@@ -1,12 +1,11 @@
 #include "string.h"
 #include "window.h"
 #include "../../../image.h"
+#include "../../../vector.h"
+#include "../../../math.h"
 
-fn Viewport viewport_create(String8 name,
-			    usize initial_width, usize initial_height) {
-  local GLint att[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
-  local u8 xdnd_version = 5;
-
+Viewport Viewport::opengl(String8 name, usize initial_width,
+			usize initial_height) {
   Viewport viewport = {.xdisplay = XOpenDisplay(0)};
   if (!viewport.xdisplay) {
     return viewport;
@@ -19,8 +18,87 @@ fn Viewport viewport_create(String8 name,
   viewport.xscreen = XDefaultScreen(viewport.xdisplay);
   viewport.xroot = XDefaultRootWindow(viewport.xdisplay);
 
-  /* OpenGL stuff */
-  XVisualInfo *vi = glXChooseVisual(viewport.xdisplay, 0, att);
+  /* ========================================================================= */
+  /* OpenGL setup */
+  i32 majorGLX, minorGLX = 0;
+  glXQueryVersion(viewport.xdisplay, &majorGLX, &minorGLX);
+  if (majorGLX <= 1 && minorGLX < 2) {
+    printf("GLX 1.2 or greater is required.\n");
+    XCloseDisplay(viewport.xdisplay);
+    return (Viewport) {0};
+  } else {
+    printf("\e[33mGLX client version:\e[0m %s\n",
+	   glXGetClientString(viewport.xdisplay, GLX_VERSION));
+    printf("\e[33mGLX client vendor:\e[0m %s\n",
+	   glXGetClientString(viewport.xdisplay, GLX_VENDOR));
+    printf("\e[33mGLX client extensions:\e[0m %s\n",
+	   glXGetClientString(viewport.xdisplay, GLX_EXTENSIONS));
+
+    printf("\e[33mGLX server version:\e[0m %s\n",
+	   glXQueryServerString(viewport.xdisplay, viewport.xscreen,
+				GLX_VERSION));
+    printf("\e[33mGLX server vendor:\e[0m %s\n",
+	   glXQueryServerString(viewport.xdisplay, viewport.xscreen,
+				GLX_VENDOR));
+    printf("\e[33mGLX server extensions:\e[0m %s\n\n",
+	   glXQueryServerString(viewport.xdisplay, viewport.xscreen,
+				GLX_EXTENSIONS));
+  }
+
+  local i32 glx_attribs[] = {
+    GLX_X_RENDERABLE    , True,
+    GLX_DRAWABLE_TYPE   , GLX_WINDOW_BIT,
+    GLX_RENDER_TYPE     , GLX_RGBA_BIT,
+    GLX_X_VISUAL_TYPE   , GLX_TRUE_COLOR,
+    GLX_RED_SIZE        , 8,
+    GLX_GREEN_SIZE      , 8,
+    GLX_BLUE_SIZE       , 8,
+    GLX_ALPHA_SIZE      , 8,
+    GLX_DEPTH_SIZE      , 24,
+    GLX_STENCIL_SIZE    , 8,
+    GLX_DOUBLEBUFFER    , True,
+    None
+  };
+
+  i32 fbcount;
+  GLXFBConfig* fbc = glXChooseFBConfig(viewport.xdisplay, viewport.xscreen,
+				       glx_attribs, &fbcount);
+  if (fbc == 0) {
+    printf("Failed to retrieve framebuffer.\n");
+    XCloseDisplay(viewport.xdisplay);
+    return (Viewport) {0};
+  }
+  printf("Found %d matching framebuffers.\n", fbcount );
+
+  // Pick the FB config/visual with the most samples per pixel
+  printf("Getting best XVisualInfo\n");
+  i32 best_fbc = -1, worst_fbc = -1, best_num_samp = -1, worst_num_samp = 999;
+  for (int i = 0; i < fbcount; ++i) {
+    XVisualInfo *vi = glXGetVisualFromFBConfig(viewport.xdisplay, fbc[i]);
+    if (vi != 0) {
+      i32 samp_buf, samples;
+      glXGetFBConfigAttrib(viewport.xdisplay, fbc[i], GLX_SAMPLE_BUFFERS,
+			   &samp_buf);
+      glXGetFBConfigAttrib(viewport.xdisplay, fbc[i], GLX_SAMPLES, &samples);
+
+      if (best_fbc < 0 || (samp_buf && samples > best_num_samp)) {
+	best_fbc = i;
+	best_num_samp = samples;
+      }
+      if (worst_fbc < 0 || !samp_buf || samples < worst_num_samp) {
+	worst_fbc = i;
+	worst_num_samp = samples;
+      }
+    }
+
+    XFree(vi);
+  }
+
+  printf("Best visual info index: %d\n", best_fbc);
+  GLXFBConfig bestFbc = fbc[best_fbc];
+  XFree(fbc);
+
+  XVisualInfo* vi = glXGetVisualFromFBConfig(viewport.xdisplay, bestFbc);
   if(!vi) {
     printf("\tglXChooseVisual\n");
     return (Viewport){0};
@@ -38,14 +116,15 @@ fn Viewport viewport_create(String8 name,
 					     ButtonPressMask |
 					     PointerMotionMask,
                               .colormap = cmap };
-  /* ============================================================================= */
+  /* ========================================================================= */
 
   viewport.xwindow = XCreateWindow(viewport.xdisplay, viewport.xroot,
 				      0, 0,
 				      initial_width, initial_height,
 				      0, vi->depth,
 				      InputOutput, vi->visual,
-				      CWColormap | CWEventMask,
+				      CWBackPixel | CWColormap | CWBorderPixel |
+				      CWEventMask,
 				      &swa);
 
   /* Set the window name */
@@ -57,25 +136,28 @@ fn Viewport viewport_create(String8 name,
     return (Viewport){0};
   }
 
-  viewport.xatom_close = XInternAtom(viewport.xdisplay, "WM_DELETE_WINDOW", False);
+  viewport.xatom_close = XInternAtom(viewport.xdisplay, "WM_DELETE_WINDOW", 0);
 
-  viewport.xatom_dndTypeList = XInternAtom(viewport.xdisplay, "XdndTypeList", False);
-  viewport.xatom_dndSelection = XInternAtom(viewport.xdisplay, "XdndSelection", False);
+  viewport.xatom_dndTypeList = XInternAtom(viewport.xdisplay, "XdndTypeList", 0);
+  viewport.xatom_dndSelection = XInternAtom(viewport.xdisplay,
+					    "XdndSelection", 0);
 
-  viewport.xatom_dndEnter = XInternAtom(viewport.xdisplay, "XdndEnter", False);
-  viewport.xatom_dndPosition = XInternAtom(viewport.xdisplay, "XdndPosition", False);
-  viewport.xatom_dndStatus = XInternAtom(viewport.xdisplay, "XdndStatus", False);
-  viewport.xatom_dndLeave = XInternAtom(viewport.xdisplay, "XdndLeave", False);
-  viewport.xatom_dndDrop = XInternAtom(viewport.xdisplay, "XdndDrop", False);
-  viewport.xatom_dndFinished = XInternAtom(viewport.xdisplay, "XdndFinished", False);
+  viewport.xatom_dndEnter = XInternAtom(viewport.xdisplay, "XdndEnter", 0);
+  viewport.xatom_dndPosition = XInternAtom(viewport.xdisplay, "XdndPosition", 0);
+  viewport.xatom_dndStatus = XInternAtom(viewport.xdisplay, "XdndStatus", 0);
+  viewport.xatom_dndLeave = XInternAtom(viewport.xdisplay, "XdndLeave", 0);
+  viewport.xatom_dndDrop = XInternAtom(viewport.xdisplay, "XdndDrop", 0);
+  viewport.xatom_dndFinished = XInternAtom(viewport.xdisplay, "XdndFinished", 0);
 
-  viewport.xatom_dndActionCopy = XInternAtom(viewport.xdisplay, "XdndActionCopy", False);
+  viewport.xatom_dndActionCopy = XInternAtom(viewport.xdisplay,
+					     "XdndActionCopy", 0);
 
-  viewport.xatom_dndUriList = XInternAtom(viewport.xdisplay, "text/uri-list", False);
-  viewport.xatom_dndPlainText = XInternAtom(viewport.xdisplay, "text/plain", False);
+  viewport.xatom_dndUriList = XInternAtom(viewport.xdisplay, "text/uri-list", 0);
+  viewport.xatom_dndPlainText = XInternAtom(viewport.xdisplay, "text/plain", 0);
 
-  viewport.xatom_dndAware = XInternAtom(viewport.xdisplay, "XdndAware", False);
+  viewport.xatom_dndAware = XInternAtom(viewport.xdisplay, "XdndAware", 0);
 
+  local u8 xdnd_version = 5;
   if (!XChangeProperty(viewport.xdisplay, viewport.xwindow,
 		       viewport.xatom_dndAware, 4, 32,
 		       PropModeReplace, &xdnd_version, 1)) {
@@ -89,44 +171,164 @@ fn Viewport viewport_create(String8 name,
     return (Viewport){0};
   }
 
-  /* More OpenGL stuff */
-  viewport.glx_context = glXCreateContext(viewport.xdisplay, vi, NULL, GL_TRUE);
-  if (!glXMakeCurrent(viewport.xdisplay, viewport.xwindow, viewport.glx_context)) {
-    printf("\tglXMakeCurrent\n");
-    return (Viewport){0};
+  /* ========================================================================= */
+  /* OpenGL context init */
+
+  // Create GLX OpenGL context
+  glXCreateContextAttribsARBProc glXCreateContextAttribsARB = 0;
+  glXCreateContextAttribsARB = (glXCreateContextAttribsARBProc)
+    glXGetProcAddressARB((const u8 *) "glXCreateContextAttribsARB");
+
+  String8 glx_exts = strFromCstr((char *)
+    glXQueryExtensionsString(viewport.xdisplay, viewport.xscreen));
+  printf("\e[33mLate extensions:\e[0m %.*s\n\n", Strexpand(glx_exts));
+  if (glXCreateContextAttribsARB == 0) {
+    printf("glXCreateContextAttribsARB() not found.\n");
   }
 
+  i32 context_attribs[] = {
+    GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+    GLX_CONTEXT_MINOR_VERSION_ARB, 3,
+    GLX_CONTEXT_FLAGS_ARB, GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+    None
+  };
+
+  if (!opengl_isExtensionSupported(glx_exts, Strlit("GLX_ARB_create_context"))) {
+    viewport.opengl_context = glXCreateNewContext(viewport.xdisplay, bestFbc,
+					       GLX_RGBA_TYPE, 0, True);
+  } else {
+    viewport.opengl_context = glXCreateContextAttribsARB(viewport.xdisplay,
+							 bestFbc, 0, true,
+							 context_attribs);
+  }
+  XSync(viewport.xdisplay, 0);
+
+  // Verifying that context is a direct context
+  if (!glXIsDirect(viewport.xdisplay, viewport.opengl_context)) {
+    printf("Indirect GLX rendering context obtained\n");
+  } else {
+    printf("Direct GLX rendering context obtained\n");
+  }
+
+  glXMakeCurrent(viewport.xdisplay, viewport.xwindow, viewport.opengl_context);
+
+  printf("\e[33mGL Vendor:\e[0m %s\n", glGetString(GL_VENDOR));
+  printf("\e[33mGL Renderer:\e[0m %s\n", glGetString(GL_RENDERER));
+  printf("\e[33mGL Version:\e[0m %s\n", glGetString(GL_VERSION));
+  printf("\e[33mGL Shading Language:\e[0m %s\n\n",
+	 glGetString(GL_SHADING_LANGUAGE_VERSION));
+
   glEnable(GL_DEPTH_TEST);
-  /* ============================================================================= */
+  /* ========================================================================= */
 
   return viewport;
 }
 
-inline fn void viewport_close(Viewport *viewport) {
-  Assert(viewport && viewport->name.str);
-
-  (void)glXMakeCurrent(viewport->xdisplay, None, NULL);
-  (void)glXDestroyContext(viewport->xdisplay, viewport->glx_context);
-  (void)XDestroyWindow(viewport->xdisplay, viewport->xwindow);
-  (void)XCloseDisplay(viewport->xdisplay);
+Viewport Viewport::vulkan(String8 name, usize initial_width,
+			  usize initial_height) {
+  return (Viewport) {0};
 }
 
-fn bool viewport_shouldClose(Viewport *viewport) {
-  Assert(viewport && viewport->name.str);
+void Viewport::close() {
+  (void)glXMakeCurrent(xdisplay, None, NULL);
+  (void)glXDestroyContext(xdisplay, opengl_context);
+  (void)XDestroyWindow(xdisplay, xwindow);
+  (void)XCloseDisplay(xdisplay);
+}
 
+bool Viewport::shouldClose() {
   XEvent event = {0};
-  if (XCheckTypedEvent(viewport->xdisplay, ClientMessage, &event)) {
-    if (event.xclient.data.l[0] == viewport->xatom_close) {
+  if (XCheckTypedEvent(xdisplay, ClientMessage, &event)) {
+    if (event.xclient.data.l[0] == xatom_close) {
       return true;
     } else {
-      XPutBackEvent(viewport->xdisplay, &event);
+      XPutBackEvent(xdisplay, &event);
     }
   }
 
   return false;
 }
 
-fn bool viewport_setWindowIcon(Arena *arena, Viewport *viewport, String8 path) {
+ViewportEvent Viewport::getEvent() {
+  XEvent event = {0};
+  XWindowAttributes gwa = {0};
+  ViewportEvent res = {};
+
+  if (XPending(xdisplay)) {
+    XNextEvent(xdisplay, &event);
+
+    switch (event.type) {
+    case Expose: {
+      res.type = SHOW;
+
+      XGetWindowAttributes(xdisplay, xwindow, &gwa);
+      glViewport(0, 0, gwa.width, gwa.height);
+    } break;
+    case KeyPress: {
+      res.type = KBD_PRESS;
+      res.kbd.modifiers = event.xkey.state;
+      res.kbd.key =
+	codepointFromKeySym(XLookupKeysym(&event.xkey,
+					  Xor(ShiftMod(res.kbd.modifiers),
+					      CapsLockMod(res.kbd.modifiers))));
+    } break;
+    case ButtonPress: {
+      res.mouse.modifiers = event.xbutton.state;
+      res.mouse.kind = (ViewportMouseBtnType)event.xbutton.button;
+      res.mouse.x = event.xbutton.x;
+      res.mouse.y = event.xbutton.y <= height
+		    ? height - event.xbutton.y
+		    : 0;
+    } break;
+    case MotionNotify: {
+      printf("Motion\n");
+      res.type = PTR_MOTION;
+      res.motion.x = ClampBot(event.xmotion.x, 0);
+      res.motion.y = event.xmotion.y <= height
+		     ? height - event.xmotion.y
+		     : 0;
+    } break;
+    case ClientMessage: {
+      /* Make sure we aren't consuming the `window close` message */
+      if (event.xclient.data.l[0] == xatom_close) {
+	XPutBackEvent(xdisplay, &event);
+      }
+
+      if (event.xclient.message_type == xatom_close) {
+	printf("dndClose\n");
+      } else if (event.xclient.message_type == xatom_dndAware) {
+	printf("dndAware\n");
+      } else if (event.xclient.message_type == xatom_dndTypeList) {
+	printf("dndTypeList\n");
+      } else if (event.xclient.message_type == xatom_dndSelection) {
+	printf("dndSelection\n");
+      } else if (event.xclient.message_type == xatom_dndEnter) {
+	printf("dndEnter\n");
+      } else if (event.xclient.message_type == xatom_dndPosition) {
+	printf("dndPosition\n");
+      } else if (event.xclient.message_type == xatom_dndDrop) {
+	printf("dndDrop\n");
+      } else if (event.xclient.message_type == xatom_dndStatus) {
+	printf("dndStatus\n");
+      } else if (event.xclient.message_type == xatom_dndLeave) {
+	printf("dndLeave\n");
+      } else if (event.xclient.message_type == xatom_dndFinished) {
+	printf("dndFinished\n");
+      } else if (event.xclient.message_type == xatom_dndActionCopy) {
+	printf("dndActionCopy\n");
+      } else if (event.xclient.message_type == xatom_dndUriList) {
+	printf("dndUriList\n");
+      } else if (event.xclient.message_type == xatom_dndPlainText) {
+	printf("dndPlainText\n");
+      }
+    } break;
+    }
+  }
+
+  return res;
+}
+
+bool Viewport::setWindowIcon(Arena *arena, String8 path) {
   usize head = arena->head;
   i32 width, height, componentXpixel;
   u8 *imgdata = loadImg(path, &width, &height, &componentXpixel);
@@ -145,9 +347,9 @@ fn bool viewport_setWindowIcon(Arena *arena, Viewport *viewport, String8 path) {
 		  (imgdata[i * 4 + 2]);
   }
 
-  Atom net_wm_icon = XInternAtom(viewport->xdisplay, "_NET_WM_ICON", False);
-  Atom cardinal = XInternAtom(viewport->xdisplay, "CARDINAL", False);
-  XChangeProperty(viewport->xdisplay, viewport->xwindow, net_wm_icon, cardinal,
+  Atom net_wm_icon = XInternAtom(xdisplay, "_NET_WM_ICON", 0);
+  Atom cardinal = XInternAtom(xdisplay, "CARDINAL", 0);
+  XChangeProperty(xdisplay, xwindow, net_wm_icon, cardinal,
 		  32, PropModeReplace, (u8 *)data, size);
 
   arena->head = head;
@@ -155,92 +357,12 @@ fn bool viewport_setWindowIcon(Arena *arena, Viewport *viewport, String8 path) {
   return true;
 }
 
-fn void viewport_setWindowTitle(Viewport *viewport, String8 title) {
-  XStoreName(viewport->xdisplay, viewport->xwindow, (char *)title.str);
+void Viewport::setWindowTitle(String8 title) {
+  XStoreName(xdisplay, xwindow, (char *)title.str);
 }
 
-
-ViewportEvent viewport_getNextEvent(Viewport *viewport) {
-  XEvent event = {0};
-  XWindowAttributes gwa = {0};
-  ViewportEvent res = {};
-
-  if (XPending(viewport->xdisplay)) {
-    XNextEvent(viewport->xdisplay, &event);
-
-    switch (event.type) {
-    case Expose: {
-      res.type = SHOW;
-
-      XGetWindowAttributes(viewport->xdisplay, viewport->xwindow, &gwa);
-      glViewport(0, 0, gwa.width, gwa.height);
-    } break;
-    case KeyPress: {
-      res.type = KBD_PRESS;
-      res.kbd.modifiers = event.xkey.state;
-      res.kbd.key =
-	codepointFromKeySym(XLookupKeysym(&event.xkey,
-					  Xor(ShiftMod(res.kbd.modifiers),
-					      CapsLockMod(res.kbd.modifiers))));
-    } break;
-    case ButtonPress: {
-      res.mouse.modifiers = event.xbutton.state;
-      res.mouse.kind = (ViewportMouseBtnType)event.xbutton.button;
-      res.mouse.x = event.xbutton.x;
-      res.mouse.y = event.xbutton.y <= viewport->height
-		    ? viewport->height - event.xbutton.y
-		    : 0;
-    } break;
-    case MotionNotify: {
-      printf("Motion\n");
-      res.type = PTR_MOTION;
-      res.motion.x = ClampBot(event.xmotion.x, 0);
-      res.motion.y = event.xmotion.y <= viewport->height
-		     ? viewport->height - event.xmotion.y
-		     : 0;
-    } break;
-    case ClientMessage: {
-      /* Make sure we aren't consuming the `window close` message */
-      if (event.xclient.data.l[0] == viewport->xatom_close) {
-	XPutBackEvent(viewport->xdisplay, &event);
-      }
-
-      if (event.xclient.message_type == viewport->xatom_close) {
-	printf("dndClose\n");
-      } else if (event.xclient.message_type == viewport->xatom_dndAware) {
-	printf("dndAware\n");
-      } else if (event.xclient.message_type == viewport->xatom_dndTypeList) {
-	printf("dndTypeList\n");
-      } else if (event.xclient.message_type == viewport->xatom_dndSelection) {
-	printf("dndSelection\n");
-      } else if (event.xclient.message_type == viewport->xatom_dndEnter) {
-	printf("dndEnter\n");
-      } else if (event.xclient.message_type == viewport->xatom_dndPosition) {
-	printf("dndPosition\n");
-      } else if (event.xclient.message_type == viewport->xatom_dndDrop) {
-	printf("dndDrop\n");
-      } else if (event.xclient.message_type == viewport->xatom_dndStatus) {
-	printf("dndStatus\n");
-      } else if (event.xclient.message_type == viewport->xatom_dndLeave) {
-	printf("dndLeave\n");
-      } else if (event.xclient.message_type == viewport->xatom_dndFinished) {
-	printf("dndFinished\n");
-      } else if (event.xclient.message_type == viewport->xatom_dndActionCopy) {
-	printf("dndActionCopy\n");
-      } else if (event.xclient.message_type == viewport->xatom_dndUriList) {
-	printf("dndUriList\n");
-      } else if (event.xclient.message_type == viewport->xatom_dndPlainText) {
-	printf("dndPlainText\n");
-      }
-    } break;
-    }
-  }
-
-  return res;
-}
-
-inline fn void viewport_swapBuffers(Viewport *viewport) {
-  glXSwapBuffers(viewport->xdisplay, viewport->xwindow);
+inline void Viewport::swapBuffers() {
+  glXSwapBuffers(xdisplay, xwindow);
 }
 
 fn Codepoint codepointFromKeySym(KeySym sym) {
@@ -280,4 +402,28 @@ fn Codepoint codepointFromKeySym(KeySym sym) {
 
   /* no matching Codepoint value found */
   return (Codepoint) {0};
+}
+
+fn bool opengl_isExtensionSupported(String8 ext_list, String8 extension) {
+  if (extension.size == 0 || strContains(extension, ' ')) {
+    return false;
+  }
+
+  for (usize start = 0, terminator; ;
+       start = terminator, ext_list = strPostfix(ext_list, terminator)) {
+    usize where = strFindFirst(ext_list, extension);
+    if (!where) {
+      break;
+    }
+
+    terminator = where + extension.size;
+
+    if (where == start || ext_list[where - 1] == ' ') {
+      if (ext_list[terminator] == ' ' || ext_list[terminator] == '\0') {
+	return true;
+      }
+    }
+  }
+
+  return false;
 }
