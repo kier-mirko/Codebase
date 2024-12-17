@@ -1,5 +1,6 @@
 #include "string.h"
 #include "window.h"
+#include "../../../image.h"
 
 fn Viewport viewport_create(String8 name,
 			    usize initial_width, usize initial_height) {
@@ -101,9 +102,60 @@ fn Viewport viewport_create(String8 name,
   return viewport;
 }
 
-inline fn void viewport_swapBuffers(Viewport *viewport) {
-  glXSwapBuffers(viewport->xdisplay, viewport->xwindow);
+inline fn void viewport_close(Viewport *viewport) {
+  Assert(viewport && viewport->name.str);
+
+  (void)glXMakeCurrent(viewport->xdisplay, None, NULL);
+  (void)glXDestroyContext(viewport->xdisplay, viewport->glx_context);
+  (void)XDestroyWindow(viewport->xdisplay, viewport->xwindow);
+  (void)XCloseDisplay(viewport->xdisplay);
 }
+
+fn bool viewport_shouldClose(Viewport *viewport) {
+  Assert(viewport && viewport->name.str);
+
+  XEvent event = {0};
+  if (XCheckTypedEvent(viewport->xdisplay, ClientMessage, &event)) {
+    if (event.xclient.data.l[0] == viewport->xatom_close) {
+      return true;
+    } else {
+      XPutBackEvent(viewport->xdisplay, &event);
+    }
+  }
+
+  return false;
+}
+
+fn bool viewport_setWindowIcon(Arena *arena, Viewport *viewport, String8 path) {
+  usize head = arena->head;
+  i32 width, height, componentXpixel;
+  u8 *imgdata = loadImg(path, &width, &height, &componentXpixel);
+  if (!imgdata) { return false; }
+
+  i32 size = 2 + width * height;
+  u64 *data = (u64 *) Newarr(arena, u64, size);
+  if (!data) { return false; }
+  data[0] = width;
+  data[1] = height;
+
+  for (usize i = 0; i < size - 2; ++i) {
+    data[i + 2] = (imgdata[i * 4 + 3] << 24) |
+		  (imgdata[i * 4 + 0] << 16) |
+		  (imgdata[i * 4 + 1] << 8) |
+		  (imgdata[i * 4 + 2]);
+  }
+
+  Atom net_wm_icon = XInternAtom(viewport->xdisplay, "_NET_WM_ICON", False);
+  Atom cardinal = XInternAtom(viewport->xdisplay, "CARDINAL", False);
+  XChangeProperty(viewport->xdisplay, viewport->xwindow, net_wm_icon, cardinal,
+		  32, PropModeReplace, (u8 *)data, size);
+
+  arena->head = head;
+  destroyImg(imgdata);
+  return true;
+}
+
+
 
 ViewportEvent viewport_getNextEvent(Viewport *viewport) {
   XEvent event = {0};
@@ -184,28 +236,8 @@ ViewportEvent viewport_getNextEvent(Viewport *viewport) {
   return res;
 }
 
-fn bool viewport_shouldClose(Viewport *viewport) {
-  Assert(viewport && viewport->name.str);
-
-  XEvent event = {0};
-  if (XCheckTypedEvent(viewport->xdisplay, ClientMessage, &event)) {
-    if (event.xclient.data.l[0] == viewport->xatom_close) {
-      return true;
-    } else {
-      XPutBackEvent(viewport->xdisplay, &event);
-    }
-  }
-
-  return false;
-}
-
-inline fn void viewport_close(Viewport *viewport) {
-  Assert(viewport && viewport->name.str);
-
-  (void)glXMakeCurrent(viewport->xdisplay, None, NULL);
-  (void)glXDestroyContext(viewport->xdisplay, viewport->glx_context);
-  (void)XDestroyWindow(viewport->xdisplay, viewport->xwindow);
-  (void)XCloseDisplay(viewport->xdisplay);
+inline fn void viewport_swapBuffers(Viewport *viewport) {
+  glXSwapBuffers(viewport->xdisplay, viewport->xwindow);
 }
 
 fn Codepoint codepointFromKeySym(KeySym sym) {
