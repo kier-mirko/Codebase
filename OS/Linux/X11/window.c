@@ -155,6 +155,9 @@ fn bool viewport_setWindowIcon(Arena *arena, Viewport *viewport, String8 path) {
   return true;
 }
 
+fn void viewport_setWindowTitle(Viewport *viewport, String8 title) {
+  XStoreName(viewport->xdisplay, viewport->xwindow, (char *)title.str);
+}
 
 
 ViewportEvent viewport_getNextEvent(Viewport *viewport) {
