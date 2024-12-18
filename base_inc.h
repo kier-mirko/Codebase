@@ -25,6 +25,10 @@
 #if OS_LINUX
   #include "OS/Linux/thread.h"
 
+  #if GFX_X11 || GFX_WAYLAND
+  #include "OS/Linux/opengl.h"
+  #endif
+
   #if GFX_X11
     #include "OS/Linux/X11/window.h"
   #elif GFX_WAYLAND

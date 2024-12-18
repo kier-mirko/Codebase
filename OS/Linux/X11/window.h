@@ -74,10 +74,13 @@ struct Viewport {
   u32 xwindow;
 
   union {
-    u32 xatoms[13];
+    u32 xatoms[15];
 
     struct {
       u32 xatom_close;
+
+      u32 xatom_state;
+      u32 xatom_state_fullscreen;
 
       u32 xatom_dndAware;
       u32 xatom_dndTypeList;
@@ -104,8 +107,13 @@ struct Viewport {
 
   ViewportEvent getEvent();
 
-  bool setWindowIcon(Arena *arena, String8 path);
-  void setWindowTitle(String8 title);
+  bool setIcon(Arena *arena, String8 path);
+  void setTitle(String8 title);
+
+
+  void toggleFullscreen(); /* Setting the window fullscreen is an asynchronous request. */
+  bool isFullscreen(); /* Calling this function may provide the wrong value if not enougth time has passed. */
+  bool isFocused();
 
   inline void swapBuffers();
 };

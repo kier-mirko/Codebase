@@ -138,6 +138,10 @@ Viewport Viewport::opengl(String8 name, usize initial_width,
 
   viewport.xatom_close = XInternAtom(viewport.xdisplay, "WM_DELETE_WINDOW", 0);
 
+  viewport.xatom_state = XInternAtom(viewport.xdisplay, "_NET_WM_STATE", 0);
+  viewport.xatom_state_fullscreen = XInternAtom(viewport.xdisplay, "_NET_WM_STATE_FULLSCREEN", 0);
+
+
   viewport.xatom_dndTypeList = XInternAtom(viewport.xdisplay, "XdndTypeList", 0);
   viewport.xatom_dndSelection = XInternAtom(viewport.xdisplay,
 					    "XdndSelection", 0);
@@ -328,7 +332,7 @@ ViewportEvent Viewport::getEvent() {
   return res;
 }
 
-bool Viewport::setWindowIcon(Arena *arena, String8 path) {
+bool Viewport::setIcon(Arena *arena, String8 path) {
   usize head = arena->head;
   i32 width, height, componentXpixel;
   u8 *imgdata = loadImg(path, &width, &height, &componentXpixel);
@@ -357,8 +361,77 @@ bool Viewport::setWindowIcon(Arena *arena, String8 path) {
   return true;
 }
 
-void Viewport::setWindowTitle(String8 title) {
+void Viewport::setTitle(String8 title) {
   XStoreName(xdisplay, xwindow, (char *)title.str);
+}
+
+void Viewport::toggleFullscreen() {
+  xatom_state = XInternAtom(xdisplay, "_NET_WM_STATE", 0);
+  xatom_state_fullscreen = XInternAtom(xdisplay, "_NET_WM_STATE_FULLSCREEN", 0);
+
+  if (xatom_state == None || xatom_state_fullscreen == None) {
+    return;
+  }
+
+  XEvent xev;
+  xev.xclient.type = ClientMessage;
+  xev.xclient.serial = 0;
+  xev.xclient.send_event = True;
+  xev.xclient.display = xdisplay;
+  xev.xclient.window = xwindow;
+  xev.xclient.message_type = xatom_state;
+  xev.xclient.format = 32;
+  xev.xclient.data.l[0] = 2;
+  xev.xclient.data.l[1] = xatom_state_fullscreen;
+  xev.xclient.data.l[2] = 0;
+  xev.xclient.data.l[3] = 1;
+  xev.xclient.data.l[4] = 0;
+
+  XSendEvent(xdisplay, xroot, 0, SubstructureNotifyMask | SubstructureRedirectMask, &xev);
+  XFlush(xdisplay);
+}
+
+bool Viewport::isFullscreen() {
+  xatom_state = XInternAtom(xdisplay, "_NET_WM_STATE", 0);
+  xatom_state_fullscreen = XInternAtom(xdisplay, "_NET_WM_STATE_FULLSCREEN", 0);
+
+  if (xatom_state == None || xatom_state_fullscreen == None) {
+    return false;
+  }
+
+  u32 actualType;
+  i32 actualFormat;
+  u64 nItems, bytesAfter;
+  u8 *property = NULL;
+
+  i32 status = XGetWindowProperty(xdisplay, xwindow, xatom_state, 0, (~0L),
+                                  False, 4, (u64 *)&actualType, &actualFormat,
+                                  &nItems, &bytesAfter, &property);
+
+  if (status != Success || actualType != 4 || actualFormat != 32 || !property) {
+    if (property) XFree(property);
+    return false;
+  }
+
+  u32 *states = (u32 *)property;
+  bool isFullscreen = false;
+  for (u64 i = 0; i < nItems; i++) {
+    if (states[i] == xatom_state_fullscreen) {
+      isFullscreen = true;
+      break;
+    }
+  }
+
+  XFree(property);
+  return isFullscreen;
+}
+
+bool Viewport::isFocused() {
+    Window focusedWindow;
+    int revertTo;
+
+    XGetInputFocus(xdisplay, &focusedWindow, &revertTo);
+    return (focusedWindow == xwindow);
 }
 
 inline void Viewport::swapBuffers() {
@@ -404,6 +477,11 @@ fn Codepoint codepointFromKeySym(KeySym sym) {
   return (Codepoint) {0};
 }
 
+
+
+
+/* Graphics stuff that shouldn't be here */
+
 fn bool opengl_isExtensionSupported(String8 ext_list, String8 extension) {
   if (extension.size == 0 || strContains(extension, ' ')) {
     return false;
@@ -426,4 +504,28 @@ fn bool opengl_isExtensionSupported(String8 ext_list, String8 extension) {
   }
 
   return false;
+}
+
+fn void viewport_setOrigin(Vector<f32, 2> origin) {
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+  glTranslatef(origin.x(), origin.y(), 0.0f);
+}
+
+fn void viewport_setOrigin(Vector<f32, 3> origin) {
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+  glTranslatef(origin.x(), origin.y(), origin.z());
+}
+
+fn void viewport_drawCircle(Vector<f32, 2> center, f32 radius) {
+  constexpr i32 triangle_amount = 40;
+
+  glBegin(GL_TRIANGLE_FAN);
+  glVertex2f(center.x(), center.y());
+  for (usize i = 0; i <= triangle_amount; i++) {
+    glVertex2f((center.x() + radius) * cos(i * TwoPi / triangle_amount),
+               (center.y() - radius) * sin(i * TwoPi / triangle_amount));
+  }
+  glEnd();
 }
