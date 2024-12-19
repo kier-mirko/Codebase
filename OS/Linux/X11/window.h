@@ -63,7 +63,7 @@ typedef struct {
   };
 } ViewportEvent;
 
-struct Viewport {
+typedef struct {
   String8 name;
   usize width;
   usize height;
@@ -98,29 +98,30 @@ struct Viewport {
   };
 
   GLXContext opengl_context;
+} Viewport;
 
-  static Viewport opengl(String8 name, usize initial_width, usize initial_height);
-  static Viewport vulkan(String8 name, usize initial_width, usize initial_height);
+fn Viewport openglViewport(String8 name, usize initial_width, usize initial_height);
+fn Viewport vulkanViewport(String8 name, usize initial_width, usize initial_height);
 
-  void close();
-  bool shouldClose();
+fn void closeViewport(Viewport *viewport);
+fn bool viewportShouldClose(Viewport *viewport);
 
-  ViewportEvent getEvent();
+fn ViewportEvent viewportGetEvent(Viewport *viewport);
 
-  bool setIcon(Arena *arena, String8 path);
-  void setTitle(String8 title);
+fn bool viewportSetIcon(Arena *arena, Viewport *viewport, String8 path);
+fn void viewportSetTitle(Viewport *viewport, String8 title);
 
+fn bool isViewportFocused(Viewport *viewport);
+/* Setting the window fullscreen is an asynchronous request. */
+fn void viewportToggleFullscreen(Viewport *viewport);
+/* Calling this function may provide the wrong value if not enougth time has passed. */
+fn bool isViewportFullscreen(Viewport *viewport);
 
-  void toggleFullscreen(); /* Setting the window fullscreen is an asynchronous request. */
-  bool isFullscreen(); /* Calling this function may provide the wrong value if not enougth time has passed. */
-  bool isFocused();
-
-  inline void swapBuffers();
-};
+inline fn void viewportSwapBuffers(Viewport *viewport);
 
 fn Codepoint codepointFromKeySym(KeySym sym);
 
-global constexpr struct codepair {
+global const struct codepair {
   unsigned short keysym;
   unsigned short ucs;
 } keysymtab[] = {

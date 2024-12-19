@@ -32,9 +32,11 @@ typedef struct String8 {
   u8 *str;
   usize size;
 
+#if CPP
   inline char operator[](usize idx) {
     return (char)str[idx];
   }
+#endif
 } String8;
 
 typedef struct StringNode {
@@ -93,7 +95,7 @@ fn String8 capitalizeFromStr(Arena *arena, String8 s);
 
 fn StringStream strSplit(Arena *arena, String8 s, char ch);
 fn usize strFindFirst(String8 s, char ch);
-fn usize strFindFirst(String8 s, String8 needle);
+fn usize strFindFirstSubstr(String8 s, String8 needle);
 fn bool strContains(String8 s, char ch);
 
 fn bool charIsSpace(u8 ch);

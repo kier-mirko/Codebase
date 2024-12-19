@@ -14,10 +14,10 @@
 fn String8 fs_read(Arena *arena, String8 filepath);
 
 fn bool fs_write(String8 filepath, String8 content);
-fn bool fs_write(String8 filepath, StringStream content);
+fn bool fs_writeStream(String8 filepath, StringStream content);
 
 fn bool fs_append(String8 filepath, String8 content);
-fn bool fs_append(String8 filepath, StringStream content);
+fn bool fs_appendStream(String8 filepath, StringStream content);
 
 fn FileProperties fs_getProp(String8 filepath);
 
@@ -28,20 +28,21 @@ typedef struct {
   String8 path;
   FileProperties prop;
   String8 content;
-
-  bool write(const String8 &content);
-  bool write(const StringStream &content);
-  bool close();
-
-  bool hasChanged();
-  bool erase();
-  bool rename(String8 to);
-
-  void sync(bool force_it = false);
 } File;
 
-fn File fs_open(Arena *arena, void *location = 0);
-fn File fs_open(Arena *arena, String8 filepath, void *location = 0);
+fn File fs_open(Arena *arena, String8 filepath);
+fn File fs_openTmp(Arena *arena);
+
+bool fs_fileWrite(File *file, String8 content);
+bool fs_fileWriteStream(File *file, StringStream content);
+bool fs_fileClose(File *file);
+
+bool fs_fileHasChanged(File *file);
+bool fs_fileErase(File *file);
+bool fs_fileRename(File *file, String8 to);
+
+void fs_fileSync(File *file);
+void fs_fileForceSync(File *file);
 
 // =============================================================================
 // Misc operation on the filesystem

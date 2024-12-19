@@ -10,12 +10,12 @@
 #include "string.h"
 
 #if CPP
-  #include "array.h"
-  #include "dynarray.h"
-  #include "hashmap.h"
-  #include "dsu.h"
-  #include "vector.h"
-  #include "matrix.h"
+  #include "array.hpp"
+  #include "dynarray.hpp"
+  #include "hashmap.hpp"
+  #include "dsu.hpp"
+  #include "vector.hpp"
+  #include "matrix.hpp"
 #endif
 
 #include "OS/dynlib.h"

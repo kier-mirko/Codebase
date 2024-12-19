@@ -1,7 +1,7 @@
 #ifndef BASE_DYNARRAY
 #define BASE_DYNARRAY
 
-#include "array.h"
+#include "array.hpp"
 
 namespace Base {
 

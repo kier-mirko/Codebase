@@ -232,20 +232,20 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, Arena *map_arena, CSV config,
     // Get the correct tmp file
     File *file = file_map.search(row_entries[feature2split_by]);
     if (!file) {
-      file_map.insert(map_arena, row_entries[feature2split_by], fs_open(arena));
+      file_map.insert(map_arena, row_entries[feature2split_by], fs_openTmp(arena));
       file = file_map.search(row_entries[feature2split_by]);
     }
 
     i = (feature2split_by == 0 ? 1 : 0);
-    file->write(row_entries[i++]);
+    fs_fileWrite(file, row_entries[i++]);
     for (; i < row.size; ++i) {
       if (i == feature2split_by) {
         continue;
       }
-      file->write(Strlit(","));
-      file->write(row_entries[i]);
+      fs_fileWrite(file, Strlit(","));
+      fs_fileWrite(file, row_entries[i]);
     }
-    file->write(Strlit("\n"));
+    fs_fileWrite(file, Strlit("\n"));
   }
 
   /* Call recursively to create the decision tree child nodes. */
@@ -267,7 +267,7 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, Arena *map_arena, CSV config,
   for (Base::HashMap<String8, File>::Slot &slot : file_map.slots) {
     for (Base::HashMap<String8, File>::Slot *curr = slot.next; curr;
          curr = curr->next) {
-      curr->value.sync(true);
+      fs_fileForceSync(&curr->value);
     }
   }
 

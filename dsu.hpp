@@ -3,7 +3,7 @@
 
 #include "base.h"
 #include "arena.h"
-#include "hashmap.h"
+#include "hashmap.hpp"
 
 namespace Base {
   template <typename T>

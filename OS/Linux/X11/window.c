@@ -1,11 +1,10 @@
 #include "string.h"
 #include "window.h"
 #include "../../../image.h"
-#include "../../../vector.h"
 #include "../../../math.h"
 
-Viewport Viewport::opengl(String8 name, usize initial_width,
-			usize initial_height) {
+fn Viewport openglViewport(String8 name, usize initial_width,
+			   usize initial_height) {
   Viewport viewport = {.xdisplay = XOpenDisplay(0)};
   if (!viewport.xdisplay) {
     return viewport;
@@ -20,6 +19,7 @@ Viewport Viewport::opengl(String8 name, usize initial_width,
 
   /* ========================================================================= */
   /* OpenGL setup */
+  /* opengl_init(); */
   i32 majorGLX, minorGLX = 0;
   glXQueryVersion(viewport.xdisplay, &majorGLX, &minorGLX);
   if (majorGLX <= 1 && minorGLX < 2) {
@@ -228,44 +228,44 @@ Viewport Viewport::opengl(String8 name, usize initial_width,
   return viewport;
 }
 
-Viewport Viewport::vulkan(String8 name, usize initial_width,
-			  usize initial_height) {
+fn Viewport vulkanViewport(String8 name, usize initial_width,
+			   usize initial_height) {
   return (Viewport) {0};
 }
 
-void Viewport::close() {
-  (void)glXMakeCurrent(xdisplay, None, NULL);
-  (void)glXDestroyContext(xdisplay, opengl_context);
-  (void)XDestroyWindow(xdisplay, xwindow);
-  (void)XCloseDisplay(xdisplay);
+void closeViewport(Viewport *viewport) {
+  (void)glXMakeCurrent(viewport->xdisplay, None, NULL);
+  (void)glXDestroyContext(viewport->xdisplay, viewport->opengl_context);
+  (void)XDestroyWindow(viewport->xdisplay, viewport->xwindow);
+  (void)XCloseDisplay(viewport->xdisplay);
 }
 
-bool Viewport::shouldClose() {
+bool viewportShouldClose(Viewport *viewport) {
   XEvent event = {0};
-  if (XCheckTypedEvent(xdisplay, ClientMessage, &event)) {
-    if (event.xclient.data.l[0] == xatom_close) {
+  if (XCheckTypedEvent(viewport->xdisplay, ClientMessage, &event)) {
+    if (event.xclient.data.l[0] == viewport->xatom_close) {
       return true;
     } else {
-      XPutBackEvent(xdisplay, &event);
+      XPutBackEvent(viewport->xdisplay, &event);
     }
   }
 
   return false;
 }
 
-ViewportEvent Viewport::getEvent() {
+ViewportEvent viewportGetEvent(Viewport *viewport) {
   XEvent event = {0};
   XWindowAttributes gwa = {0};
   ViewportEvent res = {};
 
-  if (XPending(xdisplay)) {
-    XNextEvent(xdisplay, &event);
+  if (XPending(viewport->xdisplay)) {
+    XNextEvent(viewport->xdisplay, &event);
 
     switch (event.type) {
     case Expose: {
       res.type = SHOW;
 
-      XGetWindowAttributes(xdisplay, xwindow, &gwa);
+      XGetWindowAttributes(viewport->xdisplay, viewport->xwindow, &gwa);
       glViewport(0, 0, gwa.width, gwa.height);
     } break;
     case KeyPress: {
@@ -280,49 +280,49 @@ ViewportEvent Viewport::getEvent() {
       res.mouse.modifiers = event.xbutton.state;
       res.mouse.kind = (ViewportMouseBtnType)event.xbutton.button;
       res.mouse.x = event.xbutton.x;
-      res.mouse.y = event.xbutton.y <= height
-		    ? height - event.xbutton.y
+      res.mouse.y = event.xbutton.y <= viewport->height
+		    ? viewport->height - event.xbutton.y
 		    : 0;
     } break;
     case MotionNotify: {
       printf("Motion\n");
       res.type = PTR_MOTION;
       res.motion.x = ClampBot(event.xmotion.x, 0);
-      res.motion.y = event.xmotion.y <= height
-		     ? height - event.xmotion.y
+      res.motion.y = event.xmotion.y <= viewport->height
+		     ? viewport->height - event.xmotion.y
 		     : 0;
     } break;
     case ClientMessage: {
       /* Make sure we aren't consuming the `window close` message */
-      if (event.xclient.data.l[0] == xatom_close) {
-	XPutBackEvent(xdisplay, &event);
+      if (event.xclient.data.l[0] == viewport->xatom_close) {
+	XPutBackEvent(viewport->xdisplay, &event);
       }
 
-      if (event.xclient.message_type == xatom_close) {
+      if (event.xclient.message_type == viewport->xatom_close) {
 	printf("dndClose\n");
-      } else if (event.xclient.message_type == xatom_dndAware) {
+      } else if (event.xclient.message_type == viewport->xatom_dndAware) {
 	printf("dndAware\n");
-      } else if (event.xclient.message_type == xatom_dndTypeList) {
+      } else if (event.xclient.message_type == viewport->xatom_dndTypeList) {
 	printf("dndTypeList\n");
-      } else if (event.xclient.message_type == xatom_dndSelection) {
+      } else if (event.xclient.message_type == viewport->xatom_dndSelection) {
 	printf("dndSelection\n");
-      } else if (event.xclient.message_type == xatom_dndEnter) {
+      } else if (event.xclient.message_type == viewport->xatom_dndEnter) {
 	printf("dndEnter\n");
-      } else if (event.xclient.message_type == xatom_dndPosition) {
+      } else if (event.xclient.message_type == viewport->xatom_dndPosition) {
 	printf("dndPosition\n");
-      } else if (event.xclient.message_type == xatom_dndDrop) {
+      } else if (event.xclient.message_type == viewport->xatom_dndDrop) {
 	printf("dndDrop\n");
-      } else if (event.xclient.message_type == xatom_dndStatus) {
+      } else if (event.xclient.message_type == viewport->xatom_dndStatus) {
 	printf("dndStatus\n");
-      } else if (event.xclient.message_type == xatom_dndLeave) {
+      } else if (event.xclient.message_type == viewport->xatom_dndLeave) {
 	printf("dndLeave\n");
-      } else if (event.xclient.message_type == xatom_dndFinished) {
+      } else if (event.xclient.message_type == viewport->xatom_dndFinished) {
 	printf("dndFinished\n");
-      } else if (event.xclient.message_type == xatom_dndActionCopy) {
+      } else if (event.xclient.message_type == viewport->xatom_dndActionCopy) {
 	printf("dndActionCopy\n");
-      } else if (event.xclient.message_type == xatom_dndUriList) {
+      } else if (event.xclient.message_type == viewport->xatom_dndUriList) {
 	printf("dndUriList\n");
-      } else if (event.xclient.message_type == xatom_dndPlainText) {
+      } else if (event.xclient.message_type == viewport->xatom_dndPlainText) {
 	printf("dndPlainText\n");
       }
     } break;
@@ -332,7 +332,7 @@ ViewportEvent Viewport::getEvent() {
   return res;
 }
 
-bool Viewport::setIcon(Arena *arena, String8 path) {
+bool viewportSetIcon(Arena *arena, Viewport *viewport, String8 path) {
   usize head = arena->head;
   i32 width, height, componentXpixel;
   u8 *imgdata = loadImg(path, &width, &height, &componentXpixel);
@@ -351,9 +351,9 @@ bool Viewport::setIcon(Arena *arena, String8 path) {
 		  (imgdata[i * 4 + 2]);
   }
 
-  Atom net_wm_icon = XInternAtom(xdisplay, "_NET_WM_ICON", 0);
-  Atom cardinal = XInternAtom(xdisplay, "CARDINAL", 0);
-  XChangeProperty(xdisplay, xwindow, net_wm_icon, cardinal,
+  Atom net_wm_icon = XInternAtom(viewport->xdisplay, "_NET_WM_ICON", 0);
+  Atom cardinal = XInternAtom(viewport->xdisplay, "CARDINAL", 0);
+  XChangeProperty(viewport->xdisplay, viewport->xwindow, net_wm_icon, cardinal,
 		  32, PropModeReplace, (u8 *)data, size);
 
   arena->head = head;
@@ -361,15 +361,16 @@ bool Viewport::setIcon(Arena *arena, String8 path) {
   return true;
 }
 
-void Viewport::setTitle(String8 title) {
-  XStoreName(xdisplay, xwindow, (char *)title.str);
+void viewportSetTitle(Viewport *viewport, String8 title) {
+  XStoreName(viewport->xdisplay, viewport->xwindow, (char *)title.str);
 }
 
-void Viewport::toggleFullscreen() {
-  xatom_state = XInternAtom(xdisplay, "_NET_WM_STATE", 0);
-  xatom_state_fullscreen = XInternAtom(xdisplay, "_NET_WM_STATE_FULLSCREEN", 0);
+void viewportToggleFullscreen(Viewport *viewport) {
+  viewport->xatom_state = XInternAtom(viewport->xdisplay, "_NET_WM_STATE", 0);
+  viewport->xatom_state_fullscreen = XInternAtom(viewport->xdisplay,
+						 "_NET_WM_STATE_FULLSCREEN", 0);
 
-  if (xatom_state == None || xatom_state_fullscreen == None) {
+  if (viewport->xatom_state == None || viewport->xatom_state_fullscreen == None) {
     return;
   }
 
@@ -377,25 +378,27 @@ void Viewport::toggleFullscreen() {
   xev.xclient.type = ClientMessage;
   xev.xclient.serial = 0;
   xev.xclient.send_event = True;
-  xev.xclient.display = xdisplay;
-  xev.xclient.window = xwindow;
-  xev.xclient.message_type = xatom_state;
+  xev.xclient.display = viewport->xdisplay;
+  xev.xclient.window = viewport->xwindow;
+  xev.xclient.message_type = viewport->xatom_state;
   xev.xclient.format = 32;
   xev.xclient.data.l[0] = 2;
-  xev.xclient.data.l[1] = xatom_state_fullscreen;
+  xev.xclient.data.l[1] = viewport->xatom_state_fullscreen;
   xev.xclient.data.l[2] = 0;
   xev.xclient.data.l[3] = 1;
   xev.xclient.data.l[4] = 0;
 
-  XSendEvent(xdisplay, xroot, 0, SubstructureNotifyMask | SubstructureRedirectMask, &xev);
-  XFlush(xdisplay);
+  XSendEvent(viewport->xdisplay, viewport->xroot, 0,
+	     SubstructureNotifyMask | SubstructureRedirectMask, &xev);
+  XFlush(viewport->xdisplay);
 }
 
-bool Viewport::isFullscreen() {
-  xatom_state = XInternAtom(xdisplay, "_NET_WM_STATE", 0);
-  xatom_state_fullscreen = XInternAtom(xdisplay, "_NET_WM_STATE_FULLSCREEN", 0);
+bool isViewportFullscreen(Viewport *viewport) {
+  viewport->xatom_state = XInternAtom(viewport->xdisplay, "_NET_WM_STATE", 0);
+  viewport->xatom_state_fullscreen = XInternAtom(viewport->xdisplay,
+						 "_NET_WM_STATE_FULLSCREEN", 0);
 
-  if (xatom_state == None || xatom_state_fullscreen == None) {
+  if (viewport->xatom_state == None || viewport->xatom_state_fullscreen == None) {
     return false;
   }
 
@@ -404,7 +407,8 @@ bool Viewport::isFullscreen() {
   u64 nItems, bytesAfter;
   u8 *property = NULL;
 
-  i32 status = XGetWindowProperty(xdisplay, xwindow, xatom_state, 0, (~0L),
+  i32 status = XGetWindowProperty(viewport->xdisplay, viewport->xwindow,
+				  viewport->xatom_state, 0, (~0L),
                                   False, 4, (u64 *)&actualType, &actualFormat,
                                   &nItems, &bytesAfter, &property);
 
@@ -416,7 +420,7 @@ bool Viewport::isFullscreen() {
   u32 *states = (u32 *)property;
   bool isFullscreen = false;
   for (u64 i = 0; i < nItems; i++) {
-    if (states[i] == xatom_state_fullscreen) {
+    if (states[i] == viewport->xatom_state_fullscreen) {
       isFullscreen = true;
       break;
     }
@@ -426,16 +430,16 @@ bool Viewport::isFullscreen() {
   return isFullscreen;
 }
 
-bool Viewport::isFocused() {
+bool isViewportFocused(Viewport *viewport) {
     Window focusedWindow;
     int revertTo;
 
-    XGetInputFocus(xdisplay, &focusedWindow, &revertTo);
-    return (focusedWindow == xwindow);
+    XGetInputFocus(viewport->xdisplay, &focusedWindow, &revertTo);
+    return (focusedWindow == viewport->xwindow);
 }
 
-inline void Viewport::swapBuffers() {
-  glXSwapBuffers(xdisplay, xwindow);
+inline void viewportSwapBuffers(Viewport *viewport) {
+  glXSwapBuffers(viewport->xdisplay, viewport->xwindow);
 }
 
 fn Codepoint codepointFromKeySym(KeySym sym) {
@@ -479,9 +483,7 @@ fn Codepoint codepointFromKeySym(KeySym sym) {
 
 
 
-
 /* Graphics stuff that shouldn't be here */
-
 fn bool opengl_isExtensionSupported(String8 ext_list, String8 extension) {
   if (extension.size == 0 || strContains(extension, ' ')) {
     return false;
@@ -489,15 +491,15 @@ fn bool opengl_isExtensionSupported(String8 ext_list, String8 extension) {
 
   for (usize start = 0, terminator; ;
        start = terminator, ext_list = strPostfix(ext_list, terminator)) {
-    usize where = strFindFirst(ext_list, extension);
+    usize where = strFindFirstSubstr(ext_list, extension);
     if (!where) {
       break;
     }
 
     terminator = where + extension.size;
 
-    if (where == start || ext_list[where - 1] == ' ') {
-      if (ext_list[terminator] == ' ' || ext_list[terminator] == '\0') {
+    if (where == start || ext_list.str[where - 1] == ' ') {
+      if (ext_list.str[terminator] == ' ' || ext_list.str[terminator] == '\0') {
 	return true;
       }
     }
@@ -505,6 +507,9 @@ fn bool opengl_isExtensionSupported(String8 ext_list, String8 extension) {
 
   return false;
 }
+
+#if CPP
+#include "../../../vector.hpp"
 
 fn void viewport_setOrigin(Vector<f32, 2> origin) {
   glMatrixMode(GL_MODELVIEW);
@@ -529,3 +534,4 @@ fn void viewport_drawCircle(Vector<f32, 2> center, f32 radius) {
   }
   glEnd();
 }
+#endif

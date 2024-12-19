@@ -2,7 +2,7 @@
 #define BASE_HASHMAP
 
 #include "base.h"
-#include "dynarray.h"
+#include "dynarray.hpp"
 
 namespace Base {
   template <typename T, typename U>
