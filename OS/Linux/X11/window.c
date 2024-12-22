@@ -5,6 +5,7 @@
 
 fn Viewport openglViewport(String8 name, usize initial_width,
 			   usize initial_height) {
+  opengl_init();
   Viewport viewport = {.xdisplay = XOpenDisplay(0)};
   if (!viewport.xdisplay) {
     return viewport;

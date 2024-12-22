@@ -9,6 +9,8 @@
 #include "clock.h"
 #include "string.h"
 
+#include "image.h"
+
 #if CPP
   #include "array.hpp"
   #include "dynarray.hpp"

@@ -205,11 +205,11 @@ fn File fs_open(Arena *arena, String8 filepath) {
   };
 }
 
-bool fs_fileWrite(File *file, String8 content) {
+fn bool fs_fileWrite(File *file, String8 content) {
   return write(file->descriptor, content.str, content.size) != content.size;
 }
 
-bool fs_fileWriteStream(File *file, StringStream content) {
+fn bool fs_fileWriteStream(File *file, StringStream content) {
   for (StringNode *curr = content.first; curr; curr = curr->next) {
     if (!fs_fileWrite(file, curr->value)) { return false; }
   }
@@ -217,30 +217,33 @@ bool fs_fileWriteStream(File *file, StringStream content) {
   return true;
 }
 
-bool fs_fileClose(File *file) {
+fn bool fs_fileClose(File *file) {
   return msync(file->content.str, file->prop.size, MS_SYNC) >= 0 &&
 	 munmap(file->content.str, file->prop.size) >= 0 &&
 	 close(file->descriptor) >= 0;
 }
 
-bool fs_fileHasChanged(File *file) {
+fn bool fs_fileHasChanged(File *file) {
   FileProperties prop = fs_getProp(file->path);
   return (file->prop.last_access_time != prop.last_access_time) ||
 	 (file->prop.last_modification_time != prop.last_modification_time) ||
 	 (file->prop.last_status_change_time != prop.last_status_change_time);
 }
 
-bool fs_fileErase(File *file) {
+fn bool fs_fileErase(File *file) {
   return unlink((char *) file->path.str) >= 0 && fs_fileClose(file);
 }
 
-bool fs_fileRename(File *file, String8 to) {
+fn bool fs_fileRename(File *file, String8 to) {
   return rename((char *) file->path.str, (char *) to.str) >= 0;
 }
 
-void fs_fileSync(File *file) {
+inline fn void fs_fileSync(File *file) {
   if (!fs_fileHasChanged(file)) { return; }
+  fs_fileForceSync(file);
+}
 
+fn void fs_fileForceSync(File *file) {
   (void)munmap(file->content.str, file->prop.size);
   file->prop = fs_getProp(file->path);
   file->content = str8((char *)mmap(0, file->prop.size,

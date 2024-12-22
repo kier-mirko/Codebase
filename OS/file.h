@@ -33,16 +33,16 @@ typedef struct {
 fn File fs_open(Arena *arena, String8 filepath);
 fn File fs_openTmp(Arena *arena);
 
-bool fs_fileWrite(File *file, String8 content);
-bool fs_fileWriteStream(File *file, StringStream content);
-bool fs_fileClose(File *file);
+fn bool fs_fileWrite(File *file, String8 content);
+fn bool fs_fileWriteStream(File *file, StringStream content);
+fn bool fs_fileClose(File *file);
 
-bool fs_fileHasChanged(File *file);
-bool fs_fileErase(File *file);
-bool fs_fileRename(File *file, String8 to);
+fn bool fs_fileHasChanged(File *file);
+fn bool fs_fileErase(File *file);
+fn bool fs_fileRename(File *file, String8 to);
 
-void fs_fileSync(File *file);
-void fs_fileForceSync(File *file);
+inline fn void fs_fileSync(File *file);
+       fn void fs_fileForceSync(File *file);
 
 // =============================================================================
 // Misc operation on the filesystem
