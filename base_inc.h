@@ -26,6 +26,7 @@
 
 #if OS_LINUX
   #include "OS/Linux/thread.h"
+  #include "OS/Linux/net.h"
 
   #if GFX_X11 || GFX_WAYLAND
   #include "OS/Linux/opengl.h"
