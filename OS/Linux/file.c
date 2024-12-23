@@ -1,7 +1,6 @@
 #include "../file.h"
 
 #include <fcntl.h>
-#include <errno.h>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>

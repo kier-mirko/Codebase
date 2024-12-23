@@ -56,29 +56,29 @@ typedef void (*GL_BUFFER_DATA) (i32, usize, f32*, i32);
 global GL_BUFFER_DATA glBufferData;
 
 void opengl_init() {
-glCreateShader = (GL_CREATE_SHADER) glXGetProcAddress((u8 *)"glCreateShader");
-glShaderSource = (GL_SHADER_SOURCE) glXGetProcAddress((u8 *)"glShaderSource");
-glCompileShader = (GL_COMPILE_SHADER) glXGetProcAddress((u8 *)"glCompileShader");
-glGetShaderiv = (GL_GET_SHADERIV) glXGetProcAddress((u8 *)"glGetShaderiv");
-glGetShaderInfoLog = (GL_GET_SHADER_INFOLOG) glXGetProcAddress((u8 *)"glGetShaderInfoLog");
-glAttachShader = (GL_ATTACH_SHADER) glXGetProcAddress((u8 *)"glAttachShader");
-glDeleteShader = (GL_DELETE_SHADER) glXGetProcAddress((u8 *)"glDeleteShader");
+  glCreateShader = (GL_CREATE_SHADER) glXGetProcAddress((u8 *)"glCreateShader");
+  glShaderSource = (GL_SHADER_SOURCE) glXGetProcAddress((u8 *)"glShaderSource");
+  glCompileShader = (GL_COMPILE_SHADER) glXGetProcAddress((u8 *)"glCompileShader");
+  glGetShaderiv = (GL_GET_SHADERIV) glXGetProcAddress((u8 *)"glGetShaderiv");
+  glGetShaderInfoLog = (GL_GET_SHADER_INFOLOG) glXGetProcAddress((u8 *)"glGetShaderInfoLog");
+  glAttachShader = (GL_ATTACH_SHADER) glXGetProcAddress((u8 *)"glAttachShader");
+  glDeleteShader = (GL_DELETE_SHADER) glXGetProcAddress((u8 *)"glDeleteShader");
 
-glCreateProgram = (GL_CREATE_PROGRAM) glXGetProcAddress((u8 *)"glCreateProgram");
-glGetProgramiv = (GL_GET_PROGRAMIV) glXGetProcAddress((u8 *)"glGetProgramiv");
-glGetProgramInfoLog = (GL_GET_PROGRAM_INFOLOG) glXGetProcAddress((u8 *)"glGetProgramInfoLog");
-glLinkProgram = (GL_LINK_PROGRAM) glXGetProcAddress((u8 *)"glLinkProgram");
-glUseProgram = (GL_USE_PROGRAM) glXGetProcAddress((u8 *)"glUseProgram");
+  glCreateProgram = (GL_CREATE_PROGRAM) glXGetProcAddress((u8 *)"glCreateProgram");
+  glGetProgramiv = (GL_GET_PROGRAMIV) glXGetProcAddress((u8 *)"glGetProgramiv");
+  glGetProgramInfoLog = (GL_GET_PROGRAM_INFOLOG) glXGetProcAddress((u8 *)"glGetProgramInfoLog");
+  glLinkProgram = (GL_LINK_PROGRAM) glXGetProcAddress((u8 *)"glLinkProgram");
+  glUseProgram = (GL_USE_PROGRAM) glXGetProcAddress((u8 *)"glUseProgram");
 
-glGenVertexArrays = (GL_GEN_VERTEX_ARRAYS) glXGetProcAddress((u8 *)"glGenVertexArrays");
-glBindVertexArray = (GL_BIND_VERTEX_ARRAY) glXGetProcAddress((u8 *)"glBindVertexArray");
-glVertexAttribPointer = (GL_VERTEX_ATTRIB_POINTER) glXGetProcAddress((u8 *)"glVertexAttribPointer");
-glEnableVertexAttribArray = (GL_ENABLE_VERTEX_ATTRIB_ARRAY)
+  glGenVertexArrays = (GL_GEN_VERTEX_ARRAYS) glXGetProcAddress((u8 *)"glGenVertexArrays");
+  glBindVertexArray = (GL_BIND_VERTEX_ARRAY) glXGetProcAddress((u8 *)"glBindVertexArray");
+  glVertexAttribPointer = (GL_VERTEX_ATTRIB_POINTER) glXGetProcAddress((u8 *)"glVertexAttribPointer");
+  glEnableVertexAttribArray = (GL_ENABLE_VERTEX_ATTRIB_ARRAY)
   glXGetProcAddress((u8 *)"glEnableVertexAttribArray");
 
-glGenBuffers = (GL_GEN_BUFFERS) glXGetProcAddress((u8 *)"glGenBuffers");
-glBindBuffer = (GL_BIND_BUFFER) glXGetProcAddress((u8 *)"glBindBuffer");
-glBufferData = (GL_BUFFER_DATA) glXGetProcAddress((u8 *)"glBufferData");
+  glGenBuffers = (GL_GEN_BUFFERS) glXGetProcAddress((u8 *)"glGenBuffers");
+  glBindBuffer = (GL_BIND_BUFFER) glXGetProcAddress((u8 *)"glBindBuffer");
+  glBufferData = (GL_BUFFER_DATA) glXGetProcAddress((u8 *)"glBufferData");
 }
 
 #endif

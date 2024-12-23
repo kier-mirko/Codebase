@@ -40,6 +40,10 @@
 #elif OS_BSD
   #include "OS/BSD/thread.h"
 
+  #if GFX_X11 || GFX_WAYLAND
+  #include "OS/BSD/opengl.h"
+  #endif
+
   #if GFX_X11
     #include "OS/BSD/X11/window.h"
   #elif GFX_WAYLAND

@@ -56,7 +56,7 @@ fn bool fs_write(String8 filepath, String8 content) {
   return true;
 }
 
-fn bool fs_write(String8 filepath, StringStream content) {
+fn bool fs_writeStream(String8 filepath, StringStream content) {
   StringNode *start = content.first++;
   if (!fs_write(filepath, start->value)) {
     return false;
@@ -92,7 +92,7 @@ fn bool fs_append(String8 filepath, String8 content) {
   return true;
 }
 
-fn bool fs_append(String8 filepath, StringStream content) {
+fn bool fs_appendStream(String8 filepath, StringStream content) {
   for (StringNode *start = content.first; start < content.first + content.size;
        ++start) {
     if (!fs_append(filepath, start->value)) {
@@ -160,7 +160,7 @@ fn FileProperties fs_getProp(String8 filepath) {
 // =============================================================================
 // Memory mapping files for easier and faster handling
 
-fn File fs_open(Arena *arena, void *location) {
+fn File fs_openTmp(Arena *arena) {
   char path[] = "/tmp/base-XXXXXX";
   i32 fd = mkstemp(path);
 
@@ -174,13 +174,13 @@ fn File fs_open(Arena *arena, void *location) {
     .descriptor = fd,
     .path = pathstr,
     .prop = fs_getProp(pathstr),
-    .content = str8((char *)mmap(location, 0,
+    .content = str8((char *)mmap(0, 0,
 				 PROT_READ | PROT_WRITE,
 				 MAP_SHARED, fd, 0), 0),
   };
 }
 
-fn File fs_open(Arena *arena, String8 filepath, void *location) {
+fn File fs_open(Arena *arena, String8 filepath) {
   Assert(arena);
   if (filepath.size == 0) {
     return (File) {0};
@@ -198,66 +198,57 @@ fn File fs_open(Arena *arena, String8 filepath, void *location) {
     .descriptor = fd,
     .path = filepath,
     .prop = prop,
-    .content = str8((char *)mmap(location, prop.size,
+    .content = str8((char *)mmap(0, prop.size,
 				 PROT_READ | PROT_WRITE,
 				 MAP_SHARED, fd, 0), prop.size),
   };
 }
 
-bool File::write(const String8 &content) {
-  return ::write(descriptor, content.str, content.size) != content.size;
+fn bool fs_fileWrite(File *file, String8 content) {
+  return write(file->descriptor, content.str, content.size) != content.size;
 }
 
-bool File::write(const StringStream &content) {
+fn bool fs_fileWriteStream(File *file, StringStream content) {
   for (StringNode *curr = content.first; curr; curr = curr->next) {
-    if (!write(curr->value)) { return false; }
+    if (!fs_fileWrite(file, curr->value)) { return false; }
   }
 
   return true;
 }
 
-bool File::close() {
-  return ::msync(content.str, prop.size, MS_SYNC) >= 0 &&
-	 ::munmap(content.str, prop.size) >= 0 &&
-	 ::close(descriptor) >= 0;
+fn bool fs_fileClose(File *file) {
+  return msync(file->content.str, file->prop.size, MS_SYNC) >= 0 &&
+	 munmap(file->content.str, file->prop.size) >= 0 &&
+	 close(file->descriptor) >= 0;
 }
 
-bool File::hasChanged() {
-  FileProperties prop = fs_getProp(path);
-  return (prop.last_access_time != prop.last_access_time) ||
-	 (prop.last_modification_time != prop.last_modification_time) ||
-	 (prop.last_status_change_time != prop.last_status_change_time);
-}
-
-bool File::erase() {
-  return ::unlink((char *) path.str) >= 0 && close();
-}
-
-bool File::rename(String8 to) {
-  return ::rename((char *) path.str, (char *) to.str) >= 0;
-}
-
-void File::sync(bool force_it) {
-  if (!force_it && !hasChanged()) { return; }
-
-  (void)::munmap(content.str, prop.size);
-  prop = fs_getProp(path);
-  content = str8((char *)::mmap(0, prop.size,
-				PROT_READ | PROT_WRITE,
-				MAP_SHARED, descriptor, 0), prop.size);
-}
-
-inline fn void fs_close(File *file) {
-  Assert(file);
-  (void)munmap(file->content.str, file->prop.size);
-  (void)close(file->descriptor);
-}
-
-inline fn bool fs_hasChanged(File *file) {
+fn bool fs_fileHasChanged(File *file) {
   FileProperties prop = fs_getProp(file->path);
-  return (prop.last_access_time != file->prop.last_access_time) ||
-	 (prop.last_modification_time != file->prop.last_modification_time) ||
-	 (prop.last_status_change_time != file->prop.last_status_change_time);
+  return (file->prop.last_access_time != prop.last_access_time) ||
+	 (file->prop.last_modification_time != prop.last_modification_time) ||
+	 (file->prop.last_status_change_time != prop.last_status_change_time);
+}
+
+fn bool fs_fileErase(File *file) {
+  return unlink((char *) file->path.str) >= 0 && fs_fileClose(file);
+}
+
+fn bool fs_fileRename(File *file, String8 to) {
+  return rename((char *) file->path.str, (char *) to.str) >= 0;
+}
+
+inline fn void fs_fileSync(File *file) {
+  if (!fs_fileHasChanged(file)) { return; }
+  fs_fileForceSync(file);
+}
+
+fn void fs_fileForceSync(File *file) {
+  (void)munmap(file->content.str, file->prop.size);
+  file->prop = fs_getProp(file->path);
+  file->content = str8((char *)mmap(0, file->prop.size,
+				    PROT_READ | PROT_WRITE,
+				    MAP_SHARED, file->descriptor, 0),
+		       file->prop.size);
 }
 
 // =============================================================================
