@@ -8,6 +8,7 @@
 #include "chrono.h"
 #include "clock.h"
 #include "string.h"
+#include "dsu.h"
 
 #include "image.h"
 
@@ -15,7 +16,6 @@
   #include "array.hpp"
   #include "dynarray.hpp"
   #include "hashmap.hpp"
-  #include "dsu.hpp"
   #include "vector.hpp"
   #include "matrix.hpp"
 #endif
