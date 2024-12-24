@@ -28,6 +28,10 @@ UnionFind *merge_set(UnionFind *x, UnionFind *y) {
   UnionFind *root_y = find_set(y);
   UnionFind *new_root = root_x;
 
+  if (root_x == root_y) {
+    return new_root;
+  }
+
   if (root_x->rank >= root_y->rank) {
     root_y->parent = root_x;
     root_x->rank += 1;
