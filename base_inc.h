@@ -17,6 +17,8 @@
   #include "hashmap.hpp"
   #include "vector.hpp"
   #include "matrix.hpp"
+
+  #include "simplex.hpp"
 #endif
 
 #include "OS/dynlib.h"

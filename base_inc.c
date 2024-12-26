@@ -35,4 +35,6 @@
 
 #if CPP
   #include "AI/decision_tree.cpp"
+
+  #include "simplex.cpp"
 #endif
