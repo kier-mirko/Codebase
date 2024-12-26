@@ -10,7 +10,7 @@ struct Vector {
   T values[D];
 
   template<typename... Ts>
-  Vector(Ts... args) : values{args...} {}
+  Vector(Ts... args) : values{(T)args...} {}
 
   inline T& x() {
     return values[0];
@@ -89,7 +89,7 @@ struct Vector {
     return res;
   }
 
-  T operator[](usize i) {
+  T& operator[](usize i) {
     Assert(i < D);
     return values[i];
   }

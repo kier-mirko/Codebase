@@ -3,14 +3,15 @@
 
 #include "base.h"
 
-namespace Base {
-
 template <typename T, usize N>
 struct Buffer {
   T values[N];
   usize size;
 
   Buffer() : values{0}, size(N) {}
+
+  template<typename... Ts>
+  Buffer(Ts... args) : values{args...}, size(N) {}
 
   T& operator[](usize i) {
     Assert(i < size);
@@ -162,7 +163,5 @@ struct ArrayList {
   }
 
 };
-
-}
 
 #endif
