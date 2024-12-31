@@ -1,8 +1,9 @@
 #ifndef BASE_STRING
 #define BASE_STRING
 
-#include "arena.h"
 #include "base.h"
+#include "list.h"
+#include "arena.h"
 
 #include <stdarg.h>
 #include <stdio.h>

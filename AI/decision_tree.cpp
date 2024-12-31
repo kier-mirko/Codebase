@@ -1,4 +1,5 @@
 #include "decision_tree.h"
+#include "../hashmap.hpp"
 
 /* implement log2? */
 #include <math.h>

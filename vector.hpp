@@ -9,9 +9,6 @@ template <typename T, usize D>
 struct Vector {
   T values[D];
 
-  template<typename... Ts>
-  Vector(Ts... args) : values{(T)args...} {}
-
   inline T& x() {
     return values[0];
   }
@@ -38,14 +35,34 @@ struct Vector {
     return res;
   }
 
-  f32 length() {
-    return sqrt(dot(*this));
+  // the `||vector||` thing
+  f32 magnitude() {
+    f32 res = 0.f;
+    for (usize i = 0; i < D; ++i) {
+      res += Abs(values[i]) * Abs(values[i]);
+    }
+
+    return sqrtf(res);
   }
 
-  Vector norm() {
-    Vector res;
+  f64 magnitude64() {
+    f64 res = 0.f;
+    for (usize i = 0; i < D; ++i) {
+      res += Abs(values[i]) * Abs(values[i]);
+    }
 
-    f32 length = this->length();
+    return sqrt(res);
+  }
+
+  // the `vector / ||vector||` thing
+  Vector normalize() {
+    Vector res = {0};
+
+    f32 length = magnitude();
+    if (!length) {
+      return res;
+    }
+
     for (usize i = 0; i < D; ++i) {
       res.values[i] = values[i] / length;
     }
@@ -62,6 +79,12 @@ struct Vector {
     return res;
   }
 
+  void operator+=(Vector &other) {
+    for (usize i = 0; i < D; ++i) {
+      values[i] += other.values[i];
+    }
+  }
+
   Vector operator-(Vector &other) {
     Vector res;
     for (usize i = 0; i < D; ++i) {
@@ -69,6 +92,12 @@ struct Vector {
     }
 
     return res;
+  }
+
+  void operator-=(Vector &other) {
+    for (usize i = 0; i < D; ++i) {
+      values[i] -= other.values[i];
+    }
   }
 
   Vector operator*(Vector &other) {
@@ -80,6 +109,12 @@ struct Vector {
     return res;
   }
 
+  void operator*=(Vector &other) {
+    for (usize i = 0; i < D; ++i) {
+      values[i] *= other.values[i];
+    }
+  }
+
   Vector operator*(T scalar) {
     Vector res;
     for (usize i = 0; i < D; ++i) {
@@ -87,6 +122,12 @@ struct Vector {
     }
 
     return res;
+  }
+
+  void operator*=(T scalar) {
+    for (usize i = 0; i < D; ++i) {
+      values[i] *= scalar;
+    }
   }
 
   T& operator[](usize i) {

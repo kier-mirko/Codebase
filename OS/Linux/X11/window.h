@@ -8,6 +8,7 @@
 #include<GL/glu.h>
 
 #include "../../../string.h"
+#include "../opengl.h"
 
 #define ShiftMod(MODIFIERS)    ((MODIFIERS) & 0b1)
 #define CapsLockMod(MODIFIERS) (((MODIFIERS) & 0x2) >> 1)

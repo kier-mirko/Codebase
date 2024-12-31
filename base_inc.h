@@ -2,9 +2,9 @@
 #define BASE_INC_H
 
 #include "base.h"
+#include "list.h"
 #include "memory.h"
 #include "arena.h"
-#include "list.h"
 #include "chrono.h"
 #include "clock.h"
 #include "string.h"

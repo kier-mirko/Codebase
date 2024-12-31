@@ -1,5 +1,5 @@
-#include "arena.c"
 #include "memory.c"
+#include "arena.c"
 #include "clock.c"
 #include "string.c"
 

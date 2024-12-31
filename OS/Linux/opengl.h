@@ -55,7 +55,7 @@ global GL_BIND_BUFFER glBindBuffer;
 typedef void (*GL_BUFFER_DATA) (i32, usize, f32*, i32);
 global GL_BUFFER_DATA glBufferData;
 
-void opengl_init() {
+fn void opengl_init() {
   glCreateShader = (GL_CREATE_SHADER) glXGetProcAddress((u8 *)"glCreateShader");
   glShaderSource = (GL_SHADER_SOURCE) glXGetProcAddress((u8 *)"glShaderSource");
   glCompileShader = (GL_COMPILE_SHADER) glXGetProcAddress((u8 *)"glCompileShader");
