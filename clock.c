@@ -22,42 +22,44 @@ inline fn DateTime localCurrentDateTime(i8 utc_offset) {
 }
 
 DateTime dateTimeFromUnix(u64 timestamp) {
-    DateTime dt = {.year = 1970, .month = 1, .day = 1};
+  DateTime dt = {.year = 1970, .month = 1, .day = 1};
 
-    for (u64 secondsXyear = 0;
-	 !(timestamp < secondsXyear);
-	 secondsXyear = isLeapYear(dt.year)
-			? UNIX_LEAP_YEAR
-			: UNIX_YEAR,
-	 ++dt.year, timestamp -= secondsXyear);
+  for (u64 secondsXyear = isLeapYear(dt.year)
+			  ? UNIX_LEAP_YEAR
+			  : UNIX_YEAR;
+       timestamp >= secondsXyear;
+       ++dt.year, timestamp -= secondsXyear,
+       secondsXyear = isLeapYear(dt.year)
+		      ? UNIX_LEAP_YEAR
+		      : UNIX_YEAR);
 
-    while (true) {
-        u8 days = daysXmonth[dt.month - 1];
-        if (dt.month == 2 && isLeapYear(dt.year)) {
-	  ++days;
-	}
-
-        u64 secondsXmonth = days * UNIX_DAY;
-        if (timestamp < secondsXmonth) {
-	  break;
-	}
-
-        timestamp -= secondsXmonth;
-        ++dt.month;
+  while (1) {
+    u8 days = daysXmonth[dt.month - 1];
+    if (dt.month == 2 && isLeapYear(dt.year)) {
+      ++days;
     }
 
-    dt.day += timestamp / UNIX_DAY;
-    timestamp %= UNIX_DAY;
+    u64 secondsXmonth = days * UNIX_DAY;
+    if (timestamp < secondsXmonth) {
+      break;
+    }
 
-    dt.hour = timestamp / UNIX_HOUR;
-    timestamp %= UNIX_HOUR;
+    timestamp -= secondsXmonth;
+    ++dt.month;
+  }
 
-    dt.minute = timestamp / UNIX_MINUTE;
-    timestamp %= UNIX_MINUTE;
+  dt.day += timestamp / UNIX_DAY;
+  timestamp %= UNIX_DAY;
 
-    dt.second = timestamp;
+  dt.hour = timestamp / UNIX_HOUR;
+  timestamp %= UNIX_HOUR;
 
-    return dt;
+  dt.minute = timestamp / UNIX_MINUTE;
+  timestamp %= UNIX_MINUTE;
+
+  dt.second = timestamp;
+
+  return dt;
 }
 
 u64 unixFromDateTime(DateTime dt) {
