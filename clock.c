@@ -69,7 +69,7 @@ u64 unixFromDateTime(DateTime dt) {
 		  (dt.minute * UNIX_MINUTE) +
 		  (dt.second);
 
-  for (u32 year = 1970; year < dt.year; ++year) {
+  for (u32 year = 1970; year < (u32)dt.year; ++year) {
     unix_time += isLeapYear(year) ? UNIX_LEAP_YEAR : UNIX_YEAR;
   }
 

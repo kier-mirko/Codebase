@@ -8,7 +8,7 @@ fn Thread threadSpawnArgs(void *(*thread_main)(void *), void *arg_data) {
   Assert(thread_main);
 
   Thread thread_id;
-  i32 res = pthread_create(&thread_id, 0, thread_main, arg_data);
+  pthread_create(&thread_id, 0, thread_main, arg_data);
 
   return thread_id;
 }

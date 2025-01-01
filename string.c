@@ -451,7 +451,7 @@ fn String8 longestCommonSubstring(Arena *arena, String8 s1, String8 s2) {
 
   res.size = memo[0][0];
   res.str = (u8 *)Newarr(arena, u8, memo[0][0]);
-  for (i32 i = 0, j = 0, last = 0; i < s1.size && j < s2.size;) {
+  for (usize i = 0, j = 0, last = 0; i < s1.size && j < s2.size;) {
     if (memo[i][j] == memo[i + 1][j]) {
       ++i;
     } else if (memo[i][j] == memo[i][j + 1]) {
@@ -576,7 +576,7 @@ fn bool charIsUpper(u8 ch) { return ch >= 'A' && ch <= 'Z'; }
 fn bool charIsLower(u8 ch) { return ch >= 'a' && ch <= 'z'; }
 fn bool charIsDigit(u8 ch) { return ch >= '0' && ch <= '9'; }
 fn bool charIsAlpha(u8 ch) {
-  return (ch >= 'A' && ch <= 'Z') || ch >= 'a' && ch <= 'z';
+  return (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z');
 }
 
 fn bool charIsAlphanumeric(u8 ch) {

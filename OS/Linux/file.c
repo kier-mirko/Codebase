@@ -47,7 +47,7 @@ fn bool fs_write(String8 filepath, String8 content) {
     return false;
   }
 
-  if (write(fd, content.str, content.size) != content.size) {
+  if (write(fd, content.str, content.size) != (isize)content.size) {
     (void)close(fd);
     return false;
   }
@@ -81,7 +81,7 @@ fn bool fs_append(String8 filepath, String8 content) {
     return false;
   }
 
-  if (write(fd, content.str, content.size) != content.size) {
+  if (write(fd, content.str, content.size) != (isize)content.size) {
     (void)close(fd);
     return false;
   }
@@ -205,7 +205,7 @@ fn File fs_open(Arena *arena, String8 filepath) {
 }
 
 fn bool fs_fileWrite(File *file, String8 content) {
-  return write(file->descriptor, content.str, content.size) != content.size;
+  return write(file->descriptor, content.str, content.size) != (isize)content.size;
 }
 
 fn bool fs_fileWriteStream(File *file, StringStream content) {
