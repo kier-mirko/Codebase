@@ -27,9 +27,28 @@ struct Vector {
 
   T dot(Vector &other) {
     T res = 0;
-
     for (usize i = 0; i < D; ++i) {
       res += values[i] * other.values[i];
+    }
+
+    return res;
+  }
+
+  Vector<T, 3> cross(Vector<T, 3> &other) {
+    Assert(D == 3);
+    return (Vector<T, 3>) {
+      .values = {
+	y()*other.z()-z()*other.y(),
+	z()*other.x()-x()*other.z(),
+	x()*other.y()-y()*other.x(),
+      },
+    };
+  }
+
+  Vector mulElementWise(Vector &other) {
+    Vector res = *this;
+    for (usize i = 0; i < D; ++i) {
+      res *= other[i];
     }
 
     return res;
@@ -46,7 +65,7 @@ struct Vector {
   }
 
   f64 magnitude64() {
-    f64 res = 0.f;
+    f64 res = 0.0;
     for (usize i = 0; i < D; ++i) {
       res += Abs(values[i]) * Abs(values[i]);
     }
@@ -100,19 +119,16 @@ struct Vector {
     }
   }
 
-  Vector operator*(Vector &other) {
-    Vector res;
-    for (usize i = 0; i < D; ++i) {
-      res.values[i] = values[i] * other.values[i];
-    }
-
-    return res;
+  T operator*(Vector &other) {
+    return dot(other);
   }
 
-  void operator*=(Vector &other) {
-    for (usize i = 0; i < D; ++i) {
-      values[i] *= other.values[i];
-    }
+  Vector operator%(Vector &other) {
+    return cross(other);
+  }
+
+  void operator%=(Vector<T, 3> &other) {
+    *this = cross(other);
   }
 
   Vector operator*(T scalar) {

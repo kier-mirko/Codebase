@@ -9,7 +9,7 @@ struct Matrix {
     return values[r][c];
   }
 
-  static Matrix identity() {
+  static Matrix Identity() {
     Matrix res = {0};
 
     for (usize r = 0; r < R; ++r) {
@@ -20,11 +20,11 @@ struct Matrix {
   }
 
   Matrix operator+(Matrix &other) {
-    Matrix res = {0};
+    Matrix res = *this;
 
     for (usize r = 0; r < R; ++r) {
       for (usize c = 0; c < C; ++c) {
-	res[r, c] = (*this)[r, c] + other[r, c];
+	res[r, c] += other[r, c];
       }
     }
 
@@ -32,11 +32,11 @@ struct Matrix {
   }
 
   Matrix operator-(Matrix &other) {
-    Matrix res = {0};
+    Matrix res = *this;
 
     for (usize r = 0; r < R; ++r) {
       for (usize c = 0; c < C; ++c) {
-	res[r, c] = (*this)[r, c] - other.values[r, c];
+	res[r, c] -= other[r, c];
       }
     }
 
@@ -44,11 +44,11 @@ struct Matrix {
   }
 
   Matrix operator*(T scalar) {
-    Matrix res = {0};
+    Matrix res = *this;
 
     for (usize r = 0; r < R; ++r) {
       for (usize c = 0; c < C; ++c) {
-	res[r, c] = (*this)[r, c] * scalar;
+	res[r, c] *= scalar;
       }
     }
 
@@ -71,14 +71,14 @@ struct Matrix {
     return res;
   }
 
-  template <usize R2>
-  Matrix operator*(Vector<T, R2> &vec) {
-    Assert(C == R2);
-    Matrix res = {0};
+  template <usize R1, usize C2>
+  Matrix<T, R, C2> mulElementWise(Matrix<T, R1, C2> &other) {
+    Assert(R1 == C);
+    Matrix<T, R, C2> res = *this;
 
-    for (usize i = 0; i < R; ++i) {
-      for (usize j = 0; j < C; ++j) {
-	res[i, j] *= vec[j];
+    for (usize r = 0; r < R; ++r) {
+      for (usize c = 0; c < C; ++c) {
+	res[r, c] *= other[r, c];
       }
     }
 
@@ -97,6 +97,7 @@ struct Matrix {
     return res;
   }
 
+  // Also called a `minor`
   Matrix<T, R-1, C-1> submatrix(usize r, usize c) {
     Assert(r < R && c < C);
     Matrix<T, R-1, C-1> res = {0};
