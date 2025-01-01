@@ -1,5 +1,15 @@
 #include "simplex.hpp"
 
+fn f64 minMaxNewtonMethod(f64 (*func)(f64), f64 x0, f64 epsilon) {
+  f64 xk;
+  for (usize i = 0;; ++i, x0 = xk) {
+    xk = x0 - (derive(func, x0) / secondDerivative(func, x0));
+    if (Abs(xk - x0) <= epsilon) {
+      return xk;
+    }
+  }
+}
+
 template <usize Constraints, usize Variables>
 fn Vector<f32, Variables> simplex(Vector<f32, Variables> objective_terms,
 				  Matrix<f32, Constraints, Variables> constraints,

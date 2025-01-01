@@ -8,6 +8,7 @@
 #include "chrono.h"
 #include "clock.h"
 #include "string.h"
+#include "calculus.h"
 
 #include "image.h"
 

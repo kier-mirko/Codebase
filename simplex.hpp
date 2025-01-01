@@ -1,6 +1,12 @@
 #ifndef BASE_SIMPLEX_H
 #define BASE_SIMPLEX_H
 
+#include "calculus.h"
+#include "vector.hpp"
+#include "matrix.hpp"
+
+fn f64 minMaxNewtonMethod(f64 (*func)(f64), f64 x0, f64 epsilon = 1E-8);
+
 // The input must be in the form:
 // - All decision variables are non-negative
 // - The goal is to maximize the objective function
