@@ -1,22 +1,30 @@
 #ifndef BASE_MATRIX
 #define BASE_MATRIX
 
+#include <typeinfo>
+
 template <typename T, usize R, usize C>
 struct Matrix {
   T values[R][C];
 
-  T& operator[](usize r, usize c) {
-    return values[r][c];
+  template <typename... Ts>
+  static Matrix Init(Ts... args) {
+    return (Matrix) {
+      .values = { (T)(args)... },
+    };
   }
 
   static Matrix Identity() {
     Matrix res = {0};
-
     for (usize r = 0; r < R; ++r) {
       res[r, r] = 1;
     }
 
     return res;
+  }
+
+  T& operator[](usize r, usize c) {
+    return values[r][c];
   }
 
   Matrix operator+(Matrix &other) {
@@ -203,6 +211,22 @@ struct Matrix {
     }
 
     return cofactors;
+  }
+
+  String8 toString(Arena *arena, const char *format_for_each_elem) {
+    StringStream ss = {0};
+    for (usize i = 0; i < R; ++i) {
+      for (usize j = 0; j < C; ++j) {
+	stringstreamAppend(arena, &ss,
+			   strFormat(arena, format_for_each_elem, (*this)[i, j]));
+      }
+
+      stringstreamAppend(arena, &ss, Strlit("\n"));
+    }
+
+    String8 str = str8FromStream(arena, &ss);
+    return strFormat(arena, "%ld×%ld Matrix<%s>\n%.*s",
+		     R, C, typeid(T).name(), Strexpand(str));
   }
 
   // =======================================================
