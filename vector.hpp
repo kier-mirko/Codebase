@@ -93,7 +93,7 @@ struct Vector {
     return (*this) * (other.dot(*this) / dot(*this));
   }
 
-  Vector operator+(const Vector &other) {
+  Vector operator+(Vector &other) {
     Vector res;
     for (usize i = 0; i < D; ++i) {
       res.values[i] = values[i] + other.values[i];
@@ -102,13 +102,13 @@ struct Vector {
     return res;
   }
 
-  void operator+=(const Vector &other) {
+  void operator+=(Vector &other) {
     for (usize i = 0; i < D; ++i) {
       values[i] += other.values[i];
     }
   }
 
-  Vector operator-(const Vector &other) {
+  Vector operator-(Vector &other) {
     Vector res;
     for (usize i = 0; i < D; ++i) {
       res.values[i] = values[i] - other.values[i];
@@ -123,15 +123,15 @@ struct Vector {
     }
   }
 
-  T operator*(const Vector &other) {
+  T operator*(Vector &other) {
     return dot(other);
   }
 
-  Vector operator%(const Vector &other) {
+  Vector operator%(Vector &other) {
     return cross(other);
   }
 
-  void operator%=(const Vector<T, 3> &other) {
+  void operator%=(Vector<T, 3> &other) {
     *this = cross(other);
   }
 

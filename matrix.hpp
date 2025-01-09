@@ -370,7 +370,7 @@ struct Matrix {
     return values[r][c];
   }
 
-  Matrix operator+(const Matrix &other) {
+  Matrix operator+(Matrix &other) {
     Matrix res = *this;
 
     for (usize r = 0; r < R; ++r) {
@@ -382,7 +382,7 @@ struct Matrix {
     return res;
   }
 
-  Matrix operator-(const Matrix &other) {
+  Matrix operator-(Matrix &other) {
     Matrix res = *this;
 
     for (usize r = 0; r < R; ++r) {
@@ -407,7 +407,7 @@ struct Matrix {
   }
 
   template <usize R1, usize C2>
-  Matrix<T, R, C2> operator*(const Matrix<T, R1, C2> &other) {
+  Matrix<T, R, C2> operator*(Matrix<T, R1, C2> &other) {
     Assert(R1 == C);
     Matrix<T, R, C2> res = {0};
 
