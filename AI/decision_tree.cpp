@@ -11,7 +11,7 @@ struct Occurrence {
 
   HashMap<String8, Occurrence> targets;
 
-  Occurrence(Arena *arena) : count(1), targets(arena, strHash) {}
+  Occurrence(Arena *arena) : count(0), targets(arena, strHash) {}
 };
 
 inline fn f64 ai_entropy(f64 val) { return val ? -val * log2(val) : 0; }
@@ -20,7 +20,7 @@ fn f64 ai_computeEntropy(HashMap<String8, Occurrence> *map,
                          usize row_count) {
   f64 res = 0;
   for (HashMap<String8, Occurrence>::Slot slot : map->slots) {
-    for (HashMap<String8, Occurrence>::Slot *curr = &slot; curr;
+    for (HashMap<String8, Occurrence>::KVNode *curr = slot.first; curr;
          curr = curr->next) {
       res += ai_entropy((f64)curr->value.count / (f64)row_count);
     }
@@ -49,7 +49,7 @@ fn usize ai_maxInformationGain(HashMap<String8, Occurrence> *maps,
     printf("\t");
 #endif
     for (HashMap<String8, Occurrence>::Slot slot : maps[feature].slots) {
-      HashMap<String8, Occurrence>::Slot *curr = slot.next;
+      HashMap<String8, Occurrence>::KVNode *curr = slot.first;
       for (; curr; curr = curr->next) {
 #if DEBUG
         printf("%ld/%ld * entropy(", curr->value.count, row_count);
@@ -57,7 +57,7 @@ fn usize ai_maxInformationGain(HashMap<String8, Occurrence> *maps,
 
         for (HashMap<String8, Occurrence>::Slot fslot :
              curr->value.targets.slots) {
-          for (HashMap<String8, Occurrence>::Slot *currf = fslot.next;
+          for (HashMap<String8, Occurrence>::KVNode *currf = fslot.first;
                currf; currf = currf->next) {
             if (currf->value.count == 0) {
               continue;
@@ -121,27 +121,13 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, Arena *map_arena, CSV config,
     }
 
     for (i = 0; i < n_features; ++i) {
-      Occurrence *node = maps[i].search(row_entries[i]);
-      if (node) {
-        node->count++;
-      } else if (!maps[i].insert(map_arena, row_entries[i],
-                                 Occurrence(map_arena))) {
-        /* TODO: write to tmp file maybe? */
-        printf("\tArena out of memory\n");
-        Assert(false);
-      }
+      Occurrence *node = maps[i].fromKey(map_arena, row_entries[i], Occurrence(map_arena));
+      node->count += 1;
 
       if (i != target_idx) {
         Occurrence *node = maps[i].search(row_entries[i]);
-        Occurrence *tnode = node->targets.search(row_entries[target_idx]);
-        if (tnode) {
-          tnode->count++;
-        } else if (!node->targets.insert(map_arena, row_entries[target_idx],
-                                         Occurrence(map_arena))) {
-          /* TODO: write to tmp file maybe? */
-          printf("\tArena out of memory 2\n");
-          Assert(false);
-        }
+        Occurrence *tnode = node->targets.fromKey(map_arena, row_entries[target_idx], Occurrence(map_arena));
+        tnode->count += 1;
       }
     }
   }
@@ -154,7 +140,7 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, Arena *map_arena, CSV config,
         continue;
       }
 
-      for (HashMap<String8, Occurrence>::Slot *curr = slot.next; curr;
+      for (HashMap<String8, Occurrence>::KVNode *curr = slot.first; curr;
            curr = curr->next) {
         printf("`%.*s`: %ld\t", Strexpand(curr->key), curr->value.count);
 
@@ -164,7 +150,7 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, Arena *map_arena, CSV config,
             continue;
           }
 
-          for (HashMap<String8, Occurrence>::Slot *currf = fslot.next;
+          for (HashMap<String8, Occurrence>::KVNode *currf = fslot.first;
                currf; currf = currf->next) {
             printf("`%.*s`: %ld, ", Strexpand(currf->key), currf->value.count);
           }
@@ -187,7 +173,7 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, Arena *map_arena, CSV config,
     usize count = 0;
     for (HashMap<String8, Occurrence>::Slot &slot :
          maps[target_idx].slots) {
-      for (HashMap<String8, Occurrence>::Slot *curr = slot.next; curr;
+      for (HashMap<String8, Occurrence>::KVNode *curr = slot.first; curr;
            curr = curr->next) {
         if (curr->value.count > count) {
           count = curr->value.count;
@@ -207,7 +193,7 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, Arena *map_arena, CSV config,
   usize branches = 0;
   for (HashMap<String8, Occurrence>::Slot &slot :
        maps[feature2split_by].slots) {
-    for (HashMap<String8, Occurrence>::Slot *curr = slot.next; curr;
+    for (HashMap<String8, Occurrence>::KVNode *curr = slot.first; curr;
          curr = curr->next) {
       branches += 1;
     }
@@ -232,11 +218,7 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, Arena *map_arena, CSV config,
     }
 
     // Get the correct tmp file
-    File *file = file_map.search(row_entries[feature2split_by]);
-    if (!file) {
-      file_map.insert(map_arena, row_entries[feature2split_by], fs_openTmp(arena));
-      file = file_map.search(row_entries[feature2split_by]);
-    }
+    File *file = file_map.fromKey(map_arena, row_entries[feature2split_by], fs_openTmp(arena));
 
     i = (feature2split_by == 0 ? 1 : 0);
     fs_fileWrite(file, row_entries[i++]);
@@ -267,7 +249,7 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, Arena *map_arena, CSV config,
   }
 
   for (HashMap<String8, File>::Slot &slot : file_map.slots) {
-    for (HashMap<String8, File>::Slot *curr = slot.next; curr;
+    for (HashMap<String8, File>::KVNode *curr = slot.first; curr;
          curr = curr->next) {
       fs_fileForceSync(&curr->value);
     }
@@ -280,10 +262,8 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, Arena *map_arena, CSV config,
   auto new_maps = (HashMap *)Newarr(
       map_arena, HashMap, n_features);
 
-  for (HashMap::Slot &slot :
-       maps[feature2split_by].slots) {
-    for (HashMap::Slot *curr = slot.next; curr;
-         curr = curr->next) {
+  for (HashMap::Slot &slot : maps[feature2split_by].slots) {
+    for (HashMap::KVNode *curr = slot.first; curr; curr = curr->next) {
       for (usize i = 0; i < n_features; ++i) {
         new_maps[i] = HashMap(map_arena, strHash);
       }
