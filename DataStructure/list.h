@@ -67,6 +67,7 @@
 
 // =============================================================================
 // Heaps
+#if CPP
 #define MaxHeapPush(Head, Last, OrderBy, Nodeptr)                              \
   _stmt(                                                                       \
       if (!(Head)) {                                                           \
@@ -122,5 +123,6 @@
           }                                                                    \
         }                                                                      \
       })
+#endif
 
 #endif
