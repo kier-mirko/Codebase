@@ -106,21 +106,22 @@ struct Array {
 };
 
 template <typename T>
-struct ArrayList {
-  struct ArrayNode {
-    Array<T> block;
-    ArrayNode *next = 0;
-    ArrayNode *prev = 0;
-  };
+struct ArrayListNode {
+  Array<T> block;
+  ArrayListNode *next = 0;
+  ArrayListNode *prev = 0;
+};
 
-  ArrayNode *first = 0;
-  ArrayNode *last = 0;
+template <typename T>
+struct ArrayList {
+  ArrayListNode<T> *first = 0;
+  ArrayListNode<T> *last = 0;
 
   struct Iterator {
-    ArrayNode *current;
+    ArrayListNode<T> *current;
     usize idx;
 
-    explicit Iterator(ArrayNode *ptr, usize idx) :
+    explicit Iterator(ArrayListNode<T> *ptr, usize idx) :
       current(ptr), idx(idx) {}
 
     Iterator& operator++() {

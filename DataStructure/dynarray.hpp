@@ -7,20 +7,20 @@ template <typename T>
 struct DynArray {
   usize size;
 
-  ArrayList<T> *first = 0;
-  ArrayList<T> *last = 0;
+  ArrayListNode<T> *first = 0;
+  ArrayListNode<T> *last = 0;
 
   DynArray(Arena *arena, usize initial_capacity = 8)
   : size(initial_capacity) {
     Assert(initial_capacity > 0);
-    first = last = (ArrayList<T> *) New(arena, ArrayList<T>);
+    first = last = (ArrayListNode<T> *) New(arena, ArrayListNode<T>);
     first->block = Array<T>(arena, initial_capacity);
   }
 
   T& operator[](usize i) {
     Assert(i < size);
 
-    for (ArrayList<T> *it = first; it; it = it->next) {
+    for (ArrayListNode<T> *it = first; it; it = it->next) {
       if (i < it->block.size) {
 	return it->block[i];
       } else {
@@ -33,10 +33,10 @@ struct DynArray {
   }
 
   struct Iterator {
-    ArrayList<T>* current;
+    ArrayListNode<T>* current;
     usize idx;
 
-    Iterator(ArrayList<T> *ptr, usize idx) : current(ptr), idx(idx) {}
+    Iterator(ArrayListNode<T> *ptr, usize idx) : current(ptr), idx(idx) {}
 
     T& operator*() { return current->block[idx]; }
 
