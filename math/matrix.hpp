@@ -421,6 +421,60 @@ struct Matrix {
 
     return res;
   }
+
+  bool operator==(Matrix &other) {
+    for (usize i = 0; i < R; ++i) {
+      for (usize j = 0; j < C; ++j) {
+	if ((*this)[i, j] != other[i, j]) {
+	  return false;
+	}
+      }
+    }
+
+    return true;
+  }
+
+  bool operator!=(Matrix &other) {
+    return !(*this == other);
+  }
 };
+
+template <typename T, usize R, usize C>
+fn void fixRoundingErrors(Matrix<T, R, C> *matrix, f64 epsilon = 1E-5) {
+  for (usize i = 0; i < R; ++i) {
+    for (usize j = 0; j < C; ++j) {
+      f64 rounded = round((*matrix)[i, j]);
+      if (Abs(((*matrix)[i, j]) - rounded) < epsilon) {
+	(*matrix)[i, j] = rounded;
+      }
+    }
+  }
+}
+
+template <typename T, usize R, usize C>
+fn Vector<T, R> eigvals(Matrix<T, R, C> *m, f64 epsilon = 1E-8) {
+  auto makeSimilar = [](Matrix<T, R, C> *a) {
+    Matrix q = a->gramSchmidt();
+    Matrix r = q.transpose() * (*a);
+    return r * q;
+  };
+
+  Matrix b = makeSimilar(m);
+  T last_eig = b[R-1, R-1];
+  T diff = 1;
+
+  for (usize iter = 0; iter < 5000 && diff > epsilon; ++iter) {
+    b = makeSimilar(&b);
+    diff = Abs((last_eig - b[R-1, R-1]));
+    last_eig = b[R-1, R-1];
+  }
+
+  Vector<T, R> res;
+  for (usize i = 0; i < R; ++i) {
+    res[i] = b[i, i];
+  }
+
+  return res;
+}
 
 #endif
