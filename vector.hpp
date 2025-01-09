@@ -89,7 +89,11 @@ struct Vector {
     return res;
   }
 
-  Vector operator+(Vector &other) {
+  Vector proj(Vector &other) {
+    return (*this) * (other.dot(*this) / dot(*this));
+  }
+
+  Vector operator+(const Vector &other) {
     Vector res;
     for (usize i = 0; i < D; ++i) {
       res.values[i] = values[i] + other.values[i];
@@ -98,13 +102,13 @@ struct Vector {
     return res;
   }
 
-  void operator+=(Vector &other) {
+  void operator+=(const Vector &other) {
     for (usize i = 0; i < D; ++i) {
       values[i] += other.values[i];
     }
   }
 
-  Vector operator-(Vector &other) {
+  Vector operator-(const Vector &other) {
     Vector res;
     for (usize i = 0; i < D; ++i) {
       res.values[i] = values[i] - other.values[i];
@@ -113,21 +117,21 @@ struct Vector {
     return res;
   }
 
-  void operator-=(Vector &other) {
+  void operator-=(const Vector &other) {
     for (usize i = 0; i < D; ++i) {
       values[i] -= other.values[i];
     }
   }
 
-  T operator*(Vector &other) {
+  T operator*(const Vector &other) {
     return dot(other);
   }
 
-  Vector operator%(Vector &other) {
+  Vector operator%(const Vector &other) {
     return cross(other);
   }
 
-  void operator%=(Vector<T, 3> &other) {
+  void operator%=(const Vector<T, 3> &other) {
     *this = cross(other);
   }
 
@@ -149,6 +153,20 @@ struct Vector {
   T& operator[](usize i) {
     Assert(i < D);
     return values[i];
+  }
+
+  bool operator==(const Vector &other) {
+    for (usize i = 0; i < D; ++i) {
+      if (values[i] != other.values[i]) {
+	return false;
+      }
+    }
+
+    return true;
+  }
+
+  bool operator!=(const Vector &other) {
+    return !(*this == other);
   }
 };
 

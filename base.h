@@ -127,6 +127,12 @@
 #define Assert(COND) (void)(COND)
 #endif
 
+#define Stringify_(S) (#S)
+#define Stringify(S) Stringify_(S)
+
+#define Glue_(A, B) (A##B)
+#define Glue(A, B) Glue_(A,B)
+
 #define Arrsize(ARR) (sizeof((ARR)) / sizeof(*(ARR)))
 #define Max(a, b) ((a) >= (b) ? (a) : (b))
 #define Min(a, b) ((a) <= (b) ? (a) : (b))

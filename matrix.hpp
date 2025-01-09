@@ -23,62 +23,6 @@ struct Matrix {
     return res;
   }
 
-  T& operator[](usize r, usize c) {
-    return values[r][c];
-  }
-
-  Matrix operator+(Matrix &other) {
-    Matrix res = *this;
-
-    for (usize r = 0; r < R; ++r) {
-      for (usize c = 0; c < C; ++c) {
-	res[r, c] += other[r, c];
-      }
-    }
-
-    return res;
-  }
-
-  Matrix operator-(Matrix &other) {
-    Matrix res = *this;
-
-    for (usize r = 0; r < R; ++r) {
-      for (usize c = 0; c < C; ++c) {
-	res[r, c] -= other[r, c];
-      }
-    }
-
-    return res;
-  }
-
-  Matrix operator*(T scalar) {
-    Matrix res = *this;
-
-    for (usize r = 0; r < R; ++r) {
-      for (usize c = 0; c < C; ++c) {
-	res[r, c] *= scalar;
-      }
-    }
-
-    return res;
-  }
-
-  template <usize R1, usize C2>
-  Matrix<T, R, C2> operator*(Matrix<T, R1, C2> &other) {
-    Assert(R1 == C);
-    Matrix<T, R, C2> res = {0};
-
-    for (usize i = 0; i < R; ++i) {
-      for (usize j = 0; j < C2; ++j) {
-	for (usize r = 0; r < C; ++r) {
-	  res[i, j] += (*this)[i, r] * other[r, j];
-	}
-      }
-    }
-
-    return res;
-  }
-
   template <usize R1, usize C2>
   Matrix<T, R, C2> mulElementWise(Matrix<T, R1, C2> &other) {
     Assert(R1 == C);
@@ -119,6 +63,39 @@ struct Matrix {
       }
 
       ++i;
+    }
+
+    return res;
+  }
+
+  template <usize R1, usize C1>
+  Matrix<T, R1, C1> downsize() {
+    Assert(R1 <= R && C1 <= C);
+    Matrix<T, R1, C1> res = {0};
+    for (usize i = 0; i < R1; ++i) {
+      for (usize j = 0; j < C1; ++j) {
+	res[i, j] = (*this)[i, j];
+      }
+    }
+
+    return res;
+  }
+
+  Vector<T, C> getRow(usize i) {
+    Assert(i < C);
+    Vector<T, C> res = {0};
+    for (usize j = 0; j < C; ++j) {
+      res[j] = (*this)[i, j];
+    }
+
+    return res;
+  }
+
+  Vector<T, R> getCol(usize i) {
+    Assert(i < R);
+    Vector<T, R> res = {0};
+    for (usize j = 0; j < R; ++j) {
+      res[j] = (*this)[j, i];
     }
 
     return res;
@@ -213,6 +190,46 @@ struct Matrix {
     return cofactors;
   }
 
+  Matrix gramSchmidt() {
+    Matrix res = {0};
+    Vector<T, R> v1 = getCol(0);
+    for (usize i = 0; i < R; ++i) {
+      res[i, 0] = v1[i];
+    }
+
+    for (usize i = 1, k = 1; i < R; ++i) {
+      Vector<T, R> vk = getCol(i);
+      Vector<T, R> uk = vk;
+      if (vk == Vector<T, R>()) {
+	continue;
+      }
+
+      for (usize j = 0; j < k; ++j) {
+	Vector<T, R> uj = res.getCol(j);
+	uk -= uj.proj(vk);
+      }
+
+      for (usize i = 0; i < R; ++i) {
+	res[i, k] = uk[i];
+      }
+
+      ++k;
+    }
+
+    for (usize k = 0; k < C; ++k) {
+      Vector<T, C> uk = res.getCol(k).normalize();
+      for (usize j = 0; j < R; ++j) {
+	res[j, k] = uk[j];
+      }
+    }
+    return res;
+  }
+
+  Vector<T, R> eigvals() {
+    Assert(R == C);
+    return Vector<T, R>();
+  }
+
   String8 toString(Arena *arena, const char *format_for_each_elem) {
     StringStream ss = {0};
     for (usize i = 0; i < R; ++i) {
@@ -293,7 +310,7 @@ struct Matrix {
   }
 
   // =======================================================
-  // Samething but for columns
+  // Operations on columns
   Matrix swapColumn(usize r1, usize r2) {
     Assert(r1 < C && r2 < C);
     Matrix res = {0};
@@ -341,6 +358,64 @@ struct Matrix {
 	res[i, j] = (j == target
 		     ? (*this)[i, j] * v
 		     : (*this)[i, j]);
+      }
+    }
+
+    return res;
+  }
+
+  // ===========================================================================
+  // Operators
+  T& operator[](usize r, usize c) {
+    return values[r][c];
+  }
+
+  Matrix operator+(const Matrix &other) {
+    Matrix res = *this;
+
+    for (usize r = 0; r < R; ++r) {
+      for (usize c = 0; c < C; ++c) {
+	res[r, c] += other[r, c];
+      }
+    }
+
+    return res;
+  }
+
+  Matrix operator-(const Matrix &other) {
+    Matrix res = *this;
+
+    for (usize r = 0; r < R; ++r) {
+      for (usize c = 0; c < C; ++c) {
+	res[r, c] -= other[r, c];
+      }
+    }
+
+    return res;
+  }
+
+  Matrix operator*(T scalar) {
+    Matrix res = *this;
+
+    for (usize r = 0; r < R; ++r) {
+      for (usize c = 0; c < C; ++c) {
+	res[r, c] *= scalar;
+      }
+    }
+
+    return res;
+  }
+
+  template <usize R1, usize C2>
+  Matrix<T, R, C2> operator*(const Matrix<T, R1, C2> &other) {
+    Assert(R1 == C);
+    Matrix<T, R, C2> res = {0};
+
+    for (usize i = 0; i < R; ++i) {
+      for (usize j = 0; j < C2; ++j) {
+	for (usize r = 0; r < C; ++r) {
+	  res[i, j] += (*this)[i, r] * other[r, j];
+	}
       }
     }
 
