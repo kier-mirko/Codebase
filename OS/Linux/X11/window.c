@@ -508,31 +508,3 @@ fn bool opengl_isExtensionSupported(String8 ext_list, String8 extension) {
 
   return false;
 }
-
-#if CPP
-#include "../../../vector.hpp"
-
-fn void viewport_setOrigin(Vector<f32, 2> origin) {
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
-  glTranslatef(origin.x(), origin.y(), 0.0f);
-}
-
-fn void viewport_setOrigin(Vector<f32, 3> origin) {
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
-  glTranslatef(origin.x(), origin.y(), origin.z());
-}
-
-fn void viewport_drawCircle(Vector<f32, 2> center, f32 radius) {
-  constexpr i32 triangle_amount = 40;
-
-  glBegin(GL_TRIANGLE_FAN);
-  glVertex2f(center.x(), center.y());
-  for (usize i = 0; i <= triangle_amount; i++) {
-    glVertex2f((center.x() + radius) * cos(i * TwoPi / triangle_amount),
-               (center.y() - radius) * sin(i * TwoPi / triangle_amount));
-  }
-  glEnd();
-}
-#endif
