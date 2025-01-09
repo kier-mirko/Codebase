@@ -60,7 +60,7 @@ struct Array {
   usize size;
 
   Array(Arena *arena, usize size) :
-    values((T *) Newarr(arena, T, size)), size(size) {
+    values((T *)Newarr(arena, T, size)), size(size) {
     Assert(size > 0);
   }
 
@@ -107,23 +107,27 @@ struct Array {
 
 template <typename T>
 struct ArrayList {
-  Array<T> block;
+  struct ArrayNode {
+    Array<T> block;
+    ArrayNode *next = 0;
+    ArrayNode *prev = 0;
+  };
 
-  ArrayList *next = 0;
-  ArrayList *prev = 0;
+  ArrayNode *first = 0;
+  ArrayNode *last = 0;
 
   struct Iterator {
-    ArrayList *current;
+    ArrayNode *current;
     usize idx;
 
-    explicit Iterator(ArrayList *ptr, usize idx) :
+    explicit Iterator(ArrayNode *ptr, usize idx) :
       current(ptr), idx(idx) {}
 
     Iterator& operator++() {
       ++idx;
       if (idx >= current->block.size) {
-	current = current->next;
-	idx = 0;
+        current = current->next;
+        idx = 0;
       }
 
       return *this;
@@ -131,10 +135,10 @@ struct ArrayList {
 
     Iterator& operator--() {
       if (idx == 0) {
-	current = current->prev;
-	idx = current->block.size - 1;
+        current = current->prev;
+        idx = current->block.size - 1;
       } else {
-	--idx;
+        --idx;
       }
 
       return *this;
@@ -145,22 +149,14 @@ struct ArrayList {
     bool operator==(const Iterator& other) {
       return current == other.current && idx == other.idx;
     }
+
     bool operator!=(const Iterator& other) {
       return !(*this == other);
     }
   };
 
-  Iterator begin() { return Iterator(this, 0); }
-  Iterator begin(ArrayList *first) { return Iterator(first, 0); }
-  Iterator end(ArrayList *last) { return Iterator(last, last->block.size); }
-  Iterator end() {
-    ArrayList *last = this;
-    while (last->next) {
-      last = last->next;
-    }
-
-    return Iterator(last, last->block.size);
-  }
+  Iterator begin() { return Iterator(first, 0); }
+  Iterator end() { return Iterator(last, last->block.size); }
 
 };
 
