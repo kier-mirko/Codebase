@@ -1,7 +1,7 @@
 #include "string.h"
 #include "window.h"
 #include "../../../image.h"
-#include "../../../math.h"
+#include "../../../math/constants.h"
 
 fn Viewport openglViewport(String8 name, usize initial_width,
 			   usize initial_height) {

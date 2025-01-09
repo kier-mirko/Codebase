@@ -1,7 +1,18 @@
 #include "memory.c"
 #include "arena.c"
-#include "clock.c"
 #include "string.c"
+
+#include "time/clock.c"
+
+#include "serializer/csv.c"
+
+#if CPP
+  #include "AI/decision_tree.cpp"
+#endif
+
+#if CPP
+  #include "math/simplex.cpp"
+#endif
 
 #if OS_LINUX
   #include "OS/Linux/file.c"
@@ -29,12 +40,4 @@
   #include "OS/Windows/thread.c"
 
   #include "OS/Windows/D3D/window.c"
-#endif
-
-#include "serializer/csv.c"
-
-#if CPP
-  #include "AI/decision_tree.cpp"
-
-  #include "simplex.cpp"
 #endif

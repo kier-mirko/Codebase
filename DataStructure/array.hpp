@@ -1,7 +1,7 @@
 #ifndef BASE_ARRAY
 #define BASE_ARRAY
 
-#include "base.h"
+#include "../base.h"
 
 template <typename T, usize N>
 struct Buffer {

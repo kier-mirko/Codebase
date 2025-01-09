@@ -1,9 +1,8 @@
 #ifndef BASE_VECTOR
 #define BASE_VECTOR
 
-#include "base.h"
-
 #include <math.h>
+#include "../base.h"
 
 template <typename T, usize D>
 struct Vector {

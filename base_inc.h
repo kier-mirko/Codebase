@@ -2,24 +2,27 @@
 #define BASE_INC_H
 
 #include "base.h"
-#include "list.h"
 #include "memory.h"
 #include "arena.h"
-#include "chrono.h"
-#include "clock.h"
 #include "string.h"
-#include "calculus.h"
-
 #include "image.h"
 
-#if CPP
-  #include "array.hpp"
-  #include "dynarray.hpp"
-  #include "hashmap.hpp"
-  #include "vector.hpp"
-  #include "matrix.hpp"
+#include "time/chrono.h"
+#include "time/clock.h"
 
-  #include "simplex.hpp"
+#include "math/calculus.h"
+#if CPP
+  #include "math/vector.hpp"
+  #include "math/matrix.hpp"
+  #include "math/complex.hpp"
+  #include "math/simplex.hpp"
+#endif
+
+#include "DataStructure/list.h"
+#if CPP
+  #include "DataStructure/array.hpp"
+  #include "DataStructure/dynarray.hpp"
+  #include "DataStructure/hashmap.hpp"
 #endif
 
 #include "OS/dynlib.h"

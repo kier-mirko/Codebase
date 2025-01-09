@@ -2,10 +2,10 @@
 #define BASE_OS_FILE
 
 #include "../base.h"
-#include "../list.h"
-
 #include "../arena.h"
 #include "../string.h"
+
+#include "../DataStructure/list.h"
 
 #include "file_properties.h"
 

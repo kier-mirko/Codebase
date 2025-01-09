@@ -1,7 +1,8 @@
 #ifndef BASE_HASHMAP
 #define BASE_HASHMAP
 
-#include "base.h"
+#include "../base.h"
+
 #include "dynarray.hpp"
 
 template <typename T, typename U>

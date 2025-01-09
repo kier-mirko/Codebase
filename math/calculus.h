@@ -1,8 +1,8 @@
 #ifndef BASE_CALCULUS
 #define BASE_CALCULUS
 
-#include "base.h"
 #include <math.h>
+#include "../base.h"
 
 // Replace these function with something like:
 // https://en.wikipedia.org/wiki/Cauchy%27s_integral_formula
