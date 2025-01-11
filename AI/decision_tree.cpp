@@ -126,7 +126,8 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, Arena *map_arena, CSV config,
 
       if (i != target_idx) {
         Occurrence *node = maps[i].search(row_entries[i]);
-        Occurrence *tnode = node->targets.fromKey(map_arena, row_entries[target_idx], Occurrence(map_arena));
+        Occurrence *tnode = node->targets.fromKey(map_arena, row_entries[target_idx],
+						  Occurrence(map_arena));
         tnode->count += 1;
       }
     }
