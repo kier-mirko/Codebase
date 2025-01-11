@@ -40,17 +40,17 @@
 #define CPP 0
 #endif
 
-#if defined(__i386__)
-#define ARCH_X86 1
-#elif defined(__x86_64__)
-#define ARCH_X64 1
-#elif defined(__arm__)
-#define ARCH_ARM 1
-#elif defined(__aarch64__)
-#define ARCH_ARM64 1
-#else
-#error "Unsupported platform"
-#endif
+# if defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64) || defined(_M_AMD64)
+#  define ARCH_X64 1
+# elif defined(i386) || defined(__i386) || defined(__i386__)
+#  define ARCH_X86 1
+# elif defined(__aarch64__)
+#  define ARCH_ARM64 1
+# elif defined(__arm__)
+#  define ARCH_ARM32 1
+# else
+#  error "Unsopported platform"
+# endif
 
 #if !defined(COMPILER_GCC)
 #define COMPILER_GCC 0
