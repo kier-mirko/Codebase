@@ -115,7 +115,7 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, Arena *map_arena, CSV config,
   for (StringStream row = csv_nextRow(map_arena, &config); row.size != 0;
        row = csv_header(map_arena, &config), ++row_count) {
     usize i = 0;
-    String8 *row_entries = (String8 *)Newarr(map_arena, String8, row.size);
+    String8 *row_entries = (String8 *)New(map_arena, String8, row.size);
     for (StringNode *r = row.first; r && i < n_features; r = r->next, ++i) {
       row_entries[i] = r->value;
     }
@@ -213,7 +213,7 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, Arena *map_arena, CSV config,
   for (StringStream row = csv_nextRow(map_arena, &config); row.size != 0;
        row = csv_header(map_arena, &config), ++row_count) {
     usize i = 0;
-    String8 *row_entries = (String8 *)Newarr(map_arena, String8, row.size);
+    String8 *row_entries = (String8 *)New(map_arena, String8, row.size);
     for (StringNode *r = row.first; r && i < n_features; r = r->next, ++i) {
       row_entries[i] = r->value;
     }
@@ -260,7 +260,7 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, Arena *map_arena, CSV config,
   --target_idx;
 
   using HashMap = HashMap<String8, Occurrence>;
-  auto new_maps = (HashMap *)Newarr(
+  auto new_maps = (HashMap *)New(
       map_arena, HashMap, n_features);
 
   for (HashMap::Slot &slot : maps[feature2split_by].slots) {
@@ -295,7 +295,7 @@ fn DecisionTreeNode *ai_buildDecisionTree(Arena *arena, Arena *map_arena,
 
   using HashMap = HashMap<String8, Occurrence>;
   auto maps =
-      (HashMap *)Newarr(arena, HashMap, n_features);
+      (HashMap *)New(arena, HashMap, n_features);
   for (usize i = 0; i < n_features; ++i) {
     maps[i] = HashMap(arena, strHash);
   }

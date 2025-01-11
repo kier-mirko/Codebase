@@ -28,7 +28,7 @@ fn String8 fs_read(Arena *arena, String8 filepath) {
     return (String8) {0};
   }
 
-  String8 res = { .str = (u8 *)Newarr(arena, u8, file_stat.st_size) };
+  String8 res = { .str = (u8 *)New(arena, u8, file_stat.st_size) };
   res.size = read(fd, res.str, file_stat.st_size);
 
   (void)close(fd);
@@ -165,7 +165,7 @@ fn File fs_openTmp(Arena *arena) {
   i32 fd = mkstemp(path);
 
   String8 pathstr = {
-    .str = (u8 *)Newarr(arena, u8, Arrsize(path)),
+    .str = (u8 *)New(arena, u8, Arrsize(path)),
     .size = Arrsize(path),
   };
   memCopy(pathstr.str, path, Arrsize(path));

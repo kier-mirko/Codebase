@@ -60,7 +60,7 @@ struct Array {
   usize size;
 
   Array(Arena *arena, usize size) :
-    values((T *)Newarr(arena, T, size)), size(size) {
+    values((T *)New(arena, T, size)), size(size) {
     Assert(size > 0);
   }
 

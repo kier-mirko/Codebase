@@ -9,13 +9,10 @@
 #include <windows.h>
 #endif
 
-#define make(...) makex(__VA_ARGS__,make3,make2)(__VA_ARGS__)
-#define makex(a,b,c,d,...) d
-#define make2(a, t)    (t *)arenaPush(a, sizeof(t), alignof(t))
-#define make3(a, t, n) (t *)arenaPush(a, sizeof(t) * (n), alignof(t))
-
-#define New(arenaptr, type) (type*)arenaPush(arenaptr, sizeof(type), alignof(type))
-#define Newarr(arenaptr, type, count) (type*)arenaPush(arenaptr, (count) * sizeof(type), alignof(type))
+#define New(...) Newx(__VA_ARGS__,New3,New2)(__VA_ARGS__)
+#define Newx(a,b,c,d,...) d
+#define New2(arenaptr, type) (type*)arenaPush(arenaptr, sizeof(type), alignof(type))
+#define New3(arenaptr, type, count) (type*)arenaPush(arenaptr, (count) * sizeof(type), alignof(type))
 
 typedef struct {
   void *base;
