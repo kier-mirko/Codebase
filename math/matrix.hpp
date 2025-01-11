@@ -225,11 +225,6 @@ struct Matrix {
     return res;
   }
 
-  Vector<T, R> eigvals() {
-    Assert(R == C);
-    return Vector<T, R>();
-  }
-
   String8 toString(Arena *arena, const char *format_for_each_elem) {
     StringStream ss = {0};
     for (usize i = 0; i < R; ++i) {
@@ -382,6 +377,7 @@ struct Matrix {
     return res;
   }
 
+  Matrix operator-(Matrix &&other) { return (*this) - other; }
   Matrix operator-(Matrix &other) {
     Matrix res = *this;
 
@@ -422,6 +418,10 @@ struct Matrix {
     return res;
   }
 
+  void operator*=(Matrix &other) {
+    *this = (*this) * other;
+  }
+
   bool operator==(Matrix &other) {
     for (usize i = 0; i < R; ++i) {
       for (usize j = 0; j < C; ++j) {
@@ -453,20 +453,24 @@ fn void fixRoundingErrors(Matrix<T, R, C> *matrix, f64 epsilon = 1E-5) {
 
 template <typename T, usize R, usize C>
 fn Vector<T, R> eigvals(Matrix<T, R, C> *m, f64 epsilon = 1E-8) {
-  auto makeSimilar = [](Matrix<T, R, C> *a) {
-    Matrix q = a->gramSchmidt();
-    Matrix r = q.transpose() * (*a);
-    return r * q;
-  };
+  Matrix q = m->gramSchmidt();
+  Matrix r = q.transpose() * (*m);
+  Matrix b = r * q;
 
-  Matrix b = makeSimilar(m);
   T last_eig = b[R-1, R-1];
   T diff = 1;
 
   for (usize iter = 0; iter < 5000 && diff > epsilon; ++iter) {
-    b = makeSimilar(&b);
-    diff = Abs((last_eig - b[R-1, R-1]));
-    last_eig = b[R-1, R-1];
+    q = b.gramSchmidt();
+    r = q.transpose() * b;
+    b = r * q;
+
+    T tot = 0;
+    for (usize i = 0; i < R; ++i) {
+      tot += Abs((b[i, i]));
+    }
+
+    diff = Abs(diff - tot);
   }
 
   Vector<T, R> res;
