@@ -10,11 +10,17 @@ struct HashMap {
   usize size;
   usize (*hasher)(T);
 
-  struct Slot {
+  struct KVNode {
     T key;
     U value;
-    Slot *next;
+    KVNode *next;
   };
+
+  struct Slot {
+    KVNode *first;
+    KVNode *last;
+  };
+
   DynArray<Slot> slots;
 
   HashMap(Arena *arena, usize (*hasher)(T), usize size = 16) :
@@ -23,40 +29,63 @@ struct HashMap {
   bool insert(Arena *arena, const T &key, const U &value) {
     usize idx = hasher(key) % slots.size;
 
-    Slot *new_slot = (Slot *) New(arena, Slot);
-    if (!new_slot) { return false; }
-
-    new_slot->key = key;
-    new_slot->value = value;
-    new_slot->next = slots[idx].next;
-    slots[idx].next = new_slot;
-
-    size += 1;
+    KVNode *existing_node = 0;
+    for(KVNode *n = slots[idx].first; n; n = n->next) {
+      if (key == n->key) {
+        existing_node = n;
+	existing_node->value = value;
+        break;
+      }
+    }
+    if(existing_node == 0) {
+      existing_node = (KVNode *)New(arena, KVNode);
+      if(existing_node == 0) { return false; }
+      existing_node->key = key;
+      existing_node->value = value;
+      QueuePush(slots[idx].first, slots[idx].last, existing_node);
+    }
     return true;
   }
 
   U* search(const T &key) {
     usize idx = hasher(key) % slots.size;
-    for (Slot *curr = slots[idx].next; curr; curr = curr->next) {
+    for (KVNode *curr = slots[idx].first; curr; curr = curr->next) {
       if (key == curr->key) {
 	return &curr->value;
       }
     }
-
     return 0;
   }
 
-  bool remove(const T &key) {
+  U* fromKey(Arena *arena, const T &key, const U &default_val = {}) {
     usize idx = hasher(key) % slots.size;
-    for (Slot *curr = slots[idx].next, *prev = &slots[idx];
-	 curr; curr = curr->next, prev = prev->next) {
-      if (key == curr->key) {
-	prev->next = curr->next;
-	return true;
+    KVNode *existing_node = 0;
+    for(KVNode *n = slots[idx].first; n; n = n->next) {
+      if (n->key == key) {
+        existing_node = n;
+        break;
       }
     }
+    if(existing_node == 0) {
+      existing_node = (KVNode *) New(arena, KVNode);
+      existing_node->key = key;
+      existing_node->value = default_val;
+      QueuePush(slots[idx].first, slots[idx].last, existing_node);
+    }
 
-    return false;
+    return &existing_node->value;
+  }
+
+  void remove(const T &key) {
+    usize idx = hasher(key) % slots.size;
+
+    for(KVNode *curr = slots[idx].first, *prev = 0;
+	curr;
+	prev = curr, curr = curr->next) {
+      if (curr->key == key) {
+	prev->next = curr->next;
+      }
+    }
   }
 
   inline U& operator[](const T &key) {
