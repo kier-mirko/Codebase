@@ -14,7 +14,6 @@ struct HashMap {
     T key;
     U value;
     KVNode *next;
-    KVNode *prev;
   };
 
   struct Slot {
@@ -34,14 +33,16 @@ struct HashMap {
     for(KVNode *n = slots[idx].first; n; n = n->next) {
       if (key == n->key) {
         existing_node = n;
+	existing_node->value = value;
         break;
       }
     }
     if(existing_node == 0) {
       existing_node = New(arena, KVNode);
-      if(existing_node == 0) return false;
+      if(existing_node == 0) { return false; }
       existing_node->key = key;
       existing_node->value = value;
+      QueuePush(slots[idx].first, slots[idx].last, existing_node);
     }
     return true;
   }
@@ -50,7 +51,7 @@ struct HashMap {
     usize idx = hasher(key) % slots.size;
     for (Slot *curr = slots[idx].next; curr; curr = curr->next) {
       if (key == curr->key) {
-	      return &curr->value;
+	return &curr->value;
       }
     }
     return 0;
@@ -69,6 +70,7 @@ struct HashMap {
       existing_node = New(arena, KVNode);
       existing_node->key = key;
       existing_node->value = default_val;
+      QueuePush(slots[idx].first, slots[idx].last, existing_node);
     }
 
     return existing_node->value;
@@ -77,10 +79,11 @@ struct HashMap {
   void remove(const T &key) {
     usize idx = hasher(key) % slots.size;
 
-    for(KVNode *n = slots[idx].first; n; n = n->next) {
-      if (n->key == key) {
-        n->prev->next = n->next;
-        n->next->prev = n->prev;
+    for(KVNode *curr = slots[idx].first, *prev = 0;
+	curr;
+	prev = curr, curr = curr->next) {
+      if (curr->key == key) {
+	prev->next = curr->next;
       }
     }
   }
