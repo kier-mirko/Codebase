@@ -102,7 +102,7 @@
 #elif COMPILER_CLANG
 #define alignof(TYPE) _Alignof(TYPE)
 #elif COMPILER_CL
-  /* I think `alignof` is already defined */
+#define alignof(TYPE) __alignof(TYPE)
 #else
 #define alignof(TYPE) 1
 #endif
