@@ -1,21 +1,19 @@
-#include "csv.h"
-
-inline fn StringStream csv_header(Arena *arena, CSV *config) {
-  return csv_nextRow(arena, config);
+inline String8List csv_header(Arena *arena, CSV *config) {
+  return csv_next_row(arena, config);
 }
 
-fn StringStream csv_nextRow(Arena *arena, CSV *config) {
+fn String8List csv_next_row(Arena *arena, CSV *config) {
   if (config->file.content.size <= config->offset) {
-    return (StringStream) {0};
+    return (String8List) {0};
   }
-
-  String8 content = strPostfix(config->file.content, config->offset);
-  usize line_ends = strFindFirst(content, '\n');
-  String8 row = strPrefix(content, line_ends);
-
+  
+  String8 content = str8_postfix(config->file.content, config->offset);
+  USZ line_ends = str8_find_first(content, '\n');
+  String8 row = str8_prefix(content, line_ends);
+  
   config->offset += line_ends + 1;
-
-  return strSplit(arena, row, config->delimiter);
+  
+  return str8_split(arena, row, config->delimiter);
 }
 
 // TODO: write to CSV file
