@@ -1,11 +1,11 @@
 #ifndef BASE_CORE_H
 #define BASE_CORE_H
 
-
 #include <stdio.h>
 #include <time.h>
 #include <stdint.h>
 #include <stdarg.h>
+#include <string.h>
 
 #if OS_LINUX || OS_BSD
 #include <sys/mman.h>
@@ -29,12 +29,6 @@ typedef uint64_t U64;
 typedef I8 B8;
 typedef I32 B32;
 typedef I64 B64;
-#if !CPP
-typedef enum {
-  false,
-  true
-} B32;
-#endif
 
 #if defined(ARCH_X64) || defined(ARCH_ARM64)
 typedef U64 USZ;
@@ -76,6 +70,12 @@ typedef I32 ISZ;
 #define ISIZE_MIN I32_MIN
 #endif
 
+
+#if COMPILER_CL
+# define thread_static __declspec(thread)
+#elif COMPILER_CLANG || COMPILER_GCC
+# define thread_static __thread
+#endif
 
 // =============================================================================
 // Singly Linked List

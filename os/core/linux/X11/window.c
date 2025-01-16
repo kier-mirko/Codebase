@@ -203,7 +203,7 @@ fn Viewport openglViewport(String8 name, USZ initial_width,
                                                    GLX_RGBA_TYPE, 0, True);
   } else {
     viewport.opengl_context = glXCreateContextAttribsARB(viewport.xdisplay,
-                                                         bestFbc, 0, true,
+                                                         bestFbc, 0, 1,
                                                          context_attribs);
   }
   XSync(viewport.xdisplay, 0);
@@ -245,13 +245,13 @@ B32 viewportShouldClose(Viewport *viewport) {
   XEvent event = {0};
   if (XCheckTypedEvent(viewport->xdisplay, ClientMessage, &event)) {
     if (event.xclient.data.l[0] == viewport->xatom_close) {
-      return true;
+      return 1;
     } else {
       XPutBackEvent(viewport->xdisplay, &event);
     }
   }
   
-  return false;
+  return 0;
 }
 
 ViewportEvent viewportGetEvent(Viewport *viewport) {
@@ -337,11 +337,11 @@ B32 viewportSetIcon(Arena *arena, Viewport *viewport, String8 path) {
   USZ head = arena->head;
   I32 width, height, componentXpixel;
   U8 *imgdata = loadImg(path, &width, &height, &componentXpixel);
-  if (!imgdata) { return false; }
+  if (!imgdata) { return 0; }
   
   I32 size = 2 + width * height;
   U64 *data = (U64 *) make(arena, U64, size);
-  if (!data) { return false; }
+  if (!data) { return 0; }
   data[0] = width;
   data[1] = height;
   
@@ -359,7 +359,7 @@ B32 viewportSetIcon(Arena *arena, Viewport *viewport, String8 path) {
   
   arena->head = head;
   destroyImg(imgdata);
-  return true;
+  return 1;
 }
 
 void viewportSetTitle(Viewport *viewport, String8 title) {
@@ -400,7 +400,7 @@ B32 isViewportFullscreen(Viewport *viewport) {
                                                  "_NET_WM_STATE_FULLSCREEN", 0);
   
   if (viewport->xatom_state == None || viewport->xatom_state_fullscreen == None) {
-    return false;
+    return 0;
   }
   
   U32 actualType;
@@ -415,14 +415,14 @@ B32 isViewportFullscreen(Viewport *viewport) {
   
   if (status != Success || actualType != 4 || actualFormat != 32 || !property) {
     if (property) XFree(property);
-    return false;
+    return 0;
   }
   
   U32 *states = (U32 *)property;
-  B32 isFullscreen = false;
+  B32 isFullscreen = 0;
   for (U64 i = 0; i < nItems; i++) {
     if (states[i] == viewport->xatom_state_fullscreen) {
-      isFullscreen = true;
+      isFullscreen = 1;
       break;
     }
   }
@@ -487,7 +487,7 @@ fn Codepoint codepointFromKeySym(KeySym sym) {
 /* Graphics stuff that shouldn't be here */
 fn B32 opengl_isExtensionSupported(String8 ext_list, String8 extension) {
   if (extension.size == 0 || str8_contains(extension, ' ')) {
-    return false;
+    return 0;
   }
   
   for (USZ start = 0, terminator; ;
@@ -501,10 +501,10 @@ fn B32 opengl_isExtensionSupported(String8 ext_list, String8 extension) {
     
     if (where == start || ext_list.str[where - 1] == ' ') {
       if (ext_list.str[terminator] == ' ' || ext_list.str[terminator] == '\0') {
-        return true;
+        return 1;
       }
     }
   }
   
-  return false;
+  return 0;
 }

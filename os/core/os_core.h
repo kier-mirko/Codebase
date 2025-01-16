@@ -1,17 +1,25 @@
 #ifndef BASE_OS_FILE
 #define BASE_OS_FILE
 
+typedef struct OS_Handle OS_Handle;
+struct OS_Handle
+{
+  U64 u64[1];
+};
+
 typedef U32 OS_AccessFlags;
 enum 
 {
-  ACF_Unknown = 0,
-  ACF_Execute = 1 << 0,
-  ACF_Read = 1 << 2,
-  ACF_Write = 1 << 1,
+  OS_AccessFlag_Read       = (1<<0),
+  OS_AccessFlag_Write      = (1<<1),
+  OS_AccessFlag_Execute    = (1<<2),
+  OS_AccessFlag_Append     = (1<<3),
+  OS_AccessFlag_ShareRead  = (1<<4),
+  OS_AccessFlag_ShareWrite = (1<<5),
 };
 
 typedef struct FileProperties FileProperties;
-struct 
+struct FileProperties
 {
   U32 owner_id;
   U32 group_id;
@@ -36,7 +44,8 @@ struct
 
 // =============================================================================
 // File reading and writing/appending
-fn String8 os_file_read(Arena *arena, String8 filepath);
+fn OS_Handle os_file_open(OS_AccessFlags flags, String8 filepath);
+fn String8 os_file_read(OS_Handle file, OS_AccessFlags flags);
 
 fn B32 os_file_write(String8 filepath, String8 content);
 fn B32 os_file_write_list(String8 filepath, String8List content);
@@ -55,8 +64,8 @@ typedef struct {
   String8 content;
 } File;
 
-fn File fs_open(Arena *arena, String8 filepath);
-fn File fs_openTmp(Arena *arena);
+fn File os_file_open_mapped(Arena *arena, String8 filepath);
+fn File os_file_open_mappedTmp(Arena *arena);
 
 fn B32 fs_fileWrite(File *file, String8 content);
 fn B32 fs_fileWriteStream(File *file, String8List content);

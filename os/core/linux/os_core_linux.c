@@ -19,12 +19,12 @@ fn String8 os_file_read(Arena *arena, String8 filepath)
 }
 
 fn B32 os_file_write(String8 filepath, String8 content) {
-  B32 result = false;
+  B32 result = 0;
   I32 fd = open((char *)filepath.str, O_WRONLY | O_CREAT | O_TRUNC,
                 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if (fd >= 0) {
     if (write(fd, content.str, content.size) == (ISZ)content.size) {
-      result = true;
+      result = 1;
     }
   }
   
@@ -35,7 +35,7 @@ fn B32 os_file_write(String8 filepath, String8 content) {
 fn B32 
 os_file_write_list(String8 filepath, String8List content) 
 {
-  B32 result = true;
+  B32 result = 1;
   String8Node *start = content.first++;
   ISZ fd = os_file_write(filepath, start->value);
   if (fd >= 0) 
@@ -45,7 +45,7 @@ os_file_write_list(String8 filepath, String8List content)
       if (!write(fd, start->value.str, start->value.size)) 
       {
         close(fd);
-        result = false;
+        result = 0;
         break;
       }
     }
@@ -62,16 +62,16 @@ os_file_append(String8 filepath, String8 content)
   if (fd < 0) 
   {
     (void)close(fd);
-    return false;
+    return 0;
   }
   
   if (write(fd, content.str, content.size) != (ISZ)content.size) 
   {
     (void)close(fd);
-    return false;
+    return 0;
   }
   
-  return true;
+  return 1;
 }
 
 fn B32 
@@ -85,11 +85,11 @@ os_file_append_list(String8 filepath, String8List content)
     if (!write(fd, start->value.str, start->value.size)) 
     {
       (void)close(fd);
-      return false;
+      return 0;
     }
   }
   
-  return true;
+  return 1;
 }
 
 fn FileProperties 
@@ -151,7 +151,7 @@ os_file_get_pro(String8 filepath)
 // =============================================================================
 // Memory mapping files for easier and faster handling
 
-fn File fs_openTmp(Arena *arena) {
+fn File os_file_open_mappedTmp(Arena *arena) {
   char path[] = "/tmp/base-XXXXXX";
   I32 fd = mkstemp(path);
   
@@ -171,7 +171,7 @@ fn File fs_openTmp(Arena *arena) {
   };
 }
 
-fn File fs_open(Arena *arena, String8 filepath) {
+fn File os_file_open_mapped(Arena *arena, String8 filepath) {
   Assert(arena);
   if (filepath.size == 0) {
     return (File) {0};
@@ -201,10 +201,10 @@ fn B32 fs_fileWrite(File *file, String8 content) {
 
 fn B32 fs_fileWriteStream(File *file, String8List content) {
   for (String8Node *curr = content.first; curr; curr = curr->next) {
-    if (!fs_fileWrite(file, curr->value)) { return false; }
+    if (!fs_fileWrite(file, curr->value)) { return 0; }
   }
   
-  return true;
+  return 1;
 }
 
 fn B32 fs_fileClose(File *file) {
@@ -311,14 +311,14 @@ fn B32 os_file_remove_iter(Arena *temp_arena, String8 dirname) {
     Assert(dir);
     
     struct dirent *entry;
-    B32 is_empty = true;
+    B32 is_empty = 1;
     while ((entry = readdir(dir))) {
       String8 str = str8_from_cstr(entry->d_name);
       if (str8_match(str, currdir) || str8_match(str, parentdir)) {
         continue;
       }
       
-      is_empty = false;
+      is_empty = 0;
       String8 fullpath = str8_format(temp_arena, "%.*s/%.*s",
                                      Strexpand(current->value), Strexpand(str));
       
@@ -339,7 +339,7 @@ fn B32 os_file_remove_iter(Arena *temp_arena, String8 dirname) {
     }
   }
   
-  B32 res = true;
+  B32 res = 1;
   while (deletable.first && res) {
     res = os_remove_dir(deletable.first->value);
     StackPop(deletable.first);

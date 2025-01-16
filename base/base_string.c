@@ -28,7 +28,7 @@ fn Codepoint utf8_decode(U8 *glyph_start) {
     res.codepoint |= (glyph_start[0] & 0x7) << 18;
     res.size = 4;
   } else {
-    Assert(false);
+    Assert(0);
   }
   
   return res;
@@ -47,7 +47,7 @@ fn Codepoint utf16_decode(U16 *glyph_start) {
     res.codepoint =
     ((glyph_start[0] - 0xD800) << 10) + (glyph_start[1] - 0xDC00) + 0x10000;
   } else {
-    Assert(false);
+    Assert(0);
   }
   
   return res;
@@ -78,7 +78,7 @@ fn U8 utf8_encode(U8 *res, Codepoint cp) {
     res[3] = 0x80 | (cp.codepoint & 0x3F);
     return 4;
   } else {
-    Assert(false);
+    Assert(0);
     return -1;
   }
 }
@@ -93,7 +93,7 @@ fn U8 utf16_encode(U16 *res, Codepoint cp) {
     res[1] = ((cp.codepoint - 0x10000) & 0x3FF) + 0xDC00;
     return 2;
   } else {
-    Assert(false);
+    Assert(0);
     return -1;
   }
 }
@@ -159,51 +159,51 @@ inline String8 str8_from_date_time(Arena *arena, DateTime dt) {
 
 fn B32 str8_match(String8 s1, String8 s2) {
   if (s1.size != s2.size) {
-    return false;
+    return 0;
   }
   
   for (USZ i = 0; i < s1.size; ++i) {
     if (s1.str[i] != s2.str[i]) {
-      return false;
+      return 0;
     }
   }
   
-  return true;
+  return 1;
 }
 
 fn B32 str8_match_cstr(String8 s, const char *cstr) {
   if (s.size == 0 && !cstr) {
-    return true;
+    return 1;
   } else if (!cstr || s.size == 0) {
-    return false;
+    return 0;
   }
   
   USZ i = 0;
   for (; i < s.size; ++i) {
     if (s.str[i] != cstr[i]) {
-      return false;
+      return 0;
     }
   }
   
   if (cstr[i]) {
-    return false;
+    return 0;
   } else {
-    return true;
+    return 1;
   }
 }
 
 fn B32 cstr_match(char *s1, char *s2) {
   if (s1 == s2) {
-    return true;
+    return 1;
   }
   if (!s1 || !s2) {
-    return false;
+    return 0;
   }
   
   char *it1 = s1, *it2 = s2;
   for (; *it1 && *it2; ++it1, ++it2) {
     if (*it1 != *it2) {
-      return false;
+      return 0;
     }
   }
   
@@ -218,25 +218,25 @@ fn B32 str8_is_signed_int(String8 s) {
   
   for (; curr < s.str + s.size; ++curr) {
     if (!char_is_digit(*curr)) {
-      return false;
+      return 0;
     }
   }
   
-  return true;
+  return 1;
 }
 
 fn B32 str8_is_int(String8 s) {
   for (U8 *curr = s.str; curr < s.str + s.size; ++curr) {
     if (!char_is_digit(*curr)) {
-      return false;
+      return 0;
     }
   }
   
-  return true;
+  return 1;
 }
 
 fn B32 str8_is_float(String8 s) {
-  B32 decimal_found = false;
+  B32 decimal_found = 0;
   U8 *curr = s.str;
   if (*curr == '-' || *curr == '+') {
     ++curr;
@@ -245,14 +245,14 @@ fn B32 str8_is_float(String8 s) {
   for (; curr < s.str + s.size; ++curr) {
     if (!char_is_digit(*curr)) {
       if (*curr == '.' && !decimal_found) {
-        decimal_found = true;
+        decimal_found = 1;
       } else {
-        return false;
+        return 0;
       }
     }
   }
   
-  return true;
+  return 1;
 }
 
 inline B32 str8_is_number(String8 s) {
@@ -573,11 +573,11 @@ fn USZ str8_find_first_substr(String8 haystack, String8 needle) {
 fn B32 str8_contains(String8 s, char ch) {
   for (U8 *curr = s.str; curr < s.str + s.size + 1; ++curr) {
     if (*curr == ch) {
-      return true;
+      return 1;
     }
   }
   
-  return false;
+  return 0;
 }
 
 fn B32 char_is_space(U8 ch) { return ch == ' '; }
@@ -607,30 +607,30 @@ fn U8 str8_get_separator_from_os() {
 // Other UTF strings
 B32 str16_match(String16 s1, String16 s2) {
   if (s1.size != s2.size) {
-    return false;
+    return 0;
   }
   
   for (USZ i = 0; i < s1.size; ++i) {
     if (s1.str[i] != s2.str[i]) {
-      return false;
+      return 0;
     }
   }
   
-  return true;
+  return 1;
 }
 
 fn B32 str32_match(String32 s1, String32 s2) {
   if (s1.size != s2.size) {
-    return false;
+    return 0;
   }
   
   for (USZ i = 0; i < s1.size; ++i) {
     if (s1.str[i] != s2.str[i]) {
-      return false;
+      return 0;
     }
   }
   
-  return true;
+  return 1;
 }
 
 // =============================================================================

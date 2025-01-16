@@ -11,4 +11,6 @@
 #error OS core layer not implemented
 #endif
 
+#include "core/os_core.h"
+
 #endif //OS_INC_H

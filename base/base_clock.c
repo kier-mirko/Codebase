@@ -11,7 +11,7 @@ inline DateTime currentDateTime() {
   return t_date_time_from_unix(now);
 #elif OS_WINDOWS
   // TODO: i don't know whats used by Windows
-  Assert(false);
+  Assert(0);
 #else
   return (DateTime) {0};
 #endif
