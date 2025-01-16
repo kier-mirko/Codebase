@@ -45,7 +45,7 @@ struct FileProperties
 // =============================================================================
 // File reading and writing/appending
 fn OS_Handle os_file_open(OS_AccessFlags flags, String8 filepath);
-fn String8 os_file_read(OS_Handle file, OS_AccessFlags flags);
+fn String8 os_file_read(Arena *arena, OS_Handle file);
 
 fn B32 os_file_write(String8 filepath, String8 content);
 fn B32 os_file_write_list(String8 filepath, String8List content);

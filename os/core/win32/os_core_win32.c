@@ -28,7 +28,27 @@ os_file_open(OS_AccessFlags flags, String8 filepath)
 }
 
 fn String8
-os_file_read(OS_Handle file, OS_AccessFlags flags)
+os_file_read(Arena *arena, OS_Handle file)
+{
+  String8 result = {0};
+  LARGE_INTEGER file_size = {0};
+  HANDLE handle = (HANDLE)file.u64[0];
+  if(GetFileSizeEx(handle, &file_size) != 0)
+  {
+    LONGLONG size = file_size.QuadPart;
+    U8 *buffer = make(arena, U8, result.size);
+    DWORD bytes_read = 0;
+    if(ReadFile(handle, buffer, size, &bytes_read, 0) && size == bytes_read)
+    {
+      result.str = buffer;
+      result.size = (U64)size;
+    }
+  }
+  return result;
+}
+
+fn B32
+os_file_write(OS_Handle file, String8 content)
 {
   (void)0;
 }

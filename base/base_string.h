@@ -26,7 +26,7 @@ inline U8 utf32_encode(U32 *res, Codepoint cp);
 typedef struct String8 String8;
 struct String8 {
   U8 *str;
-  USZ size;
+  U64 size;
 };
 
 typedef struct String8Node String8Node;
