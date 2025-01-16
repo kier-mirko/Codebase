@@ -31,6 +31,8 @@ fn String8
 os_file_read(Arena *arena, OS_Handle file)
 {
   String8 result = {0};
+  if(os_handle_match(file, os_handle_zero())) return result;
+  
   LARGE_INTEGER file_size = {0};
   HANDLE handle = (HANDLE)file.u64[0];
   if(GetFileSizeEx(handle, &file_size) != 0)
@@ -50,5 +52,38 @@ os_file_read(Arena *arena, OS_Handle file)
 fn B32
 os_file_write(OS_Handle file, String8 content)
 {
+  if(os_handle_match(file, os_handle_zero())) return 0;
+  B32 result = 0;
+  DWORD bytes_written = 0;
+  if(WriteFile((HANDLE)file.u64[0], content.str, (DWORD)content.size, &bytes_written, 0) 
+     && content.size == bytes_written)
+  {
+    result = 1;
+  }
+  return result;
+}
+
+fn B32
+os_file_write_list(OS_Handle file, String8List content)
+{
+  Temp scratch = scratch_begin(0, 0);
+  String8 str = str8_list_join(scratch.arena, content);
+  B32 result = os_file_write(file, str);
+  return result;
+}
+
+fn FileProperties
+os_file_get_propertie(OS_Handle file)
+{
   (void)0;
 }
+
+fn void
+os_file_close(OS_Handle file)
+{
+  if(os_handle_match(file, os_handle_zero())) return;
+  HANDLE handle = (HANDLE)file.u64[0];
+  BOOL result = CloseHandle(handle);
+  (void)result;
+}
+

@@ -117,7 +117,7 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, Arena *map_arena, CSV config,
     USZ i = 0;
     String8 *row_entries = (String8 *)make(map_arena, String8, row.size);
     for (String8Node *r = row.first; r && i < n_features; r = r->next, ++i) {
-      row_entries[i] = r->value;
+      row_entries[i] = r->string;
     }
     
     for (i = 0; i < n_features; ++i) {
@@ -215,7 +215,7 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, Arena *map_arena, CSV config,
     USZ i = 0;
     String8 *row_entries = (String8 *)make(map_arena, String8, row.size);
     for (String8Node *r = row.first; r && i < n_features; r = r->next, ++i) {
-      row_entries[i] = r->value;
+      row_entries[i] = r->string;
     }
     
     // Get the correct tmp file
@@ -241,7 +241,7 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, Arena *map_arena, CSV config,
   for (String8Node *curr = header.first; curr; curr = curr->next, ++i) {
     // Skip the column used to split
     if (i == feature2split_by) {
-      dt->label = curr->value;
+      dt->label = curr->string;
       curr->prev->next = curr->next;
       curr->next->prev = curr->prev;
       --header.size;

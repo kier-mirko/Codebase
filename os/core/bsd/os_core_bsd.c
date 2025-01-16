@@ -48,12 +48,12 @@ fn B32 os_file_write(String8 filepath, String8 content) {
 
 fn B32 os_file_writeStream(String8 filepath, String8List content) {
   String8Node *start = content.first++;
-  if (!os_file_write(filepath, start->value)) {
+  if (!os_file_write(filepath, start->string)) {
     return 0;
   }
   
   for (; start < content.first + content.size; ++start) {
-    if (!os_file_append(filepath, start->value)) {
+    if (!os_file_append(filepath, start->string)) {
       return 0;
     }
   }
@@ -85,7 +85,7 @@ fn B32 os_file_append(String8 filepath, String8 content) {
 fn B32 os_file_appendStream(String8 filepath, String8List content) {
   for (String8Node *start = content.first; start < content.first + content.size;
        ++start) {
-    if (!os_file_append(filepath, start->value)) {
+    if (!os_file_append(filepath, start->string)) {
       return 0;
     }
   }
@@ -93,7 +93,7 @@ fn B32 os_file_appendStream(String8 filepath, String8List content) {
   return 1;
 }
 
-fn FileProperties os_file_get_pro(String8 filepath) {
+fn FileProperties os_file_get_properties(String8 filepath) {
   FileProperties res = {0};
   if (filepath.size == 0) {
     return res;
@@ -163,7 +163,7 @@ fn File os_file_open_mappedTmp(Arena *arena) {
   return (File) {
     .descriptor = fd,
     .path = pathstr,
-    .prop = os_file_get_pro(pathstr),
+    .prop = os_file_get_properties(pathstr),
     .content = str8((char *)mmap(0, 0,
                                  PROT_READ | PROT_WRITE,
                                  MAP_SHARED, fd, 0), 0),
@@ -183,7 +183,7 @@ fn File os_file_open_mapped(Arena *arena, String8 filepath) {
     return (File) {0};
   }
   
-  FileProperties prop = os_file_get_pro(filepath);
+  FileProperties prop = os_file_get_properties(filepath);
   return (File) {
     .descriptor = fd,
     .path = filepath,
@@ -200,7 +200,7 @@ fn B32 fs_fileWrite(File *file, String8 content) {
 
 fn B32 fs_fileWriteStream(File *file, String8List content) {
   for (String8Node *curr = content.first; curr; curr = curr->next) {
-    if (!fs_fileWrite(file, curr->value)) { return 0; }
+    if (!fs_fileWrite(file, curr->string)) { return 0; }
   }
   
   return 1;
@@ -213,7 +213,7 @@ fn B32 fs_fileClose(File *file) {
 }
 
 fn B32 fs_fileHasChanged(File *file) {
-  FileProperties prop = os_file_get_pro(file->path);
+  FileProperties prop = os_file_get_properties(file->path);
   return (file->prop.last_access_time != prop.last_access_time) ||
   (file->prop.last_modification_time != prop.last_modification_time) ||
   (file->prop.last_status_change_time != prop.last_status_change_time);
@@ -234,7 +234,7 @@ inline void fs_fileSync(File *file) {
 
 fn void fs_fileForceSync(File *file) {
   (void)munmap(file->content.str, file->prop.size);
-  file->prop = os_file_get_pro(file->path);
+  file->prop = os_file_get_properties(file->path);
   file->content = str8((char *)mmap(0, file->prop.size,
                                     PROT_READ | PROT_WRITE,
                                     MAP_SHARED, file->descriptor, 0),
@@ -284,8 +284,8 @@ fn String8List os_file_iter(Arena *arena, String8 dirname) {
       continue;
     }
     
-    String8Node *node = (String8Node *) make(arena, String8Node);
-    node->value = str;
+    String8Node *node = make(arena, String8Node);
+    node->string = str;
     DLLPushBack(res.first, res.last, node);
   }
   
@@ -300,15 +300,15 @@ fn B32 os_file_remove_iter(Arena *temp_arena, String8 dirname) {
   
   String8List dirstack = {0};
   String8List deletable = {0};
-  String8Node *root = (String8Node *) make(temp_arena, String8Node);
-  root->value = dirname;
+  String8Node *root = make(temp_arena, String8Node);
+  root->string = dirname;
   StackPush(dirstack.first, root);
   
   while (dirstack.first) {
     String8Node *current = dirstack.first;
     StackPop(dirstack.first);
     
-    DIR *dir = opendir((char *)current->value.str);
+    DIR *dir = opendir((char *)current->string.str);
     Assert(dir);
     
     struct dirent *entry;
@@ -321,11 +321,11 @@ fn B32 os_file_remove_iter(Arena *temp_arena, String8 dirname) {
       
       is_empty = 0;
       String8 fullpath = str8_format(temp_arena, "%.*s/%.*s",
-                                     Strexpand(current->value), Strexpand(str));
+                                     Strexpand(current->string), Strexpand(str));
       
       if (entry->d_type == DT_DIR) {
-        String8Node *childdir = (String8Node *) make(temp_arena, String8Node);
-        childdir->value = fullpath;
+        String8Node *childdir = make(temp_arena, String8Node);
+        childdir->string = fullpath;
         StackPush(dirstack.first, childdir);
       } else {
         Assert(fs_delete(fullpath));
@@ -334,7 +334,7 @@ fn B32 os_file_remove_iter(Arena *temp_arena, String8 dirname) {
     
     (void)closedir(dir);
     if (is_empty) {
-      (void)os_remove_dir(current->value);
+      (void)os_remove_dir(current->string);
     } else {
       StackPush(deletable.first, current);
     }
@@ -342,7 +342,7 @@ fn B32 os_file_remove_iter(Arena *temp_arena, String8 dirname) {
   
   B32 res = 1;
   while (deletable.first && res) {
-    res = os_remove_dir(deletable.first->value);
+    res = os_remove_dir(deletable.first->string);
     StackPop(deletable.first);
   }
   

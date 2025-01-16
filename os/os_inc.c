@@ -1,3 +1,5 @@
+#include "core/os_core.c"
+
 #if OS_LINUX
 #include "core/linux/os_core_linux.c"
 #elif OS_BSD

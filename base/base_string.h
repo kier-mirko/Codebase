@@ -33,7 +33,7 @@ typedef struct String8Node String8Node;
 struct String8Node {
   String8Node *next;
   String8Node *prev;
-  String8 value;
+  String8 string;
 };
 
 typedef struct String8List String8List;
@@ -43,10 +43,10 @@ struct String8List {
   USZ size;
 };
 
-fn String8 str8_list_join(Arena *arena, String8List *strlist);
-fn void str8_list_append(Arena *arena, String8List *strlist, String8 other);
+fn String8 str8_list_join(Arena *arena, String8List strlist);
+fn void str8_list_append(Arena *arena, String8List strlist, String8 other);
 
-inline String8 str8(char *chars, USZ len);
+inline String8 str8(U8 *chars, USZ len);
 inline String8 str8_from_cstr(char *chars);
 inline String8 str8_from_date_time(Arena *arena, DateTime dt);
 inline String8 str8_from_unix_time(Arena *arena, U64 unix_timestamp);

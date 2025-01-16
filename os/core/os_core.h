@@ -44,17 +44,20 @@ struct FileProperties
 
 // =============================================================================
 // File reading and writing/appending
+fn OS_Handle os_handle_zero(void);
+fn B32 os_handle_match(OS_Handle a, OS_Handle b);
 fn OS_Handle os_file_open(OS_AccessFlags flags, String8 filepath);
 fn String8 os_file_read(Arena *arena, OS_Handle file);
 
-fn B32 os_file_write(String8 filepath, String8 content);
-fn B32 os_file_write_list(String8 filepath, String8List content);
+fn B32 os_file_write(OS_Handle file, String8 content);
+fn B32 os_file_write_list(OS_Handle file, String8List content);
 
 fn B32 os_file_append(String8 filepath, String8 content);
 fn B32 os_file_append_list(String8 filepath, String8List content);
 
-fn FileProperties os_file_get_pro(String8 filepath);
+fn FileProperties os_file_get_properties(OS_Handle file);
 
+fn void os_file_close(OS_Handle file);
 // =============================================================================
 // Memory mapping files for easier and faster handling
 typedef struct {

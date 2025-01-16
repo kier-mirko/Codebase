@@ -105,36 +105,36 @@ inline U8 utf32_encode(U32 *res, Codepoint cp) {
 
 // =============================================================================
 // UTF-8 string
-fn String8 str8_list_join(Arena *arena, String8List *stream) {
-  USZ final_len = 0, offset = 0;
+fn String8 str8_list_join(Arena *arena, String8List list) {
   
-  for (String8Node *curr = stream->first; curr; curr = curr->next) {
-    final_len += curr->value.size;
+  U64 size = 0;
+  
+  for (String8Node *n = list.first; n; n = n->next) {
+    size += n->string.size;
   }
   
-  U8 *final_chars = (U8 *)make(arena, U8, final_len);
-  for (String8Node *curr = stream->first; curr; curr = curr->next) {
-    for (USZ i = 0; i < curr->value.size; ++i) {
-      *(final_chars + (offset++)) = curr->value.str[i];
-    }
+  U8 *str = make(arena, U8, size);
+  for (String8Node *n = list.first; n; n = n->next) {
+    memcpy(str, n->string.str, n->string.size);
+    str += n->string.size;
   }
-  
-  return (String8) {.str = final_chars, .size = final_len};
+  return str8(str, size);
 }
 
-fn void str8_list_append(Arena *arena, String8List *strlist, String8 other) {
+
+fn void str8_list_append(Arena *arena, String8List strlist, String8 other) {
   Assert(arena);
   Assert(strlist);
-  ++strlist->size;
+  ++strlist.size;
   
-  String8Node *str = (String8Node *)make(arena, String8Node);
-  str->value = other;
-  DLLPushBack(strlist->first, strlist->last, str);
+  String8Node *str = make(arena, String8Node);
+  str->string = other;
+  DLLPushBack(strlist.first, strlist.last, str);
 }
 
-inline String8 str8(char *chars, USZ len) {
+inline String8 str8(U8 *chars, USZ len) {
   return (String8) {
-    .str = (U8 *)chars,
+    .str = chars,
     .size = len,
   };
 }
@@ -520,7 +520,7 @@ fn String8List str8_split(Arena *arena, String8 s, char ch) {
   for (USZ i = 0; i < s.size;) {
     if (s.str[i] == ch) {
       if (prev != i) {
-        str8_list_append(arena, &res, str8_range(s, prev, i));
+        str8_list_append(arena, res, str8_range(s, prev, i));
       }
       
       do {
@@ -532,7 +532,7 @@ fn String8List str8_split(Arena *arena, String8 s, char ch) {
   }
   
   if (prev != s.size) {
-    str8_list_append(arena, &res, str8_range(s, prev, s.size));
+    str8_list_append(arena, res, str8_range(s, prev, s.size));
   }
   
   return res;
