@@ -1,9 +1,9 @@
 #ifndef BASE_STRING
 #define BASE_STRING
 
-#define str_lit(STR) (String8){.str = (U8 *)(STR), .size = sizeof(STR) - 1}
-#define str_lit_init(STR) { (U8 *)(STR), sizeof(STR) - 1, }
-#define str_expand(STR) (I32)((STR).size), (char *)((STR).str)
+#define str8_lit(s) (String8){.str = (U8 *)(s), .size = sizeof(s) - 1}
+#define str8_lit_init(s) { (U8 *)(s), sizeof(s) - 1 }
+#define str8_expand(s) s.str, s.size
 
 // =============================================================================
 // Unicode codepoint
@@ -73,6 +73,7 @@ fn USZ cstr_len(char *chars);
 
 fn String8 str8_format(Arena *arena, const char *fmt, ...);
 fn String8 str8_format_va(Arena *arena, const char *fmt, va_list args);
+fn String8 push_str8_copy(Arena *arena, String8 s);
 
 fn String8 str8_prefix(String8 s, USZ end);
 fn String8 str8_postfix(String8 s, USZ start);

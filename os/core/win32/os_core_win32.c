@@ -40,7 +40,7 @@ os_file_read(Arena *arena, OS_Handle file)
     LONGLONG size = file_size.QuadPart;
     U8 *buffer = make(arena, U8, result.size);
     DWORD bytes_read = 0;
-    if(ReadFile(handle, buffer, size, &bytes_read, 0) && size == bytes_read)
+    if(ReadFile(handle, buffer, (DWORD)size, &bytes_read, 0) && size == bytes_read)
     {
       result.str = buffer;
       result.size = (U64)size;

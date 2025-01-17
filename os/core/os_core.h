@@ -52,34 +52,34 @@ fn String8 os_file_read(Arena *arena, OS_Handle file);
 fn B32 os_file_write(OS_Handle file, String8 content);
 fn B32 os_file_write_list(OS_Handle file, String8List content);
 
-fn B32 os_file_append(String8 filepath, String8 content);
-fn B32 os_file_append_list(String8 filepath, String8List content);
 
 fn FileProperties os_file_get_properties(OS_Handle file);
 
 fn void os_file_close(OS_Handle file);
 // =============================================================================
 // Memory mapping files for easier and faster handling
-typedef struct {
+typedef struct File File;
+struct File 
+{
   I32 descriptor;
   String8 path;
   FileProperties prop;
   String8 content;
-} File;
+};
 
 fn File os_file_open_mapped(Arena *arena, String8 filepath);
 fn File os_file_open_mappedTmp(Arena *arena);
 
-fn B32 fs_fileWrite(File *file, String8 content);
-fn B32 fs_fileWriteStream(File *file, String8List content);
-fn B32 fs_fileClose(File *file);
+fn B32 os_file_map_write(File *file, String8 content);
+fn B32 os_file_map_write_list(File *file, String8List content);
+fn B32 os_file_map_close(File *file);
 
-fn B32 fs_fileHasChanged(File *file);
-fn B32 fs_fileErase(File *file);
-fn B32 fs_fileRename(File *file, String8 to);
+fn B32 os_file_map_has_changed(File *file);
+fn B32 os_file_map_erase(File *file);
+fn B32 os_file_map_rename(File *file, String8 to);
 
-inline void fs_fileSync(File *file);
-fn void fs_fileForceSync(File *file);
+inline void os_file_map_sync(File *file);
+fn void os_file_map_force_sync(File *file);
 
 // =============================================================================
 // Misc operation on the filesystem

@@ -399,6 +399,17 @@ fn String8 str8_format_va(Arena *arena, const char *fmt, va_list args) {
   return res;
 }
 
+fn String8
+push_str8_copy(Arena *arena, String8 s)
+{
+  String8 str = {0};
+  str.size = s.size + 1;
+  str.str = make(arena, U8, str.size);
+  memcpy(str.str, s.str, s.size);
+  str.str[s.size] = 0;
+  return str;
+}
+
 inline String8 str8_prefix(String8 s, USZ end) {
   return (String8) {
     .str = s.str,

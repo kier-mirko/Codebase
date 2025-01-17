@@ -1,3 +1,35 @@
+fn OS_Handle
+os_file_open(OS_AccessFlags flags, String8 filepath)
+{
+  OS_Handle handle = {0};
+  Temp scratch = scratch_begin(0, 0);
+  String8 path = push_str8_copy(scratch.arena, filepath);
+  int access_flags = 0;
+  
+  if(flags & OS_AccessFlag_Read && flags & OS_AccessFlag_Write) 
+  { 
+    access_flags = O_RDWR | O_CREAT; 
+  }
+  else if(flags & OS_AccessFlag_Read)
+  {
+    access_flags = O_RDONLY;
+  }
+  else if(flags & OS_AccessFlag_Write)
+  {
+    access_flags = O_WRONLY | O_CREAT;
+  }
+  else if(flags & OS_AccessFlag_Append)
+  {
+    access_flags |= O_APPEND;
+  }
+  
+  int fd = open((char*)path.str, access_flags, 0644);
+  if(fd >= 0) {
+    handle.u64[0] = (U64)fd;
+  }
+  return handle;
+}
+
 // =============================================================================
 // File reading and writing/appending
 fn String8 os_file_read(Arena *arena, String8 filepath) 
@@ -52,44 +84,6 @@ os_file_write_list(String8 filepath, String8List content)
   }
   
   return result;
-}
-
-fn B32 
-os_file_append(String8 filepath, String8 content) 
-{
-  I32 fd = open((char *)filepath.str, O_WRONLY | O_CREAT | O_APPEND,
-                S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-  if (fd < 0) 
-  {
-    (void)close(fd);
-    return 0;
-  }
-  
-  if (write(fd, content.str, content.size) != (ISZ)content.size) 
-  {
-    (void)close(fd);
-    return 0;
-  }
-  
-  return 1;
-}
-
-fn B32 
-os_file_append_list(String8 filepath, String8List content) 
-{
-  String8Node *start = content.first;
-  ISZ fd = os_file_append(filepath, start->value);
-  
-  for (start = start->next; start; start = start->next) 
-  {
-    if (!write(fd, start->string.str, start->string.size)) 
-    {
-      (void)close(fd);
-      return 0;
-    }
-  }
-  
-  return 1;
 }
 
 fn FileProperties 
@@ -207,33 +201,33 @@ fn B32 fs_fileWriteStream(File *file, String8List content) {
   return 1;
 }
 
-fn B32 fs_fileClose(File *file) {
+fn B32 os_file_map_close(File *file) {
   return msync(file->content.str, file->prop.size, MS_SYNC) >= 0 &&
     munmap(file->content.str, file->prop.size) >= 0 &&
     close(file->descriptor) >= 0;
 }
 
-fn B32 fs_fileHasChanged(File *file) {
+fn B32 os_file_map_has_changed(File *file) {
   FileProperties prop = os_file_get_properties(file->path);
   return (file->prop.last_access_time != prop.last_access_time) ||
   (file->prop.last_modification_time != prop.last_modification_time) ||
   (file->prop.last_status_change_time != prop.last_status_change_time);
 }
 
-fn B32 fs_fileErase(File *file) {
-  return unlink((char *) file->path.str) >= 0 && fs_fileClose(file);
+fn B32 os_file_map_erase(File *file) {
+  return unlink((char *) file->path.str) >= 0 && os_file_map_close(file);
 }
 
-fn B32 fs_fileRename(File *file, String8 to) {
+fn B32 os_file_map_rename(File *file, String8 to) {
   return rename((char *) file->path.str, (char *) to.str) >= 0;
 }
 
-inline void fs_fileSync(File *file) {
-  if (!fs_fileHasChanged(file)) { return; }
-  fs_fileForceSync(file);
+inline void os_file_map_sync(File *file) {
+  if (!os_file_map_has_changed(file)) { return; }
+  os_file_map_force_sync(file);
 }
 
-fn void fs_fileForceSync(File *file) {
+fn void os_file_map_force_sync(File *file) {
   (void)munmap(file->content.str, file->prop.size);
   file->prop = os_file_get_properties(file->path);
   file->content = str8((char *)mmap(0, file->prop.size,
