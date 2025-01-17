@@ -107,6 +107,13 @@
 #define alignof(TYPE) 1
 #endif
 
+#if COMPILER_CL
+#define thread_local __declspec(thread)
+#elif COMPILER_CLANG || COMPILER_GCC
+#define thread_local __thread
+#endif
+
+
 #define _stmt(S)                                                               \
   do {                                                                         \
     S                                                                          \
