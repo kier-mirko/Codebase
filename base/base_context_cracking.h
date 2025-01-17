@@ -33,13 +33,7 @@
 #else
 #error "Unsupported OS"
 #endif
-
-#if defined(__cplusplus)
-#define CPP 1
-#else
-#define CPP 0
-#endif
-
+.
 # if defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64) || defined(_M_AMD64)
 #  define ARCH_X64 1
 # elif defined(i386) || defined(__i386) || defined(__i386__)
@@ -98,13 +92,13 @@
 #endif
 
 #if COMPILER_GCC
-#define alignof(TYPE) __alignof__(TYPE)
+#define alignof(T) __alignof__(T)
 #elif COMPILER_CLANG
-#define alignof(TYPE) _Alignof(TYPE)
+#define alignof(T) _Alignof(T)
 #elif COMPILER_CL
-#define alignof(TYPE) __alignof(TYPE)
+#define alignof(T) __alignof(T)
 #else
-#define alignof(TYPE) 1
+#define alignof(T) 1
 #endif
 
 #define _stmt(S)                                                               \
@@ -120,11 +114,11 @@ S                                                                          \
 #endif
 #endif
 
-#define AssertAlways(COND) _stmt(if (!(COND)) { _assert_break(); })
+#define AssertAlways(c) _stmt(if (!(c)) { _assert_break(); })
 #ifdef ENABLE_ASSERT
-#define Assert(COND) AssertAlways(COND)
+#define Assert(c) AssertAlways(c)
 #else
-#define Assert(COND) (void)(COND)
+#define Assert(c) (void)(c)
 #endif
 
 #define Stringify_(S) (#S)

@@ -103,16 +103,6 @@ fn U8 char_to_upper(U8 ch);
 fn U8 char_to_lower(U8 ch);
 fn U8 str8_get_separator_from_os();
 
-#if CPP
-inline B32 operator==(String8 s1, String8 s2) {
-  return str8_match(s1, s2);
-}
-
-inline B32 operator!=(String8 s1, String8 s2) {
-  return !str8_match(s1, s2);
-}
-#endif
-
 // =============================================================================
 // Other UTF strings
 
