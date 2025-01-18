@@ -65,7 +65,7 @@ typedef struct {
   FilenameNode *last;
 } FilenameList;
 
-fn FilenameList fs_iterFiles(String8 dirname);
+fn FilenameList fs_iterFiles(Arena *arena, String8 dirname);
 fn bool fs_rmIter(String8 dirname);
 
 #endif

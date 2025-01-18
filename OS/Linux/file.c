@@ -274,13 +274,11 @@ fn bool fs_rmdir(String8 path) {
   return rmdir((char *)path.str) >= 0;
 }
 
-fn FilenameList fs_iterFiles(String8 dirname) {
+fn FilenameList fs_iterFiles(Arena *arena, String8 dirname) {
   local const String8 currdir = Strlit(".");
   local const String8 parentdir = Strlit("..");
 
   FilenameList res = {0};
-  Scratch scratch = ScratchBegin(0, 0);
-
   DIR *dir = opendir((char *)dirname.str);
   if (!dir) {
     return res;
@@ -293,12 +291,11 @@ fn FilenameList fs_iterFiles(String8 dirname) {
       continue;
     }
 
-    FilenameNode *node = New(scratch.arena, FilenameNode);
+    FilenameNode *node = New(arena, FilenameNode);
     node->value = str;
     DLLPushBack(res.first, res.last, node);
   }
 
-  ScratchEnd(scratch);
   (void)closedir(dir);
   return res;
 }
