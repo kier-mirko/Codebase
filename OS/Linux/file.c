@@ -205,21 +205,21 @@ fn File fs_open(Arena *arena, String8 filepath) {
 }
 
 fn bool fs_fileWrite(File *file, String8 content) {
-  return write(file->handle, content.str, content.size) != (isize)content.size;
+  return write(file->handle.fd[0], content.str, content.size) != (isize)content.size;
 }
 
 fn bool fs_fileWriteStream(File *file, StringStream content) {
   for (StringNode *curr = content.first; curr; curr = curr->next) {
     if (!fs_fileWrite(file, curr->value)) { return false; }
   }
-  
+
   return true;
 }
 
 fn bool fs_fileClose(File *file) {
   return msync(file->content.str, file->prop.size, MS_SYNC) >= 0 &&
 	 munmap(file->content.str, file->prop.size) >= 0 &&
-    close(file->handle) >= 0;
+    close(file->handle.fd[0]) >= 0;
 }
 
 fn bool fs_fileHasChanged(File *file) {
@@ -247,8 +247,7 @@ fn void fs_fileForceSync(File *file) {
   file->prop = fs_getProp(file->path);
   file->content = str8((char *)mmap(0, file->prop.size,
 				    PROT_READ | PROT_WRITE,
-		       file->prop.size);
-                                    MAP_SHARED, file->handle, 0),
+				    MAP_SHARED, file->handle.fd[0], 0), file->prop.size);
 }
 
 // =============================================================================
