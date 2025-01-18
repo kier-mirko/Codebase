@@ -28,13 +28,12 @@ inline fn void arenaPop(Arena *arena, usize bytes);
 inline fn bool arenaFree(Arena *arena);
 fn void *arenaPush(Arena *arena, usize size, usize align);
 
-typedef struct Temp Temp;
-struct Temp {
+typedef struct {
   Arena *arena;
   usize pos;
-};
+} Scratch;
 
-fn Temp temp_begin(Arena *arena);
-fn void temp_end(Temp temp);
+inline fn Scratch tmpBegin(Arena *arena);
+inline fn void tmpEnd(Scratch tmp);
 
 #endif

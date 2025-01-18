@@ -67,13 +67,11 @@ fn void *arenaPush(Arena *arena, usize size, usize align) {
   return res;
 }
 
-fn Temp temp_begin(Arena *arena) {
-  Temp temp = {arena, arena->head};
-  return temp;
+inline fn Scratch tmpBegin(Arena *arena) {
+  return (Scratch) { .arena = arena, .pos = arena->head };
 }
 
-fn void temp_end(Temp temp) {
-  // TODO(km): for now i think doing it this is fine, but in the future we need
-  // to decommit the pages that are not used
-  temp.arena->head = temp.pos;
+inline fn void tmpEnd(Scratch tmp) {
+  arenaPop(tmp.arena, tmp.arena->head - tmp.pos);
+  tmp.arena->head = tmp.pos;
 }

@@ -1,5 +1,6 @@
 #include "memory.c"
 #include "arena.c"
+#include "thread_ctx.c"
 #include "string.c"
 
 #include "time/clock.c"

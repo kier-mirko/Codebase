@@ -97,6 +97,8 @@
   #define NDEBUG 1
 #endif
 
+#define TLS_CTX_SIZE MB(64)
+
 #if COMPILER_GCC
 #define alignof(TYPE) __alignof__(TYPE)
 #elif COMPILER_CLANG

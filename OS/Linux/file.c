@@ -28,7 +28,7 @@ fn String8 fs_read(Arena *arena, String8 filepath) {
     return (String8) {0};
   }
 
-  String8 res = { .str = (u8 *)New(arena, u8, file_stat.st_size) };
+  String8 res = { .str = New(arena, u8, file_stat.st_size) };
   res.size = read(fd, res.str, file_stat.st_size);
 
   (void)close(fd);
@@ -165,7 +165,7 @@ fn File fs_openTmp(Arena *arena) {
   i32 fd = mkstemp(path);
 
   String8 pathstr = {
-    .str = (u8 *)New(arena, u8, Arrsize(path)),
+    .str = New(arena, u8, Arrsize(path)),
     .size = Arrsize(path),
   };
   memCopy(pathstr.str, path, Arrsize(path));
@@ -274,11 +274,12 @@ fn bool fs_rmdir(String8 path) {
   return rmdir((char *)path.str) >= 0;
 }
 
-fn FilenameList fs_iterFiles(Arena *arena, String8 dirname) {
+fn FilenameList fs_iterFiles(String8 dirname) {
   local const String8 currdir = Strlit(".");
   local const String8 parentdir = Strlit("..");
 
   FilenameList res = {0};
+  Scratch scratch = ScratchBegin(0, 0);
 
   DIR *dir = opendir((char *)dirname.str);
   if (!dir) {
@@ -292,23 +293,24 @@ fn FilenameList fs_iterFiles(Arena *arena, String8 dirname) {
       continue;
     }
 
-    FilenameNode *node = (FilenameNode *)New(arena, FilenameNode);
+    FilenameNode *node = New(scratch.arena, FilenameNode);
     node->value = str;
     DLLPushBack(res.first, res.last, node);
   }
 
+  ScratchEnd(scratch);
   (void)closedir(dir);
   return res;
 }
 
-fn bool fs_rmIter(Arena *temp_arena, String8 dirname) {
+fn bool fs_rmIter(String8 dirname) {
   const String8 currdir = Strlit(".");
   const String8 parentdir = Strlit("..");
-  usize prev_head = temp_arena->head;
 
+  Scratch scratch = ScratchBegin(0, 0);
   FilenameList dirstack = {0};
   FilenameList deletable = {0};
-  FilenameNode *root = (FilenameNode *)New(temp_arena, FilenameNode);
+  FilenameNode *root = New(scratch.arena, FilenameNode);
   root->value = dirname;
   StackPush(dirstack.first, root);
 
@@ -328,11 +330,11 @@ fn bool fs_rmIter(Arena *temp_arena, String8 dirname) {
       }
 
       is_empty = false;
-      String8 fullpath = strFormat(temp_arena, "%.*s/%.*s",
-                                   Strexpand(current->value), Strexpand(str));
+      String8 fullpath = strFormat(scratch.arena, "%.*s/%.*s",
+				   Strexpand(current->value), Strexpand(str));
 
       if (entry->d_type == DT_DIR) {
-        FilenameNode *childdir = (FilenameNode *)New(temp_arena, FilenameNode);
+        FilenameNode *childdir = New(scratch.arena, FilenameNode);
         childdir->value = fullpath;
         StackPush(dirstack.first, childdir);
       } else {
@@ -354,6 +356,6 @@ fn bool fs_rmIter(Arena *temp_arena, String8 dirname) {
     StackPop(deletable.first);
   }
 
-  temp_arena->head = prev_head;
+  ScratchEnd(scratch);
   return res;
 }

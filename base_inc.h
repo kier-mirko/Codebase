@@ -4,6 +4,7 @@
 #include "base.h"
 #include "memory.h"
 #include "arena.h"
+#include "thread_ctx.h"
 #include "string.h"
 #include "image.h"
 
