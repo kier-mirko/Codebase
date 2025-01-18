@@ -28,4 +28,13 @@ inline fn void arenaPop(Arena *arena, usize bytes);
 inline fn bool arenaFree(Arena *arena);
 fn void *arenaPush(Arena *arena, usize size, usize align);
 
+typedef struct Temp Temp;
+struct Temp {
+  Arena *arena;
+  usize pos;
+};
+
+fn Temp temp_begin(Arena *arena);
+fn void temp_end(Temp temp);
+
 #endif

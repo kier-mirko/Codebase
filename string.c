@@ -430,40 +430,50 @@ inline fn String8 strRange(String8 s, usize start, usize end) {
 inline fn bool strEndsWith(String8 s, char ch) { return s.str[s.size - 1] == ch; }
 
 fn String8 longestCommonSubstring(Arena *arena, String8 s1, String8 s2) {
-  String8 res;
-  if (s1.size == 0 || s2.size == 0) {
-    return res;
-  }
-
-  // TODO: don't use variable length arrays
-  usize(*memo)[s2.size + 1] = (usize(*)[s2.size + 1])
-      arenaPush(arena, sizeof(usize[s1.size + 1][s2.size + 1]), alignof(usize[s1.size + 1][s2.size + 1]));
-
-  for (i32 i = s1.size - 1; i >= 0; --i) {
-    for (i32 j = s2.size - 1; j >= 0; --j) {
-      if (s1.str[i] == s2.str[j]) {
-        memo[i][j] = 1 + memo[i + 1][j + 1];
+#define at(m,i,j) m.x[(i)*m.n + (j)]
+  typedef struct Matrix Matrix;
+  struct Matrix {
+    usize *x;
+    usize m;
+    usize n;
+  };
+  
+  usize m = s1.size + 1;
+  usize n = s2.size + 1;
+  
+  Matrix c = {
+    .x = New(arena, usize, m*n),
+    .m = m,
+    .n = n,
+  };
+  
+  for(usize i = 1; i < m; ++i) {
+    for(usize j = 1; j < n; ++j) {
+      if(s1.str[i-1] == s2.str[j-1]) {
+        at(c,i,j) = at(c,i-1,j-1) + 1;
       } else {
-        memo[i][j] = Max(memo[i + 1][j], memo[i][j + 1]);
+        at(c,i,j) = Max(at(c,i-1,j), at(c,i,j-1));
       }
     }
   }
-
-  res.size = memo[0][0];
-  res.str = (u8 *)New(arena, u8, memo[0][0]);
-  for (usize i = 0, j = 0, last = 0; i < s1.size && j < s2.size;) {
-    if (memo[i][j] == memo[i + 1][j]) {
-      ++i;
-    } else if (memo[i][j] == memo[i][j + 1]) {
-      ++j;
-    } else if (memo[i][j] - 1 == memo[i + 1][j + 1]) {
-      res.str[last++] = s1.str[i];
-      ++i;
-      ++j;
+  
+  usize size = at(c,m-1,n-1);
+  u8 *str = New(arena, u8, size);
+  usize idx = size - 1;
+  for(usize i = m - 1, j = n - 1; i > 0 && j > 0;) {
+    if(at(c,i,j) == at(c,i-1,j)) {
+      --i;
+    } else if(at(c,i,j) == at(c,i,j-1)) {
+      --j;
+    } else {
+      str[idx] = s1.str[i - 1];
+      --idx;
+      --i;
+      --j;
     }
   }
-
-  return res;
+#undef at
+  return str8(str, size);
 }
 
 fn String8 upperFromStr(Arena *arena, String8 s) {
@@ -554,7 +564,7 @@ fn usize strFindFirstSubstr(String8 haystack, String8 needle) {
       return i;
     }
 
-    outer:
+    outer: ;
   }
 
   return 0;

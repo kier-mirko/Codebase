@@ -102,10 +102,17 @@
 #elif COMPILER_CLANG
 #define alignof(TYPE) _Alignof(TYPE)
 #elif COMPILER_CL
-  /* I think `alignof` is already defined */
+#define alignof(TYPE) __alignof(TYPE)
 #else
 #define alignof(TYPE) 1
 #endif
+
+#if COMPILER_CL
+#define thread_local __declspec(thread)
+#elif COMPILER_CLANG || COMPILER_GCC
+#define thread_local __thread
+#endif
+
 
 #define _stmt(S)                                                               \
   do {                                                                         \
