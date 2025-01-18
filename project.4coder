@@ -1,0 +1,42 @@
+version(2);
+project_name = "Codebase";
+
+patterns = {
+  "*.bat",
+  "*.sh",
+  "*.cpp",
+  "*.c",
+  "*.hpp",
+  "*.h",
+  "*.cc",
+  "*.4coder",
+};
+
+blacklist_patterns = { ".*", };
+
+load_paths_base = { { ".", .relative = 1, .recursive = 1, }, };
+load_paths = {
+  .win   = load_paths_base,
+  .linux = load_paths_base,
+  .mac   = load_paths_base,
+};
+
+commands = {
+  .build = {
+    .out = "*compilation*", .footer_panel = 1, .save_dirty_files = 1,
+    .win   = "build.bat",
+    .linux = "./build.sh",
+    .mac   = "./build.sh", 
+  },
+  .run = {
+    .out = "*run*", .footer_panel = 0, .save_dirty_files = 0,
+    .win   = "build\\main",
+    .linux = "build/main",
+    .mac   = "build/main", 
+  },
+};
+
+fkey_command = {
+  .F1 = "build",
+  .F2 = "run",
+};
