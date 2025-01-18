@@ -3,7 +3,6 @@
 
 #include <stdio.h>
 #include <time.h>
-#include <stdint.h>
 #include <stdarg.h>
 #include <string.h>
 
@@ -13,32 +12,90 @@
 #include <windows.h>
 #endif
 
-typedef float F32;
-typedef double F64;
-typedef long double F128;
+#define DefaultAlignment (2 * sizeof(void*))
 
-typedef int8_t I8;
-typedef uint8_t U8;
-typedef int16_t I16;
-typedef uint16_t U16;
-typedef int32_t I32;
-typedef uint32_t U32;
-typedef int64_t I64;
-typedef uint64_t U64;
-
-typedef I8 B8;
-typedef I32 B32;
-typedef I64 B64;
-
-#if defined(ARCH_X64) || defined(ARCH_ARM64)
-typedef U64 USZ;
-typedef I64 ISZ;
+#if COMPILER_GCC
+#define alignof(T) __alignof__(T)
+#elif COMPILER_CLANG
+#define alignof(T) _Alignof(T)
+#elif COMPILER_CL
+#define alignof(T) __alignof(T)
 #else
-typedef U32 USZ;
-typedef I32 ISZ;
+#error alignof is implemented for this compiler
 #endif
 
-#define DefaultAlignment (2 * sizeof(void*))
+#define _stmt(S)  do{ S }while(0)
+
+#ifndef _assert_break
+#if OS_WINDOWS
+#define _assert_break() __debugbreak()
+#else
+#define _assert_break() __builtin_trap()
+#endif
+#endif
+
+#define AssertAlways(c) _stmt(if (!(c)) { _assert_break(); })
+#ifdef ENABLE_ASSERT
+#define Assert(c) AssertAlways(c)
+#else
+#define Assert(c)
+#endif
+
+#if COMPILER_GCC || COMPILER_CLANG
+#define DLLExport export_c __attribute__((visibility("default")))
+#elif COMPILER_CL
+#define DLLExport export_c __declspec(dllexport)
+#endif
+
+#if COMPILER_CL
+# define thread_static __declspec(thread)
+#elif COMPILER_CLANG || COMPILER_GCC
+# define thread_static __thread
+#endif
+
+
+//-km: helper macro
+
+#define Stringify_(S) (#S)
+#define Stringify(S) Stringify_(S)
+
+#define Glue_(A, B) (A##B)
+#define Glue(A, B) Glue_(A,B)
+
+#define Arrsize(ARR) (sizeof((ARR)) / sizeof(*(ARR)))
+#define Max(a, b) ((a) >= (b) ? (a) : (b))
+#define Min(a, b) ((a) <= (b) ? (a) : (b))
+#define ClampTop(a, b) Min((a), (b))
+#define ClampBot(a, b) Max((a), (b))
+#define Swap(a, b, _tmp) ((_tmp) = (a), (a) = (b), (b) = (_tmp))
+#define Abs(a) ((a) >= 0 ? (a) : (-(a)))
+
+#define DeferLoop(...) for(U8 __i_ = 1; __i_; --__i_, __VA_ARGS__)
+
+#define Not(A) (~(A))
+#define And(A, B) ((A) & (B))
+#define Or(A, B) ((A) | (B))
+#define Nand(A, B) (~((A) && (B)))
+#define Nor(A, B) (~((A) || (B)))
+#define Xor(A, B) ((A) ^ (B))
+#define Xnor(A, B) (~(A) ^ (B))
+#define GetBit(NUM, I) ((NUM & (1 << I)) >> I)
+#define SetBit(NUM, I, BIT) (NUM | (1 << (BIT - 1)))
+
+#define KiB(BYTES) ((BYTES)*1024)
+#define MB(BYTES) (KiB((BYTES)) * 1024)
+#define GB(BYTES) (MB((BYTES)) * 1024UL)
+#define TB(BYTES) (GB((BYTES)) * 1024UL)
+
+#define global static
+#define local static
+#define fn static
+
+#define CExport extern "C"
+#define CExportBegin extern "C" {
+#define CExportEnd }
+
+//-km: constant and basic types
 
 #define U8_MAX 0xFF
 #define U8_MIN 0
@@ -71,10 +128,30 @@ typedef I32 ISZ;
 #endif
 
 
-#if COMPILER_CL
-# define thread_static __declspec(thread)
-#elif COMPILER_CLANG || COMPILER_GCC
-# define thread_static __thread
+typedef float F32;
+typedef double F64;
+typedef long double F128;
+
+typedef signed char         I8;
+typedef short              I16;
+typedef int                I32;
+typedef signed long        I64;
+
+typedef unsigned char       U8;
+typedef unsigned short     U16;
+typedef unsigned int       U32;
+typedef unsigned long long U64;
+
+typedef I8 B8;
+typedef I32 B32;
+typedef I64 B64;
+
+#if defined(ARCH_X64) || defined(ARCH_ARM64)
+typedef U64 USZ;
+typedef I64 ISZ;
+#else
+typedef U32 USZ;
+typedef I32 ISZ;
 #endif
 
 // =============================================================================
@@ -95,7 +172,7 @@ LLPushBackCustom((Head), (Last), (Nodeptr), next)
 
 #define LLPushBackCustom(Head, Last, Nodeptr, Next)                            \
 (!(Head) ? (Head) = (Last) = (Nodeptr)                                       \
-: ((Last) ? ((Last)->Next = (Nodeptr), (Last) = (Nodeptr))          \
+: ((Last) ? ((Last)->Next = (Nodeptr), (Last) = (Nodeptr))                  \
 : ((Head)->Next = (Last) = (Nodeptr))))
 
 // =============================================================================
