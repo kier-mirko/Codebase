@@ -37,6 +37,7 @@ fn bool fs_write(String8 filepath, String8 content) {
     }
   }
   CloseHandle(handle);
+  ScratchEnd(scratch);
   return result;
 }
 
@@ -102,4 +103,31 @@ fn FileProperties fs_getProp(String8 filepath) {
   properties.size = size.QuadPart;
   
   return properties;
+}
+
+fn File fs_open(Arena *arena, String8 filepath) {
+  File result = {0};
+  Scratch scratch = ScratchBegin(&arena, 1);
+  String16 path = UTF16From8(scratch.arena, &filepath);
+  
+  SECURITY_ATTRIBUTES security_attributes = {sizeof(SECURITY_ATTRIBUTES), 0, 0};
+  DWORD access_flags = GENERIC_READ | GENERIC_WRITE;
+  DWORD share_mode = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
+  HANDLE file = CreateFileW((WCHAR*)path.str, access_flags, share_mode, 
+                            &security_attributes, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+  
+  if(file != INVALID_HANDLE_VALUE) {
+    LARGE_INTEGER file_size;
+    if(GetFileSizeEx(file, &file_size)) {
+      HANDLE file_mapped = CreateFileMappingW(file, &security_attributes, PAGE_READWRITE, file_size.HighPart, file_size.LowPart, 0);
+      if(file_mapped != INVALID_HANDLE_VALUE) {
+        result.handle.u64[0] = (u64)file_mapped;
+        result.path = filepath;
+        result.prop = fs_getProp(filepath);
+        result.content.str = MapViewOfFileEx(file_mapped, FILE_MAP_ALL_ACCESS, 0, 0, 0, 0);
+        result.content.size = file_size.QuadPart;
+      }
+    }
+  }
+  return result;
 }

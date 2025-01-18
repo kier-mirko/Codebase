@@ -23,8 +23,13 @@ fn FileProperties fs_getProp(String8 filepath);
 
 // =============================================================================
 // Memory mapping files for easier and faster handling
+typedef struct OS_Handle OS_Handle;
+struct OS_Handle {
+  u64 u64[1];
+};
+
 typedef struct {
-  i32 descriptor;
+  OS_Handle handle;
   String8 path;
   FileProperties prop;
   String8 content;
