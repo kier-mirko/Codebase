@@ -9,24 +9,36 @@
 
 #include "file_properties.h"
 
+typedef u32 OS_AccessFlags;
+enum {
+  OS_AccessFlag_Read       = (1<<0),
+  OS_AccessFlag_Write      = (1<<1),
+  OS_AccessFlag_Execute    = (1<<2),
+  OS_AccessFlag_Append     = (1<<3),
+  OS_AccessFlag_ShareRead  = (1<<4),
+  OS_AccessFlag_ShareWrite = (1<<5),
+};
+
+typedef struct OS_Handle OS_Handle;
+struct OS_Handle {
+  u64 fd[1];
+};
+
+fn OS_Handle os_handleZero(void);
+fn bool os_handleEq(OS_Handle a, OS_Handle b);
+
 // =============================================================================
 // File reading and writing/appending
-fn String8 fs_read(Arena *arena, String8 filepath);
+fn OS_Handle fs_open(String8 filepath, OS_AccessFlags flags);
+fn String8 fs_read(Arena *arena, OS_Handle file);
 
-fn bool fs_write(String8 filepath, String8 content);
-fn bool fs_writeStream(String8 filepath, StringStream content);
-
-fn bool fs_append(String8 filepath, String8 content);
-fn bool fs_appendStream(String8 filepath, StringStream content);
+fn bool fs_write(OS_Handle file, String8 content);
+fn bool fs_writeStream(OS_Handle file, StringStream content);
 
 fn FileProperties fs_getProp(String8 filepath);
 
 // =============================================================================
 // Memory mapping files for easier and faster handling
-typedef struct OS_Handle OS_Handle;
-struct OS_Handle {
-  u64 fd[1];
-};
 
 typedef struct {
   OS_Handle handle;
@@ -35,7 +47,7 @@ typedef struct {
   String8 content;
 } File;
 
-fn File fs_open(Arena *arena, String8 filepath);
+fn File fs_fileOpen(Arena *arena, String8 filepath);
 fn File fs_openTmp(Arena *arena);
 
 fn bool fs_fileWrite(File *file, String8 content);
