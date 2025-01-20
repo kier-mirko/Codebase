@@ -10,7 +10,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#define Strlit(STR) (String8){.str = (u8 *)(STR), .size = sizeof(STR) - 1}
+#define Strlit(STR) str8((u8*)STR, sizeof(STR)-1)
 #define StrlitInit(STR) { (u8 *)(STR), sizeof(STR) - 1, }
 #define Strexpand(STR) (i32)((STR).size), (char *)((STR).str)
 
@@ -21,11 +21,11 @@ typedef struct {
   u8 size;
 } Codepoint;
 
-       fn Codepoint decodeUTF8(u8 *glyph_start);
-       fn Codepoint decodeUTF16(u16 *glyph_start);
+fn Codepoint decodeUTF8(u8 *glyph_start);
+fn Codepoint decodeUTF16(u16 *glyph_start);
 inline fn Codepoint decodeUTF32(u32 *glyph_start);
-       fn u8 encodeUTF8(u8 *res, Codepoint cp);
-       fn u8 encodeUTF16(u16 *res, Codepoint cp);
+fn u8 encodeUTF8(u8 *res, Codepoint cp);
+fn u8 encodeUTF16(u16 *res, Codepoint cp);
 inline fn u8 encodeUTF32(u32 *res, Codepoint cp);
 
 // =============================================================================
@@ -57,7 +57,7 @@ typedef struct StringStream {
 fn String8 str8FromStream(Arena *arena, StringStream *stream);
 fn void stringstreamAppend(Arena *arena, StringStream *strlist, String8 other);
 
-inline fn String8 str8(char *chars, usize len);
+inline fn String8 str8(u8 *chars, usize len);
 inline fn String8 strFromCstr(char *chars);
 inline fn String8 strFromDateTime(Arena *arena, DateTime dt);
 inline fn String8 strFromUnixTime(Arena *arena, u64 unix_timestamp);
@@ -66,9 +66,9 @@ fn bool strEq(String8 s1, String8 s2);
 fn bool strEqCstr(String8 s, const char *cstr);
 fn bool cstrEq(char *s1, char *s2);
 
-       fn bool strIsSignedInteger(String8 s);
-       fn bool strIsInteger(String8 s);
-       fn bool strIsFloating(String8 s);
+fn bool strIsSignedInteger(String8 s);
+fn bool strIsInteger(String8 s);
+fn bool strIsFloating(String8 s);
 inline fn bool strIsNumerical(String8 s);
 fn i64 i64FromStr(String8 s);
 fn u64 u64FromStr(String8 s);

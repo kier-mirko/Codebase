@@ -39,7 +39,7 @@ fn String8 fs_read(Arena *arena, OS_Handle file) {
     OVERLAPPED overlapped = {0};
     if(ReadFile(handle, buffer, size, &bytes_read, &overlapped)
        && size == bytes_read) {
-      result.str = buffer;
+      result.str = (u8*)buffer;
       result.size = size;
     }
   }
@@ -53,7 +53,7 @@ fn bool fs_write(OS_Handle file, String8 content) {
   if(os_handleEq(file, os_handleZero())) { return result; }
   
   DWORD bytes_written = 0;
-  if(WriteFile((HANDLE)file.fd[0], content.str, content.size, &bytes_written, 0)
+  if(WriteFile((HANDLE)file.fd[0], content.str, (DWORD)content.size, &bytes_written, 0)
      && content.size == bytes_written) {
     result = true;
   }
@@ -70,22 +70,19 @@ fn FileProperties fs_getProp(String8 filepath) {
   WIN32_FILE_ATTRIBUTE_DATA file_attributes;
   GetFileAttributesExW((WCHAR*)path.str, GetFileExInfoStandard, &file_attributes);
   
-  LARGE_INTEGER last_access_time = {
-    .LowPart = file_attributes.ftLastAccessTime.dwLowDateTime,
-    .HighPart = file_attributes.ftLastAccessTime.dwHighDateTime,
-  };
+  LARGE_INTEGER last_access_time = {0};
+  last_access_time.LowPart = file_attributes.ftLastAccessTime.dwLowDateTime;
+  last_access_time.HighPart = file_attributes.ftLastAccessTime.dwHighDateTime;
   properties.last_access_time = last_access_time.QuadPart;
   
-  LARGE_INTEGER last_modification_time = {
-    .LowPart = file_attributes.ftLastWriteTime.dwLowDateTime,
-    .HighPart = file_attributes.ftLastWriteTime.dwHighDateTime,
-  };
+  LARGE_INTEGER last_modification_time = {0};
+  last_modification_time.LowPart = file_attributes.ftLastWriteTime.dwLowDateTime;
+  last_modification_time.HighPart = file_attributes.ftLastWriteTime.dwHighDateTime;
   properties.last_modification_time = last_modification_time.QuadPart;
   
-  LARGE_INTEGER size = { 
-    .LowPart = file_attributes.nFileSizeLow, 
-    .HighPart = file_attributes.nFileSizeHigh 
-  };
+  LARGE_INTEGER size = {0};
+  size.LowPart = file_attributes.nFileSizeLow;
+  size.HighPart = file_attributes.nFileSizeHigh;
   properties.size = size.QuadPart;
   
   return properties;
@@ -110,7 +107,7 @@ fn File fs_fileOpen(Arena *arena, String8 filepath) {
         result.handle.fd[0] = (u64)file_mapped;
         result.path = filepath;
         result.prop = fs_getProp(filepath);
-        result.content.str = MapViewOfFileEx(file_mapped, FILE_MAP_ALL_ACCESS, 0, 0, 0, 0);
+        result.content.str = (u8*)MapViewOfFileEx(file_mapped, FILE_MAP_ALL_ACCESS, 0, 0, 0, 0);
         result.content.size = file_size.QuadPart;
       }
     }
