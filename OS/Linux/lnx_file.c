@@ -62,58 +62,39 @@ fn bool fs_write(OS_Handle file, String8 content) {
   return result;
 }
 
-fn FileProperties fs_getProp(String8 filepath) {
-  FileProperties res = {0};
-  if (filepath.size == 0) {
-    return res;
-  }
-
+fn FileProperties fs_getProp(OS_Handle file) {
+  FileProperties result = {0};
+  
+  if(os_handleEq(file, os_handleZero())) { return result; }
+  
   struct stat file_stat;
-  if (stat((char *)filepath.str, &file_stat) < 0) {
-    return res;
+  if (fstat((int)file.fd[0], &file_stat) < 0) {
+    return result;
   }
-
-  res.ownerID = file_stat.st_uid;
-  res.groupID = file_stat.st_gid;
-  res.size = (usize)file_stat.st_size;
-  res.last_access_time = (u64)file_stat.st_atime;
-  res.last_modification_time = (u64)file_stat.st_mtime;
-  res.last_status_change_time = (u64)file_stat.st_ctime;
-
-  res.user = ACF_Unknown;
-  if (file_stat.st_mode & S_IRUSR) {
-    res.user = ACF_Read;
-  }
-  if (file_stat.st_mode & S_IWUSR) {
-    res.user = (AccessFlag)(res.user | ACF_Write);
-  }
-  if (file_stat.st_mode & S_IXUSR) {
-    res.user = (AccessFlag)(res.user | ACF_Execute);
-  }
-
-  res.group = ACF_Unknown;
-  if (file_stat.st_mode & S_IRGRP) {
-    res.group = ACF_Read;
-  }
-  if (file_stat.st_mode & S_IWGRP) {
-    res.group = (AccessFlag)(res.group | ACF_Write);
-  }
-  if (file_stat.st_mode & S_IXGRP) {
-    res.group = (AccessFlag)(res.group | ACF_Execute);
-  }
-
-  res.other = ACF_Unknown;
-  if (file_stat.st_mode & S_IROTH) {
-    res.other = ACF_Read;
-  }
-  if (file_stat.st_mode & S_IWOTH) {
-    res.other = (AccessFlag)(res.other | ACF_Write);
-  }
-  if (file_stat.st_mode & S_IXOTH) {
-    res.other = (AccessFlag)(res.other | ACF_Execute);
-  }
-
-  return res;
+  
+  result.ownerID = file_stat.st_uid;
+  result.groupID = file_stat.st_gid;
+  result.size = (usize)file_stat.st_size;
+  result.last_access_time = (u64)file_stat.st_atime;
+  result.last_modification_time = (u64)file_stat.st_mtime;
+  result.last_status_change_time = (u64)file_stat.st_ctime;
+  
+  result.user = ACF_Unknown;
+  if (file_stat.st_mode & S_IRUSR) { result.user |= ACF_Read; }
+  if (file_stat.st_mode & S_IWUSR) { result.user |= ACF_Write; }
+  if (file_stat.st_mode & S_IXUSR) { result.user |= ACF_Execute; }
+  
+  result.group = ACF_Unknown;
+  if (file_stat.st_mode & S_IRGRP) { result.group |= ACF_Read; }
+  if (file_stat.st_mode & S_IWGRP) { result.group |= ACF_Write; }
+  if (file_stat.st_mode & S_IXGRP) { result.group |= ACF_Execute; }
+  
+  result.other = ACF_Unknown;
+  if (file_stat.st_mode & S_IROTH) { result.other |= ACF_Read; }
+  if (file_stat.st_mode & S_IWOTH) { result.other |= ACF_Write; }
+  if (file_stat.st_mode & S_IXOTH) { result.other |= ACF_Execute; }
+  
+  return result;
 }
 
 // =============================================================================
@@ -122,45 +103,34 @@ fn FileProperties fs_getProp(String8 filepath) {
 fn File fs_openTmp(Arena *arena) {
   char path[] = "/tmp/base-XXXXXX";
   i32 fd = mkstemp(path);
-
-  String8 pathstr = {
-    .str = New(arena, u8, Arrsize(path)),
-    .size = Arrsize(path),
-  };
+  
+  String8 pathstr = {0};
+  pathstr.str = New(arena, u8, Arrsize(path));
+  pathstr.size = Arrsize(path);
   memCopy(pathstr.str, path, Arrsize(path));
-
-  return (File) {
-    .handle = (u64)fd,
-    .path = pathstr,
-    .prop = fs_getProp(pathstr),
-    .content = str8((char *)mmap(0, 0,
-				 PROT_READ | PROT_WRITE,
-				 MAP_SHARED, fd, 0), 0),
-  };
+  
+  File file = {0};
+  file.handle[0] = (u64)fd;
+  file.path = pathstr;
+  file.prop = fs_getProp(file.handle);
+  file..content = str8((u8*)mmap(0, 0PROT_READ | PROT_WRITE,MAP_SHARED, fd, 0), 0),
+  return file;
 }
 
 fn File fs_fileOpen(Arena *arena, String8 filepath) {
-  Assert(arena);
-  if (filepath.size == 0) {
-    return (File) {0};
-  }
-
+  File result = {0};
+  
   i32 fd = open((char *)filepath.str, O_RDWR | O_CREAT,
-		S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-  if (fd < 0) {
-    (void)close(fd);
-    return (File) {0};
+                S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+  if (fd != -1) {
+    result.handle[0] = (u64)fd;
+    reuslt.path = filepath;
+    FileProperties prop = fs_getProp(result.handle);
+    reuslt.prop = prop;
+    result.content = str8((char *)mmap(0, prop.size, PROT_READ | PROT_WRITE,MAP_SHARED, fd, 0), prop.size);
   }
-
-  FileProperties prop = fs_getProp(filepath);
-  return (File) {
-    .handle = (u64)fd,
-    .path = filepath,
-    .prop = prop,
-    .content = str8((char *)mmap(0, prop.size,
-				 PROT_READ | PROT_WRITE,
-				 MAP_SHARED, fd, 0), prop.size),
-  };
+  
+  return result;
 }
 
 fn bool fs_fileWrite(File *file, String8 content) {
@@ -182,7 +152,7 @@ fn bool fs_fileClose(File *file) {
 }
 
 fn bool fs_fileHasChanged(File *file) {
-  FileProperties prop = fs_getProp(file->path);
+  FileProperties prop = fs_getProp(file->handle);
   return (file->prop.last_access_time != prop.last_access_time) ||
 	 (file->prop.last_modification_time != prop.last_modification_time) ||
 	 (file->prop.last_status_change_time != prop.last_status_change_time);
@@ -203,10 +173,10 @@ inline fn void fs_fileSync(File *file) {
 
 fn void fs_fileForceSync(File *file) {
   (void)munmap(file->content.str, file->prop.size);
-  file->prop = fs_getProp(file->path);
+  file->prop = fs_getProp(file->handle);
   file->content = str8((char *)mmap(0, file->prop.size,
-				    PROT_READ | PROT_WRITE,
-				    MAP_SHARED, file->handle.fd[0], 0), file->prop.size);
+                                    PROT_READ | PROT_WRITE,
+                                    MAP_SHARED, file->handle.fd[0], 0), file->prop.size);
 }
 
 // =============================================================================
@@ -283,11 +253,11 @@ fn bool fs_rmIter(String8 dirname) {
       if (strEq(str, currdir) || strEq(str, parentdir)) {
         continue;
       }
-
+      
       is_empty = false;
       String8 fullpath = strFormat(scratch.arena, "%.*s/%.*s",
-				   Strexpand(current->value), Strexpand(str));
-
+                                   Strexpand(current->value), Strexpand(str));
+      
       if (entry->d_type == DT_DIR) {
         FilenameNode *childdir = New(scratch.arena, FilenameNode);
         childdir->value = fullpath;

@@ -35,7 +35,7 @@ fn String8 fs_read(Arena *arena, OS_Handle file);
 fn bool fs_write(OS_Handle file, String8 content);
 fn bool fs_writeStream(OS_Handle file, StringStream content);
 
-fn FileProperties fs_getProp(String8 filepath);
+fn FileProperties fs_getProp(OS_Handle file);
 
 // =============================================================================
 // Memory mapping files for easier and faster handling
@@ -59,7 +59,7 @@ fn bool fs_fileErase(File *file);
 fn bool fs_fileRename(File *file, String8 to);
 
 inline fn void fs_fileSync(File *file);
-       fn void fs_fileForceSync(File *file);
+fn void fs_fileForceSync(File *file);
 
 // =============================================================================
 // Misc operation on the filesystem
