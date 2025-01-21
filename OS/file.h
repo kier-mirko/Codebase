@@ -1,12 +1,6 @@
 #ifndef BASE_OS_FILE
 #define BASE_OS_FILE
 
-#include "../base.h"
-#include "../arena.h"
-#include "../string.h"
-
-#include "../DataStructure/list.h"
-
 typedef u8 os_Permissions;
 enum {
   os_Permissions_Unknown = 0,

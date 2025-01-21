@@ -1,9 +1,6 @@
 #ifndef BASE_IMAGE_H
 #define BASE_IMAGE_H
 
-#include "base.h"
-#include "string.h"
-
 /* TODO: handmade image loading maybe? */
 #define STB_IMAGE_IMPLEMENTATION
 #include "extern/stb_image.h"

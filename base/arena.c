@@ -1,6 +1,3 @@
-#include "base.h"
-#include "arena.h"
-
 inline fn bool isPowerOfTwo(usize value) {
   return !(value & (value - 1));
 }

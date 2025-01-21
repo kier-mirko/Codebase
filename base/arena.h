@@ -1,8 +1,6 @@
 #ifndef BASE_ARENA
 #define BASE_ARENA
 
-#include "base.h"
-
 #if OS_LINUX || OS_BSD
 #include <sys/mman.h>
 #elif OS_WINDOWS

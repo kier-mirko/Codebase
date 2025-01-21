@@ -1,10 +1,8 @@
-#include "thread.h"
-
-inline fn Thread threadSpawn(void *(*thread_main)(void *)) {
-  return threadSpawnArgs(thread_main, 0);
+inline fn Thread os_thdSpawn(void *(*thread_main)(void *)) {
+  return os_thdSpawnArgs(thread_main, 0);
 }
 
-fn Thread threadSpawnArgs(void *(*thread_main)(void *), void *arg_data) {
+fn Thread os_thdSpawnArgs(void *(*thread_main)(void *), void *arg_data) {
   Assert(thread_main);
 
   Thread thread_id;
@@ -13,10 +11,10 @@ fn Thread threadSpawnArgs(void *(*thread_main)(void *), void *arg_data) {
   return thread_id;
 }
 
-inline fn void threadJoin(Thread id) {
-  threadJoinReturn(id, 0);
+inline fn void os_thdJoin(Thread id) {
+  os_thdJoinReturn(id, 0);
 }
 
-fn void threadJoinReturn(Thread id, void **save_return_value_in) {
+fn void os_thdJoinReturn(Thread id, void **save_return_value_in) {
   (void)pthread_join(id, save_return_value_in);
 }

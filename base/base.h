@@ -2,117 +2,117 @@
 #define BASE_BASE
 
 #if defined(__GNUC__) && !defined(__llvm__) && !defined(__INTEL_COMPILER)
-#define COMPILER_GCC 1
+#  define COMPILER_GCC 1
 #elif defined(__clang__) && !defined(_MSC_VER)
-#define COMPILER_CLANG 1
+#  define COMPILER_CLANG 1
 #elif defined(_MSC_VER)
-#define COMPILER_CL 1
-#if defined(_M_IX86)
-#define ARCH_X86 1
-#elif defined(_M_AMD64)
-#define ARCH_X64 1
-#elif defined(_M_ARM)
-#define ARCH_ARM 1
-#elif defined(_M_ARM64)
-#define ARCH_ARM64 1
+#  define COMPILER_CL 1
+#  if defined(_M_IX86)
+#    define ARCH_X86 1
+#  elif defined(_M_AMD64)
+#    define ARCH_X64 1
+#  elif defined(_M_ARM)
+#    define ARCH_ARM 1
+#  elif defined(_M_ARM64)
+#    define ARCH_ARM64 1
+#  else
+#    error "Unsupported platform"
+#  endif
 #else
-#error "Unsupported platform"
-#endif
-#else
-#error "Unsupported compiler"
+#  error "Unsupported compiler"
 #endif
 
 #if defined(__gnu_linux__)
-#define OS_LINUX 1
+#  define OS_LINUX 1
 #elif defined(__unix__)
-#define OS_BSD 1
+#  define OS_BSD 1
 #elif defined(_WIN32)
-#define OS_WINDOWS 1
+#  define OS_WINDOWS 1
 #elif defined(__APPLE__)
-#define OS_MAC 1
+#  define OS_MAC 1
 #else
-#error "Unsupported OS"
+#  error "Unsupported OS"
 #endif
 
 #if defined(__cplusplus)
-#define CPP 1
+#  define CPP 1
 #else
-#define CPP 0
+#  define CPP 0
 #endif
 
-# if defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64) || defined(_M_AMD64)
+#if defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64) || defined(_M_AMD64)
 #  define ARCH_X64 1
-# elif defined(i386) || defined(__i386) || defined(__i386__)
+#elif defined(i386) || defined(__i386) || defined(__i386__)
 #  define ARCH_X86 1
-# elif defined(__aarch64__)
+#elif defined(__aarch64__)
 #  define ARCH_ARM64 1
-# elif defined(__arm__)
+#elif defined(__arm__)
 #  define ARCH_ARM32 1
-# else
+#else
 #  error "Unsopported platform"
-# endif
+#endif
 
 #if !defined(COMPILER_GCC)
-#define COMPILER_GCC 0
+#  define COMPILER_GCC 0
 #endif
 #if !defined(COMPILER_CLANG)
-#define COMPILER_CLANG 0
+#  define COMPILER_CLANG 0
 #endif
 #if !defined(COMPILER_CL)
-#define COMPILER_CL 0
+#  define COMPILER_CL 0
 #endif
 
 #if !defined(OS_LINUX)
-#define OS_LINUX 0
+#  define OS_LINUX 0
 #endif
 #if !defined(OS_BSD)
-#define OS_BSD 0
+#  define OS_BSD 0
 #endif
 #if !defined(OS_MAC)
-#define OS_MAC 0
+#  define OS_MAC 0
 #endif
 #if !defined(OS_WINDOWS)
-#define OS_WINDOWS 0
+#  define OS_WINDOWS 0
 #endif
 
 #if !defined(ARCH_X86)
-#define ARCH_X86 0
+#  define ARCH_X86 0
 #endif
 #if !defined(ARCH_X64)
-#define ARCH_X64 0
+#  define ARCH_X64 0
 #endif
 #if !defined(ARCH_ARM)
-#define ARCH_ARM 0
+#  define ARCH_ARM 0
 #endif
 #if !defined(ARCH_ARM64)
-#define ARCH_ARM64 0
+#  define ARCH_ARM64 0
 #endif
 
 #if defined(DEBUG)
-  #undef DEBUG
-  #define DEBUG 1
-  #define NDEBUG 0
+#  undef DEBUG
+#  define DEBUG 1
+#  define NDEBUG 0
 #else
-  #define DEBUG 0
-  #define NDEBUG 1
+#  define DEBUG 0
+#  define NDEBUG 1
 #endif
 
 #define TLS_CTX_SIZE MB(64)
 
 #if COMPILER_GCC
-#define alignof(TYPE) __alignof__(TYPE)
+#  define alignof(TYPE) __alignof__(TYPE)
 #elif COMPILER_CLANG
-#define alignof(TYPE) _Alignof(TYPE)
+#  define alignof(TYPE) _Alignof(TYPE)
 #elif COMPILER_CL
-#define alignof(TYPE) __alignof(TYPE)
+#  define alignof(TYPE) __alignof(TYPE)
 #else
-#define alignof(TYPE) 1
+#  define alignof(TYPE) 1
 #endif
 
 #if COMPILER_CL
-#define thread_local __declspec(thread)
+#  define thread_local __declspec(thread)
 #elif COMPILER_CLANG || COMPILER_GCC
-#define thread_local __thread
+#  define thread_local __thread
 #endif
 
 
@@ -137,10 +137,10 @@
   })
 
 #ifdef ENABLE_ASSERT
-#define Assert(COND) AssertAlways(COND)
-#define AssertMsg(COND, MSG) AssertAlwaysWithMsg(COND, MSG)
+#  define Assert(COND) AssertAlways(COND)
+#  define AssertMsg(COND, MSG) AssertAlwaysWithMsg(COND, MSG)
 #else
-#define Assert(COND) (void)(COND)
+#  define Assert(COND) (void)(COND)
 #endif
 
 #define Stringify_(S) (#S)
@@ -183,9 +183,9 @@
 #define CExportEnd }
 
 #if COMPILER_GCC || COMPILER_CLANG
-#define DLLExport export_c __attribute__((visibility("default")))
+#  define DLLExport export_c __attribute__((visibility("default")))
 #elif COMPILER_CL
-#define DLLExport export_c __declspec(dllexport)
+#  define DLLExport export_c __declspec(dllexport)
 #endif
 
 #include <stdint.h>
@@ -210,11 +210,11 @@ typedef enum {
 #endif
 
 #if defined(ARCH_X64) || defined(ARCH_ARM64)
-typedef u64 usize;
-typedef i64 isize;
+  typedef u64 usize;
+  typedef i64 isize;
 #else
-typedef u32 usize;
-typedef i32 isize;
+  typedef u32 usize;
+  typedef i32 isize;
 #endif
 
 #define DefaultAlignment (2 * sizeof(void*))
@@ -238,15 +238,15 @@ typedef i32 isize;
 #define I64_MIN (-0x8000000000000000)
 
 #if defined(ARCH_X64) || defined(ARCH_ARM64)
-#define USIZE_MAX U64_MAX
-#define USIZE_MIN U64_MIN
-#define ISIZE_MAX I64_MAX
-#define ISIZE_MIN I64_MIN
+#  define USIZE_MAX U64_MAX
+#  define USIZE_MIN U64_MIN
+#  define ISIZE_MAX I64_MAX
+#  define ISIZE_MIN I64_MIN
 #else
-#define USIZE_MAX U32_MAX
-#define USIZE_MIN U32_MIN
-#define ISIZE_MAX I32_MAX
-#define ISIZE_MIN I32_MIN
+#  define USIZE_MAX U32_MAX
+#  define USIZE_MIN U32_MIN
+#  define ISIZE_MAX I32_MAX
+#  define ISIZE_MIN I32_MIN
 #endif
 
 #endif

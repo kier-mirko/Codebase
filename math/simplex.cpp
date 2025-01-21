@@ -1,5 +1,3 @@
-#include "simplex.hpp"
-
 fn f64 minMaxNewtonMethod(f64 (*func)(f64), f64 x0, f64 epsilon) {
   f64 xk;
   for (usize i = 0;; ++i, x0 = xk) {

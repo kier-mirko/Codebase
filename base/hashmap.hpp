@@ -1,10 +1,6 @@
 #ifndef BASE_HASHMAP
 #define BASE_HASHMAP
 
-#include "../base.h"
-
-#include "dynarray.hpp"
-
 template <typename T, typename U>
 struct HashMap {
   usize size;

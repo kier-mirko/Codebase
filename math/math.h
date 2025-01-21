@@ -2,7 +2,10 @@
 #define BASE_CALCULUS
 
 #include <math.h>
-#include "../base.h"
+
+#define Pi32 (3.14159265f)
+#define Pi64 (3.141592653589793)
+#define Pi128 (3.1415926535897932384626433832795028841971693993751058209749445923078164L)
 
 // Replace these function with something like:
 // https://en.wikipedia.org/wiki/Cauchy%27s_integral_formula

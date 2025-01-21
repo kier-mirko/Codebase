@@ -1,5 +1,3 @@
-#include "clock.h"
-
 inline fn bool isLeapYear(u32 year) {
     return (year % 4 == 0 && year % 100 != 0) ||
 	   (year % 400 == 0);

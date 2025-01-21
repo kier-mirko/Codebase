@@ -1,16 +1,5 @@
-#include "../DataStructure/hashmap.hpp"
-
 /* implement log2? */
 #include <math.h>
-
-struct Occurrence {
-  String8 name;
-  usize count;
-
-  HashMap<String8, Occurrence> targets;
-
-  Occurrence(Arena *arena) : count(0), targets(arena, strHash) {}
-};
 
 inline fn f64 ai_entropy(f64 val) { return val ? -val * log2(val) : 0; }
 

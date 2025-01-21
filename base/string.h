@@ -1,12 +1,6 @@
 #ifndef BASE_STRING
 #define BASE_STRING
 
-#include "base.h"
-#include "arena.h"
-
-#include "DataStructure/list.h"
-#include "time/clock.h"
-
 #include <stdarg.h>
 #include <stdio.h>
 

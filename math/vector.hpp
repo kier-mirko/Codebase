@@ -2,7 +2,6 @@
 #define BASE_VECTOR
 
 #include <math.h>
-#include "../base.h"
 
 template <typename T, usize D>
 struct Vector {

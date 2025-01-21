@@ -1,11 +1,6 @@
 #ifndef BASE_SERIALIZER_CSV
 #define BASE_SERIALIZER_CSV
 
-#include "../base.h"
-#include "../arena.h"
-#include "../string.h"
-#include "../OS/file.h"
-
 typedef struct {
   char delimiter;
   File file;
