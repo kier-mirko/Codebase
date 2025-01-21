@@ -68,7 +68,8 @@ fn void *arenaPush(Arena *arena, usize size, usize align) {
 }
 
 inline fn Scratch tmpBegin(Arena *arena) {
-  return (Scratch) { .arena = arena, .pos = arena->head };
+  Scratch scratch = { arena, arena->head };
+  return scratch;
 }
 
 inline fn void tmpEnd(Scratch tmp) {

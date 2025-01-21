@@ -54,8 +54,10 @@ fn Codepoint decodeUTF16(u16 *glyph_start) {
 }
 
 inline fn Codepoint decodeUTF32(u32 *glyph_start) {
-  Codepoint res = {.codepoint = *glyph_start, .size = 1};
-  return res;
+  Codepoint result = {0};
+  result.codepoint = *glyph_start;
+  result.size = 1;
+  return result;
 }
 
 fn u8 encodeUTF8(u8 *res, Codepoint cp) {
@@ -106,44 +108,40 @@ inline fn u8 encodeUTF32(u32 *res, Codepoint cp) {
 // =============================================================================
 // UTF-8 string
 fn String8 str8FromStream(Arena *arena, StringStream *stream) {
-  usize final_len = 0, offset = 0;
-
+  usize size = 0;
+  
   for (StringNode *curr = stream->first; curr; curr = curr->next) {
-    final_len += curr->value.size;
+    size += curr->value.size;
   }
-
-  u8 *final_chars = New(arena, u8, final_len);
+  
+  u8 *str = New(arena, u8, size);
+  u8 *ptr = str;
   for (StringNode *curr = stream->first; curr; curr = curr->next) {
-    for (usize i = 0; i < curr->value.size; ++i) {
-      *(final_chars + (offset++)) = curr->value.str[i];
-    }
+    memcpy(ptr, curr->value.str, curr->value.size);
+    ptr += curr->value.size;
   }
-
-  return (String8) {.str = final_chars, .size = final_len};
+  
+  return str8(str, size);
 }
 
 fn void stringstreamAppend(Arena *arena, StringStream *strlist, String8 other) {
   Assert(arena);
   Assert(strlist);
   ++strlist->size;
-
+  
   StringNode *str = New(arena, StringNode);
   str->value = other;
   DLLPushBack(strlist->first, strlist->last, str);
 }
 
-inline fn String8 str8(char *chars, usize len) {
-  return (String8) {
-      .str = (u8 *)chars,
-      .size = len,
-  };
+inline fn String8 str8(u8 *chars, usize len) {
+  String8 str = {chars, len};
+  return str;
 }
 
 inline fn String8 strFromCstr(char *chars) {
-  return (String8) {
-      .str = (u8 *)chars,
-      .size = str8len(chars),
-  };
+  String8 str = {(u8*)chars, str8len(chars)};
+  return str;
 }
 
 inline fn String8 strFromUnixTime(Arena *arena, u64 unix_timestamp) {
@@ -326,11 +324,8 @@ fn String8 stringifyI64(Arena *arena, i64 n) {
   }
 
   arenaPop(arena, approx - i);
-
-  return (String8) {
-    .str = str,
-    .size = i,
-  };
+  
+  return str8(str,i);
 }
 
 fn String8 stringifyU64(Arena *arena, u64 n) {
@@ -347,11 +342,8 @@ fn String8 stringifyU64(Arena *arena, u64 n) {
   }
 
   arenaPop(arena, approx - i);
-
-  return (String8) {
-    .str = str,
-    .size = i,
-  };
+  
+  return str8(str, i);
 }
 
 fn String8 stringifyF64(Arena *arena, f64 n) {
@@ -361,11 +353,8 @@ fn String8 stringifyF64(Arena *arena, f64 n) {
   // TODO: maybe implement `sprintf`?
   size = sprintf((char *)str, "%f", n);
   arenaPop(arena, approx - size);
-
-  return (String8) {
-    .str = str,
-    .size = size,
-  };
+  
+  return str8(str, size);
 }
 
 fn usize str8len(char *chars) {
@@ -389,42 +378,30 @@ fn String8 strFormatVa(Arena *arena, const char *fmt, va_list args) {
   va_list args2;
   va_copy(args2, args);
   u32 needed_bytes = vsnprintf(0, 0, fmt, args2) + 1;
-
+  
   String8 res;
   res.str = New(arena, u8, needed_bytes);
   res.size = vsnprintf((char *)res.str, needed_bytes, fmt, args);
   res.str[res.size] = 0;
-
+  
   va_end(args2);
   return res;
 }
 
 inline fn String8 strPrefix(String8 s, usize end) {
-  return (String8) {
-    .str = s.str,
-    .size = ClampTop(s.size, end)
-  };
+  return str8(s.str, ClampTop(s.size, end));
 }
 
 inline fn String8 strPostfix(String8 s, usize start) {
-  return (String8) {
-    .str = s.str + start,
-    .size = (s.size >= start ? s.size - start : 0)
-  };
+  return str8(s.str + start, s.size >= start ? s.size - start : 0);
 }
 
 inline fn String8 substr(String8 s, usize end) {
-  return (String8) {
-    .str = s.str,
-    .size = ClampTop(s.size, end)
-  };
+  return str8(s.str, ClampTop(s.size,end));
 }
 
 inline fn String8 strRange(String8 s, usize start, usize end) {
-  return (String8) {
-    .str = s.str + start,
-    .size = ClampTop(end, s.size) - start
-  };
+  return str8(s.str + start, ClampTop(end, s.size) - start);
 }
 
 inline fn bool strEndsWith(String8 s, char ch) { return s.str[s.size - 1] == ch; }
@@ -437,16 +414,15 @@ fn String8 longestCommonSubstring(Arena *arena, String8 s1, String8 s2) {
     usize m;
     usize n;
   };
-
+  
   usize m = s1.size + 1;
   usize n = s2.size + 1;
-
-  Table c = {
-    .x = New(arena, usize, m*n),
-    .m = m,
-    .n = n,
-  };
-
+  
+  Table c = {0};
+  c.x = New(arena, usize, m*n);
+  c.m = m;
+  c.n = n;
+  
   for(usize i = 1; i < m; ++i) {
     for(usize j = 1; j < n; ++j) {
       if(s1.str[i-1] == s2.str[j-1]) {
@@ -473,32 +449,32 @@ fn String8 longestCommonSubstring(Arena *arena, String8 s1, String8 s2) {
     }
   }
 #undef at
-  return str8((char *)str, size);
+  return str8(str, size);
 }
 
 fn String8 upperFromStr(Arena *arena, String8 s) {
-  String8 res = {.str = New(arena, u8, s.size), .size = s.size};
-
+  String8 res = {New(arena, u8, s.size), s.size};
+  
   for (usize i = 0; i < s.size; ++i) {
     res.str[i] = charToUpper(s.str[i]);
   }
-
+  
   return res;
 }
 
 fn String8 lowerFromStr(Arena *arena, String8 s) {
-  String8 res = {.str = New(arena, u8, s.size), .size = s.size};
-
+  String8 res = {New(arena, u8, s.size), s.size};
+  
   for (usize i = 0; i < s.size; ++i) {
     res.str[i] = charToLower(s.str[i]);
   }
-
+  
   return res;
 }
 
 fn String8 capitalizeFromStr(Arena *arena, String8 s) {
-  String8 res = {.str = New(arena, u8, s.size), .size = s.size};
-
+  String8 res = {New(arena, u8, s.size), s.size};
+  
   res.str[0] = charToUpper(s.str[0]);
   for (usize i = 1; i < s.size; ++i) {
     if (charIsSpace(s.str[i])) {
@@ -638,105 +614,105 @@ fn bool str32Eq(String32 s1, String32 s2) {
 fn String8 UTF8From16(Arena *arena, String16 *in) {
   usize res_size = 0, approx_size = in->size * 4;
   u8 *bytes = New(arena, u8, approx_size), *res_offset = bytes;
-
+  
   Codepoint codepoint = {0};
   for (u16 *start = in->str, *end = in->str + in->size; start < end;
        start += codepoint.size) {
     codepoint = decodeUTF16(start);
-
+    
     u8 utf8_codepoint_size = encodeUTF8(res_offset, codepoint);
     res_size += utf8_codepoint_size;
     res_offset += utf8_codepoint_size;
   }
-
+  
   arenaPop(arena, (approx_size - res_size));
-  return (String8) {.str = bytes, .size = res_size};
+  return str8(bytes, res_size);
 }
 
 fn String8 UTF8From32(Arena *arena, String32 *in) {
   usize res_size = 0, approx_size = in->size * 4;
   u8 *bytes = New(arena, u8, approx_size), *res_offset = bytes;
-
+  
   Codepoint codepoint = {0};
   for (u32 *start = in->str, *end = in->str + in->size; start < end;
        start += codepoint.size) {
     codepoint = decodeUTF32(start);
-
+    
     u8 utf8_codepoint_size = encodeUTF8(res_offset, codepoint);
     res_size += utf8_codepoint_size;
     res_offset += utf8_codepoint_size;
   }
-
+  
   arenaPop(arena, (approx_size - res_size));
-  return (String8) {.str = bytes, .size = res_size};
+  return str8(bytes, res_size);
 }
 
 fn String16 UTF16From8(Arena *arena, String8 *in) {
   usize res_size = 0, approx_size = in->size * 2;
   u16 *words = New(arena, u16, approx_size), *res_offset = words;
-
+  
   Codepoint codepoint = {0};
   for (u8 *start = in->str, *end = in->str + in->size; start < end;
        start += codepoint.size) {
     codepoint = decodeUTF8(start);
-
+    
     u8 utf16_codepoint_size = encodeUTF16(res_offset, codepoint);
     res_size += utf16_codepoint_size;
     res_offset += utf16_codepoint_size;
   }
-
+  
   arenaPop(arena, (approx_size - res_size));
-  String16 res = {.str = words, .size = res_size};
+  String16 res = {words, res_size};
   return res;
 }
 
 fn String16 UTF16From32(Arena *arena, String32 *in) {
   usize res_size = 0, approx_size = in->size * 2;
   u16 *words = New(arena, u16, approx_size), *res_offset = words;
-
+  
   Codepoint codepoint = {0};
   for (u32 *start = in->str, *end = in->str + in->size; start < end;
        start += codepoint.size) {
     codepoint = decodeUTF32(start);
-
+    
     u8 utf16_codepoint_size = encodeUTF16(res_offset, codepoint);
     res_size += utf16_codepoint_size;
     res_offset += utf16_codepoint_size;
   }
-
+  
   arenaPop(arena, (approx_size - res_size));
-  String16 res = {.str = words, .size = res_size};
+  String16 res = {words, res_size};
   return res;
 }
 
 fn String32 UTF32From8(Arena *arena, String8 *in) {
   usize res_size = 0, approx_size = in->size * 2;
   u32 *dwords = New(arena, u32, approx_size), *res_offset = dwords;
-
+  
   Codepoint cp = {0};
   for (u8 *start = in->str, *end = in->str + in->size; start < end;
        start += cp.size, ++res_size) {
     cp = decodeUTF8(start);
     *res_offset++ = cp.codepoint;
   }
-
+  
   arenaPop(arena, (approx_size - res_size));
-  String32 res = {.str = dwords, .size = res_size};
+  String32 res = {dwords, res_size};
   return res;
 }
 
 fn String32 UTF32From16(Arena *arena, String16 *in) {
   usize res_size = 0, approx_size = in->size * 2;
   u32 *dwords = New(arena, u32, approx_size), *res_offset = dwords;
-
+  
   Codepoint cp = {0};
   for (u16 *start = in->str, *end = in->str + in->size; start < end;
        start += cp.size, ++res_size) {
     cp = decodeUTF16(start);
     *res_offset++ = cp.codepoint;
   }
-
+  
   arenaPop(arena, (approx_size - res_size));
-  String32 res = {.str = dwords, .size = res_size};
+  String32 res = {dwords, res_size};
   return res;
 }
