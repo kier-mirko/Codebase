@@ -4,7 +4,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#define Strlit(STR) (String8){.str = (u8 *)(STR), .size = sizeof(STR) - 1}
+#define Strlit(STR) str8((u8 *)(STR), sizeof(STR) - 1)
 #define StrlitInit(STR) { (u8 *)(STR), sizeof(STR) - 1, }
 #define Strexpand(STR) (i32)((STR).size), (char *)((STR).str)
 
@@ -81,7 +81,6 @@ fn String8 strFormatVa(Arena *arena, const char *fmt, va_list args);
 
 fn String8 strPrefix(String8 s, usize end);
 fn String8 strPostfix(String8 s, usize start);
-fn String8 strcat(String8 dest, String8 src);
 fn String8 substr(String8 s, usize end);
 fn String8 strRange(String8 s, usize start, usize end);
 fn bool strEndsWith(String8 s, char ch);

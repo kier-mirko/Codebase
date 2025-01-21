@@ -9,9 +9,10 @@ struct Matrix {
 
   template <typename... Ts>
   static Matrix Init(Ts... args) {
-    return (Matrix) {
+    Matrix res = {
       .values = { (T)(args)... },
     };
+    return res;
   }
 
   static Matrix Identity() {

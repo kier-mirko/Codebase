@@ -2,11 +2,11 @@
 
 #include <fcntl.h>
 #include <stdio.h>
-#include <sys/stat.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include <dirent.h>
-#include <sys/types.h>
 
 // =============================================================================
 // File reading and writing/appending
@@ -28,7 +28,8 @@ fn os_Handle fs_open(String8 filepath, os_AccessFlags flags) {
     fd = 0;
   }
 
-  return (os_Handle) {.fd = { (u64)fd }};
+  os_Handle res = {(u64)fd};
+  return res;
 }
 
 fn String8 fs_read(Arena *arena, os_Handle file) {
@@ -132,7 +133,10 @@ inline fn bool fs_fresize(File *file, usize size) {
   if (ftruncate(file->handle.fd[0], size) < 0) {
     return false;
   }
-  return file->content = (u8 *)mremap(file->content, file->prop.size, size, MREMAP_MAYMOVE);
+
+  (void)munmap(file->content, file->prop.size);
+  return (bool)(file->content = (u8*)mmap(0, size, PROT_READ | PROT_WRITE,
+					  MAP_SHARED, file->handle.fd[0], 0));
 }
 
 inline fn void fs_fwrite(File *file, String8 str) {
@@ -180,8 +184,8 @@ inline fn bool fs_rmdir(String8 path) {
 }
 
 fn FilenameList fs_iterFiles(Arena *arena, String8 dirname) {
-  local const String8 currdir = Strlit(".");
-  local const String8 parentdir = Strlit("..");
+  local const String8 currdir = StrlitInit(".");
+  local const String8 parentdir = StrlitInit("..");
 
   FilenameList res = {0};
   DIR *dir = opendir((char *)dirname.str);
@@ -206,8 +210,8 @@ fn FilenameList fs_iterFiles(Arena *arena, String8 dirname) {
 }
 
 fn bool fs_rmIter(String8 dirname) {
-  const String8 currdir = Strlit(".");
-  const String8 parentdir = Strlit("..");
+  local const String8 currdir = StrlitInit(".");
+  local const String8 parentdir = StrlitInit("..");
 
   Scratch scratch = ScratchBegin(0, 0);
   FilenameList dirstack = {0};

@@ -255,12 +255,13 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, Arena *map_arena, CSV config,
         new_maps[i] = HashMap(map_arena, strHash);
       }
 
+      CSV csv_parser = {
+        .delimiter = ',',
+        .file = file_map[curr->key],
+      };
       DecisionTreeNode *child =
           ai_makeDTNode(arena, map_arena,
-                        (CSV){
-                            .delimiter = ',',
-                            .file = file_map[curr->key],
-                        },
+                        csv_parser,
                         header, new_maps, n_features, target_idx, threshold);
       DLLPushBack(dt->first, dt->last, child);
     }

@@ -1,6 +1,7 @@
 fn Viewport openglViewport(String8 name, usize initial_width,
 			   usize initial_height) {
   opengl_init();
+  Viewport blank = {0};
   Viewport viewport = {.xdisplay = XOpenDisplay(0)};
   if (!viewport.xdisplay) {
     return viewport;
@@ -21,7 +22,7 @@ fn Viewport openglViewport(String8 name, usize initial_width,
   if (majorGLX <= 1 && minorGLX < 2) {
     printf("GLX 1.2 or greater is required.\n");
     XCloseDisplay(viewport.xdisplay);
-    return (Viewport) {0};
+    return blank;
   } else {
     printf("\e[33mGLX client version:\e[0m %s\n",
 	   glXGetClientString(viewport.xdisplay, GLX_VERSION));
@@ -62,7 +63,7 @@ fn Viewport openglViewport(String8 name, usize initial_width,
   if (fbc == 0) {
     printf("Failed to retrieve framebuffer.\n");
     XCloseDisplay(viewport.xdisplay);
-    return (Viewport) {0};
+    return blank;
   }
   printf("Found %d matching framebuffers.\n", fbcount );
 
@@ -97,14 +98,14 @@ fn Viewport openglViewport(String8 name, usize initial_width,
   XVisualInfo* vi = glXGetVisualFromFBConfig(viewport.xdisplay, bestFbc);
   if(!vi) {
     printf("\tglXChooseVisual\n");
-    return (Viewport){0};
+    return blank;
   }
 
   Colormap cmap;
   if (!(cmap = XCreateColormap(viewport.xdisplay, viewport.xroot,
 			       vi->visual, AllocNone))) {
     printf("\tXCreateColormap\n");
-    return (Viewport){0};
+    return blank;
   }
 
   XSetWindowAttributes swa = {.event_mask = ExposureMask |
@@ -129,7 +130,7 @@ fn Viewport openglViewport(String8 name, usize initial_width,
   /* Display the window */
   if (!XMapWindow(viewport.xdisplay, viewport.xwindow)) {
     printf("\tXMapWindow\n");
-    return (Viewport){0};
+    return blank;
   }
 
   viewport.xatom_close = XInternAtom(viewport.xdisplay, "WM_DELETE_WINDOW", 0);
@@ -162,13 +163,13 @@ fn Viewport openglViewport(String8 name, usize initial_width,
 		       viewport.xatom_dndAware, 4, 32,
 		       PropModeReplace, &xdnd_version, 1)) {
     printf("\tXChangeProperty\n");
-    return (Viewport){0};
+    return blank;
   }
 
   if (!XSetWMProtocols(viewport.xdisplay, viewport.xwindow,
 		       (Atom *)&viewport.xatom_close, 1)) {
     printf("\tXSetWMProtocols\n");
-    return (Viewport){0};
+    return blank;
   }
 
   /* ========================================================================= */
@@ -226,7 +227,8 @@ fn Viewport openglViewport(String8 name, usize initial_width,
 
 fn Viewport vulkanViewport(String8 name, usize initial_width,
 			   usize initial_height) {
-  return (Viewport) {0};
+  Viewport viewport = {0};
+  return viewport;
 }
 
 void closeViewport(Viewport *viewport) {
@@ -252,7 +254,7 @@ bool viewportShouldClose(Viewport *viewport) {
 ViewportEvent viewportGetEvent(Viewport *viewport) {
   XEvent event = {0};
   XWindowAttributes gwa = {0};
-  ViewportEvent res = {};
+  ViewportEvent res;
 
   if (XPending(viewport->xdisplay)) {
     XNextEvent(viewport->xdisplay, &event);
@@ -439,24 +441,25 @@ inline void viewportSwapBuffers(Viewport *viewport) {
 }
 
 fn Codepoint codepointFromKeySym(KeySym sym) {
-  i32 min = 0;
-  i32 max = Arrsize(keysymtab);
-  i32 mid;
+  i32 min = 0, mid, max = Arrsize(keysymtab);
+  Codepoint res = {0};
 
   /* first check for Latin-1 characters (1:1 mapping) */
   if ((sym >= 0x0020 && sym <= 0x007e) ||
-      (sym >= 0x00a0 && sym <= 0x00ff))
-    return (Codepoint) {
+      (sym >= 0x00a0 && sym <= 0x00ff)) {
+    Codepoint res = {
       .codepoint = (u32)sym,
       .size = 1,
     };
+    return res;
+  }
 
   /* also check for directly encoded 24-bit UCS characters */
-  if ((sym & 0xff000000) == 0x01000000)
-    return (Codepoint) {
-      .codepoint = (u32)sym & 0x00ffffff,
-      .size = 3,
-    };
+  if ((sym & 0xff000000) == 0x01000000) {
+    res.codepoint = (u32)sym & 0x00ffffff;
+    res.size = 3;
+    return res;
+  }
 
   /* binary search in table */
   while (max >= min) {
@@ -466,15 +469,14 @@ fn Codepoint codepointFromKeySym(KeySym sym) {
     else if (keysymtab[mid].keysym > sym)
       max = mid - 1;
     else {
-      return (Codepoint) {
-	.codepoint = keysymtab[mid].ucs,
-	.size = 4,
-      };
+      res.codepoint = keysymtab[mid].ucs;
+      res.size = 4;
+      return res;
     }
   }
 
   /* no matching Codepoint value found */
-  return (Codepoint) {0};
+  return res;
 }
 
 

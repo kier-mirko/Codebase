@@ -34,13 +34,15 @@ struct Vector {
 
   Vector<T, 3> cross(Vector<T, 3> &other) {
     Assert(D == 3);
-    return (Vector<T, 3>) {
+    Vector<T, 3> res = {
       .values = {
 	y()*other.z()-z()*other.y(),
 	z()*other.x()-x()*other.z(),
 	x()*other.y()-y()*other.x(),
       },
     };
+
+    return res;
   }
 
   Vector mulElementWise(Vector &other) {

@@ -7,7 +7,7 @@
 #include<GL/glx.h>
 #include<GL/glu.h>
 
-#define ShiftMod(MODIFIERS)    ((MODIFIERS) & 0b1)
+#define ShiftMod(MODIFIERS)    ((MODIFIERS) & 1)
 #define CapsLockMod(MODIFIERS) (((MODIFIERS) & 0x2) >> 1)
 #define CtrlMod(MODIFIERS)     (((MODIFIERS) & 0x4) >> 2)
 #define MetaMod(MODIFIERS)     (((MODIFIERS) & 0x8) >> 3)

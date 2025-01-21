@@ -54,10 +54,11 @@ fn Codepoint decodeUTF16(u16 *glyph_start) {
 }
 
 inline fn Codepoint decodeUTF32(u32 *glyph_start) {
-  return (Codepoint) {
+  Codepoint res = {
     .codepoint = *glyph_start,
     .size = 1,
   };
+  return res;
 }
 
 fn u8 encodeUTF8(u8 *res, Codepoint cp) {
@@ -134,11 +135,13 @@ fn void stringstreamAppend(Arena *arena, StringStream *strlist, String8 other) {
 }
 
 inline fn String8 str8(u8 *chars, usize len) {
-  return (String8) {chars, len};
+  String8 res = {chars, len};
+  return res;
 }
 
 inline fn String8 strFromCstr(char *chars) {
-  return (String8) {(u8*)chars, str8len(chars)};
+  String8 res = {(u8*)chars, str8len(chars)};
+  return res;
 }
 
 inline fn String8 strFromUnixTime(Arena *arena, u64 unix_timestamp) {
@@ -391,17 +394,6 @@ inline fn String8 strPrefix(String8 s, usize end) {
 
 inline fn String8 strPostfix(String8 s, usize start) {
   return str8(s.str + start, s.size >= start ? s.size - start : 0);
-}
-
-fn String8 strcat(Arena *arena, String8 s1, String8 s2) {
-  String8 res = {
-    .str = New(arena, u8, s1.size + s2.size),
-    .size = s1.size + s2.size,
-  };
-
-  memCopy(res.str, s1.str, s1.size);
-  memCopy(res.str + s1.size, s2.str, s2.size);
-  return res;
 }
 
 inline fn String8 substr(String8 s, usize end) {
