@@ -27,7 +27,6 @@
 #endif
 
 #include "OS/dynlib.h"
-#include "OS/file_properties.h"
 #include "OS/file.h"
 
 #if OS_LINUX

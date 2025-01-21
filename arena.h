@@ -23,10 +23,10 @@ typedef struct {
 inline fn void *forwardAlign(void *ptr, usize align);
 inline fn bool isPowerOfTwo(usize value);
 
-fn Arena *arenaBuild(usize size, usize base_addr);
+       fn Arena *arenaBuild(usize size, usize base_addr);
 inline fn void arenaPop(Arena *arena, usize bytes);
 inline fn bool arenaFree(Arena *arena);
-fn void *arenaPush(Arena *arena, usize size, usize align);
+       fn void *arenaPush(Arena *arena, usize size, usize align);
 
 typedef struct {
   Arena *arena;

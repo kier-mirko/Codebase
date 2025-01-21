@@ -7,67 +7,83 @@
 
 #include "../DataStructure/list.h"
 
-#include "file_properties.h"
-
-typedef u32 OS_AccessFlags;
+typedef u8 os_Permissions;
 enum {
-  OS_AccessFlag_Read       = (1<<0),
-  OS_AccessFlag_Write      = (1<<1),
-  OS_AccessFlag_Execute    = (1<<2),
-  OS_AccessFlag_Append     = (1<<3),
-  OS_AccessFlag_ShareRead  = (1<<4),
-  OS_AccessFlag_ShareWrite = (1<<5),
+  os_Permissions_Unknown = 0,
+  os_Permissions_Execute = 1 << 0,
+  os_Permissions_Write = 1 << 1,
+  os_Permissions_Read = 1 << 2,
 };
 
-typedef struct OS_Handle OS_Handle;
-struct OS_Handle {
+typedef u32 os_AccessFlags;
+enum {
+  os_acfRead = 1 << 0,
+  os_acfWrite = 1 << 1,
+  os_acfExecute = 1 << 2,
+  os_acfAppend = 1 << 3,
+  os_acfShareRead = 1 << 4,
+  os_acfShareWrite = 1 << 5,
+};
+
+typedef struct {
+  u32 ownerID;
+  u32 groupID;
+  usize size;
+
+  u64 last_access_time;
+  u64 last_modification_time;
+  u64 last_status_change_time;
+
+  union {
+    os_Permissions permissions[3];
+
+    struct {
+      os_Permissions user;
+      os_Permissions group;
+      os_Permissions other;
+    };
+  };
+} fs_Properties;
+
+typedef struct {
   u64 fd[1];
-};
+} os_Handle;
 
-fn OS_Handle os_handleZero(void);
-fn bool os_handleEq(OS_Handle a, OS_Handle b);
+typedef struct {
+  os_Handle handle;
+  String8 path;
+  fs_Properties prop;
+  u8 *content;
+} File;
 
 // =============================================================================
 // File reading and writing/appending
-fn OS_Handle fs_open(String8 filepath, OS_AccessFlags flags);
-fn String8 fs_read(Arena *arena, OS_Handle file);
+       fn os_Handle fs_open(String8 filepath, os_AccessFlags flags);
+       fn String8 fs_read(Arena *arena, os_Handle file);
+inline fn bool fs_write(os_Handle file, String8 content);
 
-fn bool fs_write(OS_Handle file, String8 content);
-fn bool fs_writeStream(OS_Handle file, StringStream content);
-
-fn FileProperties fs_getProp(OS_Handle file);
+fn fs_Properties fs_getProp(os_Handle file);
 
 // =============================================================================
 // Memory mapping files for easier and faster handling
 
-typedef struct {
-  OS_Handle handle;
-  String8 path;
-  FileProperties prop;
-  String8 content;
-} File;
+       fn File fs_fopen(String8 filepath);
+       fn File fs_fopenTmp(Arena *arena);
+inline fn bool fs_fclose(File *file);
+inline fn bool fs_fresize(File *file, usize size);
+inline fn void fs_fwrite(File *file, String8 str);
 
-fn File fs_fileOpen(Arena *arena, String8 filepath);
-fn File fs_openTmp(Arena *arena);
-
-fn bool fs_fileWrite(File *file, String8 content);
-fn bool fs_fileWriteStream(File *file, StringStream content);
-fn bool fs_fileClose(File *file);
-
-fn bool fs_fileHasChanged(File *file);
-fn bool fs_fileErase(File *file);
-fn bool fs_fileRename(File *file, String8 to);
-
-inline fn void fs_fileSync(File *file);
-fn void fs_fileForceSync(File *file);
+inline fn bool fs_fileHasChanged(File *file);
+inline fn bool fs_fdelete(File *file);
+inline fn bool fs_frename(File *file, String8 to);
 
 // =============================================================================
 // Misc operation on the filesystem
 inline fn bool fs_delete(String8 filepath);
 inline fn bool fs_rename(String8 filepath, String8 to);
 
-fn bool fs_mkdir(String8 path);
-fn bool fs_rmdir(String8 path);
+inline fn bool fs_mkdir(String8 path);
+inline fn bool fs_rmdir(String8 path);
 
 // =============================================================================
 // File iteration

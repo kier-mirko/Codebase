@@ -1,7 +1,5 @@
 #include "../DataStructure/hashmap.hpp"
 
-#include "decision_tree.h"
-
 /* implement log2? */
 #include <math.h>
 
@@ -137,7 +135,7 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, Arena *map_arena, CSV config,
   /* Print table */
   for (usize i = 0; i < n_features; ++i) {
     for (HashMap<String8, Occurrence>::Slot slot : maps[i].slots) {
-      if (slot.next == 0) {
+      if (slot.first == 0) {
         continue;
       }
 
@@ -147,7 +145,7 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, Arena *map_arena, CSV config,
 
         for (HashMap<String8, Occurrence>::Slot fslot :
              curr->value.targets.slots) {
-          if (fslot.next == 0) {
+          if (fslot.first == 0) {
             continue;
           }
 
@@ -219,18 +217,25 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, Arena *map_arena, CSV config,
     }
 
     // Get the correct tmp file
-    File *file = file_map.fromKey(map_arena, row_entries[feature2split_by], fs_openTmp(arena));
-
+    File *file = file_map.fromKey(map_arena, row_entries[feature2split_by],
+				  fs_fopenTmp(arena));
     i = (feature2split_by == 0 ? 1 : 0);
-    fs_fileWrite(file, row_entries[i++]);
+
+    StringStream ss = {0};
+    Scratch scratch = ScratchBegin(0, 0);
+    stringstreamAppend(scratch.arena, &ss, str8(file->content, file->prop.size));
+    stringstreamAppend(scratch.arena, &ss, row_entries[i++]);
+
     for (; i < row.size; ++i) {
       if (i == feature2split_by) {
         continue;
       }
-      fs_fileWrite(file, Strlit(","));
-      fs_fileWrite(file, row_entries[i]);
+      stringstreamAppend(scratch.arena, &ss, Strlit(","));
+      stringstreamAppend(scratch.arena, &ss, row_entries[i]);
     }
-    fs_fileWrite(file, Strlit("\n"));
+    stringstreamAppend(scratch.arena, &ss, Strlit("\n"));
+    fs_fwrite(file, str8FromStream(scratch.arena, &ss));
+    ScratchEnd(scratch);
   }
 
   /* Call recursively to create the decision tree child nodes. */
@@ -246,13 +251,6 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, Arena *map_arena, CSV config,
       curr->next->prev = curr->prev;
       --header.size;
       break;
-    }
-  }
-
-  for (HashMap<String8, File>::Slot &slot : file_map.slots) {
-    for (HashMap<String8, File>::KVNode *curr = slot.first; curr;
-         curr = curr->next) {
-      fs_fileForceSync(&curr->value);
     }
   }
 

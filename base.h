@@ -122,16 +122,23 @@
   } while (0)
 
 #ifndef _assert_break
-#if OS_WINDOWS
-#define _assert_break() __debugbreak()
-#else
-#define _assert_break() __builtin_trap()
-#endif
+#  if OS_WINDOWS
+#    define _assert_break() __debugbreak()
+#  else
+#    define _assert_break() __builtin_trap()
+#  endif
 #endif
 
 #define AssertAlways(COND) _stmt(if (!(COND)) { _assert_break(); })
+#define AssertAlwaysWithMsg(COND, MSG) _stmt(\
+  if (!(COND)) {\
+    printf("%s", MSG);\
+    _assert_break(); \
+  })
+
 #ifdef ENABLE_ASSERT
 #define Assert(COND) AssertAlways(COND)
+#define AssertMsg(COND, MSG) AssertAlwaysWithMsg(COND, MSG)
 #else
 #define Assert(COND) (void)(COND)
 #endif
