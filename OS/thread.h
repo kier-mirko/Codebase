@@ -8,7 +8,7 @@
   typedef pthread_t Thread;
 #endif
 
-typedef void* (*thd_fn)(void *);
+typedef void (*thd_fn)(void *);
 
        fn Thread os_thdSpawn(thd_fn thread_main, void *args);
 inline fn void os_thdJoin(Thread id, void **return_buff);
