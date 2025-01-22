@@ -2,18 +2,15 @@
 #define BASE_OS_LINUX_THREAD
 
 #include <stdio.h>
-#include <pthread.h>
 
-#if OS_LINUX
+#if OS_LINUX || OS_BSD
+  #include <pthread.h>
   typedef pthread_t Thread;
-#elif OS_BSD
-  typedef struct pthread Thread;
 #endif
 
-inline fn Thread os_thdSpawn(void *(*thread_main)(void *));
-       fn Thread os_thdSpawnArgs(void *(*thread_main)(void *), void *arg_data);
+typedef void* (*thd_fn)(void *);
 
-inline fn void os_thdJoin(Thread id);
-       fn void os_thdJoinReturn(Thread id, void **save_return_value_in);
+       fn Thread os_thdSpawn(thd_fn thread_main, void *args);
+inline fn void os_thdJoin(Thread id, void **return_buff);
 
 #endif

@@ -1,8 +1,4 @@
-inline fn Thread os_thdSpawn(void *(*thread_main)(void *)) {
-  return os_thdSpawnArgs(thread_main, 0);
-}
-
-fn Thread os_thdSpawnArgs(void *(*thread_main)(void *), void *arg_data) {
+fn Thread os_thdSpawn(thd_fn thread_main, void *arg_data) {
   Assert(thread_main);
 
   Thread thread_id;
@@ -11,10 +7,6 @@ fn Thread os_thdSpawnArgs(void *(*thread_main)(void *), void *arg_data) {
   return thread_id;
 }
 
-inline fn void os_thdJoin(Thread id) {
-  os_thdJoinReturn(id, 0);
-}
-
-fn void os_thdJoinReturn(Thread id, void **save_return_value_in) {
-  (void)pthread_join(id, save_return_value_in);
+fn void os_thdJoin(Thread id, void **return_buff) {
+  (void)pthread_join(id, return_buff);
 }
