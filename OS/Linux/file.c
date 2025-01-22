@@ -40,7 +40,7 @@ fn String8 fs_read(Arena *arena, os_Handle file) {
   struct stat file_stat;
   if (!fstat(fd, &file_stat)) {
     u8 *buffer = New(arena, u8, file_stat.st_size);
-    if(read(fd, buffer, file_stat.st_size) >= 0) {
+    if(pread(fd, buffer, file_stat.st_size, 0) >= 0) {
       result.str = buffer;
       result.size = file_stat.st_size;
     }
