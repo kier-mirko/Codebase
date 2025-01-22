@@ -24,20 +24,20 @@ fn Viewport openglViewport(String8 name, usize initial_width,
     XCloseDisplay(viewport.xdisplay);
     return blank;
   } else {
-    printf("\e[33mGLX client version:\e[0m %s\n",
+    printf("\x1b[33mGLX client version:\x1b[0m %s\n",
 	   glXGetClientString(viewport.xdisplay, GLX_VERSION));
-    printf("\e[33mGLX client vendor:\e[0m %s\n",
+    printf("\x1b[33mGLX client vendor:\x1b[0m %s\n",
 	   glXGetClientString(viewport.xdisplay, GLX_VENDOR));
-    printf("\e[33mGLX client extensions:\e[0m %s\n",
+    printf("\x1b[33mGLX client extensions:\x1b[0m %s\n",
 	   glXGetClientString(viewport.xdisplay, GLX_EXTENSIONS));
 
-    printf("\e[33mGLX server version:\e[0m %s\n",
+    printf("\x1b[33mGLX server version:\x1b[0m %s\n",
 	   glXQueryServerString(viewport.xdisplay, viewport.xscreen,
 				GLX_VERSION));
-    printf("\e[33mGLX server vendor:\e[0m %s\n",
+    printf("\x1b[33mGLX server vendor:\x1b[0m %s\n",
 	   glXQueryServerString(viewport.xdisplay, viewport.xscreen,
 				GLX_VENDOR));
-    printf("\e[33mGLX server extensions:\e[0m %s\n\n",
+    printf("\x1b[33mGLX server extensions:\x1b[0m %s\n\n",
 	   glXQueryServerString(viewport.xdisplay, viewport.xscreen,
 				GLX_EXTENSIONS));
   }
@@ -182,7 +182,7 @@ fn Viewport openglViewport(String8 name, usize initial_width,
 
   String8 glx_exts = strFromCstr((char *)
     glXQueryExtensionsString(viewport.xdisplay, viewport.xscreen));
-  printf("\e[33mLate extensions:\e[0m %.*s\n\n", Strexpand(glx_exts));
+  printf("\x1b[33mLate extensions:\x1b[0m %.*s\n\n", Strexpand(glx_exts));
   if (glXCreateContextAttribsARB == 0) {
     printf("glXCreateContextAttribsARB() not found.\n");
   }
@@ -213,10 +213,10 @@ fn Viewport openglViewport(String8 name, usize initial_width,
 
   glXMakeCurrent(viewport.xdisplay, viewport.xwindow, viewport.opengl_context);
 
-  printf("\e[33mGL Vendor:\e[0m %s\n", glGetString(GL_VENDOR));
-  printf("\e[33mGL Renderer:\e[0m %s\n", glGetString(GL_RENDERER));
-  printf("\e[33mGL Version:\e[0m %s\n", glGetString(GL_VERSION));
-  printf("\e[33mGL Shading Language:\e[0m %s\n\n",
+  printf("\x1b[33mGL Vendor:\x1b[0m %s\n", glGetString(GL_VENDOR));
+  printf("\x1b[33mGL Renderer:\x1b[0m %s\n", glGetString(GL_RENDERER));
+  printf("\x1b[33mGL Version:\x1b[0m %s\n", glGetString(GL_VERSION));
+  printf("\x1b[33mGL Shading Language:\x1b[0m %s\n\n",
 	 glGetString(GL_SHADING_LANGUAGE_VERSION));
 
   glEnable(GL_DEPTH_TEST);
