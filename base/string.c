@@ -155,6 +155,16 @@ inline fn String8 strFromDateTime(Arena *arena, DateTime dt) {
 		   dt.hour, dt.minute, dt.second, dt.ms);
 }
 
+fn String8 str8_copy(Arena *arena, String8 str){
+  String8 result = {0};
+  
+  result.str = New(arena, u8, str.size + 1);
+  result.size = str.size + 1;
+  memcpy(result.str, str.str, str.size);
+  result.str[str.size] = 0;
+  return result;
+}
+
 fn bool strEq(String8 s1, String8 s2) {
   if (s1.size != s2.size) {
     return false;
