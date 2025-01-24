@@ -108,27 +108,27 @@ inline fn u8 encodeUTF32(u32 *res, Codepoint cp) {
 
 // =============================================================================
 // UTF-8 string
-fn String8 str8FromStream(Arena *arena, StringStream *stream) {
-  usize final_len = 0, offset = 0;
-  for (StringNode *curr = stream->first; curr; curr = curr->next) {
-    final_len += curr->value.size;
+fn String8 str8FromStream(Arena *arena, StringStream stream) {
+  usize size = 0;
+  for (StringNode *curr = stream.first; curr; curr = curr->next) {
+    size += curr->value.size;
   }
-
-  u8 *final_chars = New(arena, u8, final_len);
-  for (StringNode *curr = stream->first; curr; curr = curr->next) {
-    for (usize i = 0; i < curr->value.size; ++i) {
-      *(final_chars + (offset++)) = curr->value.str[i];
-    }
+  
+  u8 *str = New(arena, u8, size);
+  u8 *ptr = str;
+  for (StringNode *curr = stream.first; curr; curr = curr->next) {
+    memCopy(ptr, curr->value.str, curr->value.size);
+    ptr += curr->value.size;
   }
-
-  return str8(final_chars, final_len);
+  
+  return str8(str, size);
 }
 
 fn void stringstreamAppend(Arena *arena, StringStream *strlist, String8 other) {
   Assert(arena);
   Assert(strlist);
   ++strlist->size;
-
+  
   StringNode *str = New(arena, StringNode);
   str->value = other;
   DLLPushBack(strlist->first, strlist->last, str);
@@ -495,32 +495,32 @@ fn String8 capitalizeFromStr(Arena *arena, String8 s) {
       res.str[i] = charToLower(s.str[i]);
     }
   }
-
+  
   return res;
 }
 
 fn StringStream strSplit(Arena *arena, String8 s, char ch) {
   StringStream res = {0};
-
+  
   usize prev = 0;
   for (usize i = 0; i < s.size;) {
     if (s.str[i] == ch) {
       if (prev != i) {
-	stringstreamAppend(arena, &res, strRange(s, prev, i));
+        stringstreamAppend(arena, &res, strRange(s, prev, i));
       }
-
+      
       do {
-	prev = ++i;
+        prev = ++i;
       } while (s.str[i] == ch);
     } else {
       ++i;
     }
   }
-
+  
   if (prev != s.size) {
     stringstreamAppend(arena, &res, strRange(s, prev, s.size));
   }
-
+  
   return res;
 }
 

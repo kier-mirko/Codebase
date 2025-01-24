@@ -48,7 +48,7 @@ typedef struct StringStream {
   usize size;
 } StringStream;
 
-fn String8 str8FromStream(Arena *arena, StringStream *stream);
+fn String8 str8FromStream(Arena *arena, StringStream stream);
 fn void stringstreamAppend(Arena *arena, StringStream *strlist, String8 other);
 
 inline fn String8 str8(u8 *chars, usize len);
