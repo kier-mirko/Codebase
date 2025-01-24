@@ -159,7 +159,7 @@ fn String8 str8_copy(Arena *arena, String8 str){
   String8 result = {0};
   
   result.str = New(arena, u8, str.size + 1);
-  result.size = str.size + 1;
+  result.size = str.size;
   memcpy(result.str, str.str, str.size);
   result.str[str.size] = 0;
   return result;
