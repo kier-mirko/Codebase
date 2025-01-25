@@ -5,12 +5,15 @@
 
 #if OS_LINUX || OS_BSD
 #include <pthread.h>
-typedef pthread_t Thread;
 #endif
 
-typedef void (*thd_fn)(void *);
+typedef struct{
+    u64 v[1];
+} OS_Thread;
 
-fn Thread os_thdSpawn(thd_fn thread_main, void *args);
-inline fn void os_thdJoin(Thread id, void **return_buff);
+typedef void ThreadFunc(void*);
+
+fn OS_Thread os_thread_start(ThreadFunc *thread_main, void *args);
+fn bool os_thread_join(OS_Thread ids);
 
 #endif

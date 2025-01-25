@@ -11,4 +11,5 @@
 #elif OS_WINDOWS
 # include "win32/win32_file.c"
 # include "win32/win32_dynlib.c"
+# include "win32/win32_thread.c"
 #endif
