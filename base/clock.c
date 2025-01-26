@@ -45,18 +45,18 @@ DateTime dateTimeFromUnix(u64 timestamp) {
     timestamp -= secondsXmonth;
     ++dt.month;
   }
-
-  dt.day += timestamp / UNIX_DAY;
+  
+  dt.day += (u8)(timestamp / UNIX_DAY);
   timestamp %= UNIX_DAY;
-
-  dt.hour = timestamp / UNIX_HOUR;
+  
+  dt.hour = (u8)(timestamp / UNIX_HOUR);
   timestamp %= UNIX_HOUR;
-
-  dt.minute = timestamp / UNIX_MINUTE;
+  
+  dt.minute = (u8)(timestamp / UNIX_MINUTE);
   timestamp %= UNIX_MINUTE;
-
-  dt.second = timestamp;
-
+  
+  dt.second = (u8)timestamp;
+  
   return dt;
 }
 
