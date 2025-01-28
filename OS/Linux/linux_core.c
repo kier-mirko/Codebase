@@ -79,7 +79,7 @@ i32 main(i32 argc, char **argv) {
   lnx_info.hostname = lnx_gethostname();
 
   lnx_arena = ArenaBuild();
-  TimeTrack(lnx_parseMeminfo());
+  lnx_parseMeminfo();
   // TODO(lb): get IPv4&6
 
   // TODO(lb): put `argv` in a String8*

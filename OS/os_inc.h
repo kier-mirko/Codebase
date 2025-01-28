@@ -9,6 +9,7 @@
 #  include "Linux/X11/window.h"
 #  include "Linux/opengl.h"
 #elif OS_BSD
+#  include "BSD/bsd_core.h"
 #  include "BSD/opengl.h"
 #  include "BSD/X11/window.h"
 #elif OS_WINDOWS

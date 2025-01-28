@@ -6,9 +6,8 @@
 
 #  include "Linux/X11/window.c"
 #elif OS_BSD
-#  include "BSD/dynlib.c"
+#  include "BSD/bsd_core.c"
 #  include "BSD/file.c"
-#  include "BSD/thread.c"
 #  include "BSD/X11/window.c"
 #elif OS_WINDOWS
 #  include "Win32/win32_file.c"

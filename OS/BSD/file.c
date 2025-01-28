@@ -8,17 +8,17 @@
 
 // =============================================================================
 // File reading and writing/appending
-fn os_Handle fs_open(String8 filepath, os_AccessFlags flags) {
+fn OS_Handle fs_open(String8 filepath, OS_AccessFlags flags) {
   i32 access_flags = 0;
 
-  if((flags & os_acfRead) && (flags & os_acfWrite)) {
+  if((flags & OS_acfRead) && (flags & OS_acfWrite)) {
     access_flags |= O_RDWR;
-  } else if(flags & os_acfRead) {
+  } else if(flags & OS_acfRead) {
     access_flags |= O_RDONLY;
-  } else if(flags & os_acfWrite) {
+  } else if(flags & OS_acfWrite) {
     access_flags |= O_WRONLY | O_CREAT | O_TRUNC;
   }
-  if(flags & os_acfAppend) { access_flags |= O_APPEND | O_CREAT; }
+  if(flags & OS_acfAppend) { access_flags |= O_APPEND | O_CREAT; }
 
   i32 fd = open((char*)filepath.str, access_flags,
 		S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
@@ -26,13 +26,13 @@ fn os_Handle fs_open(String8 filepath, os_AccessFlags flags) {
     fd = 0;
   }
 
-  os_Handle res = {(u64)fd};
+  OS_Handle res = {(u64)fd};
   return res;
 }
 
-fn String8 fs_read(Arena *arena, os_Handle file) {
+fn String8 fs_read(Arena *arena, OS_Handle file) {
   String8 result = {0};
-  int fd = file.fd[0];
+  int fd = file.h[0];
   if(!fd) { return result; }
 
   struct stat file_stat;
@@ -47,17 +47,17 @@ fn String8 fs_read(Arena *arena, os_Handle file) {
   return result;
 }
 
-fn bool fs_write(os_Handle file, String8 content) {
-  if(!file.fd[0]) { return false; }
-  return write(file.fd[0], content.str, content.size) == (isize)content.size;
+fn bool fs_write(OS_Handle file, String8 content) {
+  if(!file.h[0]) { return false; }
+  return write(file.h[0], content.str, content.size) == (isize)content.size;
 }
 
-fn fs_Properties fs_getProp(os_Handle file) {
-  fs_Properties res = {0};
-  if(!file.fd[0]) { return res; }
+fn FS_Properties fs_getProp(OS_Handle file) {
+  FS_Properties res = {0};
+  if(!file.h[0]) { return res; }
 
   struct stat file_stat;
-  if (fstat((i32)file.fd[0], &file_stat) < 0) {
+  if (fstat((i32)file.h[0], &file_stat) < 0) {
     return res;
   }
 
@@ -68,20 +68,20 @@ fn fs_Properties fs_getProp(os_Handle file) {
   res.last_modification_time = (u64)file_stat.st_mtime;
   res.last_status_change_time = (u64)file_stat.st_ctime;
 
-  res.user = os_Permissions_Unknown;
-  if (file_stat.st_mode & S_IRUSR) { res.user |= os_Permissions_Read; }
-  if (file_stat.st_mode & S_IWUSR) { res.user |= os_Permissions_Write; }
-  if (file_stat.st_mode & S_IXUSR) { res.user |= os_Permissions_Execute; }
+  res.user = OS_Permissions_Unknown;
+  if (file_stat.st_mode & S_IRUSR) { res.user |= OS_Permissions_Read; }
+  if (file_stat.st_mode & S_IWUSR) { res.user |= OS_Permissions_Write; }
+  if (file_stat.st_mode & S_IXUSR) { res.user |= OS_Permissions_Execute; }
 
-  res.group = os_Permissions_Unknown;
-  if (file_stat.st_mode & S_IRGRP) { res.group |= os_Permissions_Read; }
-  if (file_stat.st_mode & S_IWGRP) { res.group |= os_Permissions_Write; }
-  if (file_stat.st_mode & S_IXGRP) { res.group |= os_Permissions_Execute; }
+  res.group = OS_Permissions_Unknown;
+  if (file_stat.st_mode & S_IRGRP) { res.group |= OS_Permissions_Read; }
+  if (file_stat.st_mode & S_IWGRP) { res.group |= OS_Permissions_Write; }
+  if (file_stat.st_mode & S_IXGRP) { res.group |= OS_Permissions_Execute; }
 
-  res.other = os_Permissions_Unknown;
-  if (file_stat.st_mode & S_IROTH) { res.other |= os_Permissions_Read; }
-  if (file_stat.st_mode & S_IWOTH) { res.other |= os_Permissions_Write; }
-  if (file_stat.st_mode & S_IXOTH) { res.other |= os_Permissions_Execute; }
+  res.other = OS_Permissions_Unknown;
+  if (file_stat.st_mode & S_IROTH) { res.other |= OS_Permissions_Read; }
+  if (file_stat.st_mode & S_IWOTH) { res.other |= OS_Permissions_Write; }
+  if (file_stat.st_mode & S_IXOTH) { res.other |= OS_Permissions_Execute; }
 
   return res;
 }
@@ -94,7 +94,7 @@ fn File fs_fopen(String8 filepath) {
   i32 fd = open((char *)filepath.str, O_RDWR | O_CREAT,
 		S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if (fd >= 0) {
-    file.handle.fd[0] = fd;
+    file.handle.h[0] = fd;
     file.path = filepath;
     file.prop = fs_getProp(file.handle);
     file.content = (u8 *)mmap(0, ClampBot(file.prop.size, 1), PROT_READ | PROT_WRITE,
@@ -115,7 +115,7 @@ fn File fs_fopenTmp(Arena *arena) {
   memCopy(pathstr.str, path, Arrsize(path));
 
   File file = {0};
-  file.handle.fd[0] = fd;
+  file.handle.h[0] = fd;
   file.path = pathstr;
   file.prop = fs_getProp(file.handle);
   file.content = (u8*)mmap(0, ClampBot(file.prop.size, 1), PROT_READ | PROT_WRITE,
@@ -124,17 +124,17 @@ fn File fs_fopenTmp(Arena *arena) {
 }
 
 fn bool fs_fclose(File *file) {
-  return close(file->handle.fd[0]) >= 0;
+  return close(file->handle.h[0]) >= 0;
 }
 
 inline fn bool fs_fresize(File *file, usize size) {
-  if (ftruncate(file->handle.fd[0], size) < 0) {
+  if (ftruncate(file->handle.h[0], size) < 0) {
     return false;
   }
 
   (void)munmap(file->content, file->prop.size);
   return (bool)(file->content = (u8*)mmap(0, size, PROT_READ | PROT_WRITE,
-					  MAP_SHARED, file->handle.fd[0], 0));
+					  MAP_SHARED, file->handle.h[0], 0));
 }
 
 inline fn void fs_fwrite(File *file, String8 content) {
@@ -144,7 +144,7 @@ inline fn void fs_fwrite(File *file, String8 content) {
 }
 
 inline fn bool fs_fileHasChanged(File *file) {
-  fs_Properties prop = fs_getProp(file->handle);
+  FS_Properties prop = fs_getProp(file->handle);
   return (file->prop.last_access_time != prop.last_access_time) ||
 	 (file->prop.last_modification_time != prop.last_modification_time) ||
 	 (file->prop.last_status_change_time != prop.last_status_change_time);

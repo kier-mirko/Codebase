@@ -1,4 +1,4 @@
-fn void* os_thdEntry(void *args) {
+fn void* lnx_thdEntry(void *args) {
   lnx_thdData *wrap_args = (lnx_thdData *)args;
   ThreadFunc *func = (ThreadFunc *)wrap_args->func;
   func(wrap_args->args);
@@ -20,7 +20,7 @@ fn OS_Handle os_thdSpawn(ThreadFunc *thread_main, void *args) {
 
   OS_Handle res = {0};
   pthread_t *thread_id = (pthread_t *)&res.h;
-  i32 maybeErr = pthread_create(thread_id, 0, os_thdEntry, wrap_args);
+  i32 maybeErr = pthread_create(thread_id, 0, lnx_thdEntry, wrap_args);
   ScratchEnd(scr);
 
   if (maybeErr == 0) {
