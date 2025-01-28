@@ -1,3 +1,44 @@
+fn OS_SystemInfo*
+os_getSystemInfo(void)
+{
+  return &w32_info;
+}
+
+fn void* 
+os_reserve(usize base_addr, usize size)
+{
+  void *result = VirtualAlloc((void*)base_addr, size, MEM_RESERVE, PAGE_READWRITE);
+  return result;
+}
+
+fn void* 
+os_reserveHuge(usize base_addr, usize size)
+{
+  void *result = VirtualAlloc((void*)base_addr, size, MEM_RESERVE | MEM_LARGE_PAGES, PAGE_READWRITE);
+  return result;
+}
+
+fn void 
+os_release(void *base, usize size)
+{
+  BOOL result = VirtualFree(base, size, MEM_RELEASE);
+  (void)result;
+}
+
+fn void 
+os_commit(void *base, usize size)
+{
+  void *result = VirtualAlloc(base, size, MEM_COMMIT, PAGE_READWRITE);
+  (void)result;
+}
+
+fn void 
+os_decommit(void *base, usize size)
+{
+  BOOL result = VirtualFree(base, size, MEM_DECOMMIT);
+  (void)result;
+}
+
 ////////////////////////////////
 //- km: Thread functions
 fn OS_W32_Thread* 
@@ -281,3 +322,32 @@ os_file_iter_end(OS_FileIter *iter)
   OS_W32_FileIter *w32_iter = (OS_W32_FileIter*)iter;
   FindClose(w32_iter->handle);
 }
+
+////////////////////////////////
+//- km: Entry point
+
+fn void
+w32_entry_point_caller(int argc, WCHAR **wargv)
+{
+  SYSTEM_INFO sys_info = {0};
+  GetSystemInfo(&sys_info);
+  
+  w32_info.core_count = (u8)sys_info.dwNumberOfProcessors;
+  w32_info.page_size = sys_info.dwPageSize;
+  w32_info.hugepage_size = GetLargePageMinimum();
+  
+  start(0, 0);
+}
+
+#if BUILD_CONSOLE_INTEFACE
+int 
+wmain(int argc, WCHAR **argv)
+{
+  w32_entry_point_caller(argv, argv);
+}
+#else
+int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, PWSTR cmdln, int cmd_show)
+{
+  w32_entry_point_caller(__argc, __wargv);
+}
+#endif

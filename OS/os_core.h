@@ -23,6 +23,12 @@ typedef struct {
   String8 hostname;
 } OS_SystemInfo;
 
+typedef struct{
+  String8 *first;
+  String8 *last;
+  i64 count;
+} CmdLine;
+
 typedef u8 OS_Permissions;
 enum {
   OS_Permissions_Unknown = 0,
@@ -93,7 +99,7 @@ typedef void ThreadFunc(void*);
 
 // =============================================================================
 // Main entry point
-fn void start(u32 argc, String8 *argv);
+fn void start(CmdLine *cmdln);
 
 // =============================================================================
 // System information retrieval

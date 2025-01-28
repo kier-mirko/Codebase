@@ -30,6 +30,8 @@ struct OS_W32_FileIter
 StaticAssert(sizeof(OS_W32_FileIter) <= sizeof(OS_FileIter), file_iter_size_check);
 
 global OS_W32_State w32_state;
+global OS_SystemInfo w32_info = {0};
+
 
 fn OS_W32_Thread* os_w32_thread_alloc(void);
 fn void os_w32_thread_release(OS_W32_Thread *thread);
