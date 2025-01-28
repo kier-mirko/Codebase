@@ -82,6 +82,5 @@ i32 main(i32 argc, char **argv) {
   lnx_parseMeminfo();
   // TODO(lb): get IPv4&6
 
-  // TODO(lb): put `argv` in a String8*
-  start(argc, 0);
+  start(0);
 }

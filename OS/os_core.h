@@ -68,9 +68,10 @@ typedef struct {
 } FS_Properties;
 
 typedef struct {
-  OS_Handle handle;
-  String8 path;
+  OS_Handle mmap_handle;
+  OS_Handle file_handle;
   FS_Properties prop;
+  String8 path;
   u8 *content;
 } File;
 
@@ -133,10 +134,11 @@ fn String8 fs_read(Arena *arena, OS_Handle file);
 fn bool fs_write(OS_Handle file, String8 content);
 
 fn FS_Properties fs_getProp(OS_Handle file);
+fn String8 fs_pathFromHandle(Arena *arena, OS_Handle file);
 
 // =============================================================================
 // Memory mapping files
-       fn File fs_fopen(String8 filepath);
+       fn File fs_fopen(Arena* arena, OS_Handle file);
        fn File fs_fopenTmp(Arena *arena);
 inline fn bool fs_fclose(File *file);
 inline fn bool fs_fresize(File *file, usize size);

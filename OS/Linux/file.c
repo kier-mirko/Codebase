@@ -100,21 +100,28 @@ fn FS_Properties fs_getProp(OS_Handle file) {
   return result;
 }
 
+fn String8 fs_pathFromHandle(Arena *arena, OS_Handle fd) {
+  char path[PATH_MAX];
+  snprintf(path, sizeof(path), "/proc/self/fd/%ld", fd.h[0]);
+
+  String8 res = {0};
+  res.size = readlink(path, path, sizeof(path));
+  res.str = New(arena, u8, res.size);
+  memCopy(res.str, path, res.size);
+  return res;
+}
+
 // =============================================================================
 // Memory mapping files for easier and faster handling
 
-fn File fs_fopen(String8 filepath) {
+fn File fs_fopen(Arena *arena, OS_Handle fd) {
   File file = {0};
-  i32 fd = open((char *)filepath.str, O_RDWR | O_CREAT,
-                S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-
-  if (fd >= 0) {
-    file.handle.h[0] = fd;
-    file.path = filepath;
-    file.prop = fs_getProp(file.handle);
-    file.content = (u8 *)mmap(0, ClampBot(file.prop.size, 1), PROT_READ | PROT_WRITE,
-				MAP_SHARED, fd, 0);
-  }
+  file.file_handle = fd;
+  file.path = fs_pathFromHandle(arena, fd);
+  file.prop = fs_getProp(file.file_handle);
+  file.content = (u8 *)mmap(0, ClampBot(file.prop.size, 1),
+			    PROT_READ | PROT_WRITE, MAP_SHARED, fd.h[0], 0);
+  file.mmap_handle.h[0] = (u64)file.content;
 
   return file;
 }
@@ -130,26 +137,28 @@ fn File fs_fopenTmp(Arena *arena) {
   memCopy(pathstr.str, path, Arrsize(path));
 
   File file = {0};
-  file.handle.h[0] = fd;
+  file.file_handle.h[0] = fd;
   file.path = pathstr;
-  file.prop = fs_getProp(file.handle);
+  file.prop = fs_getProp(file.file_handle);
   file.content = (u8*)mmap(0, ClampBot(file.prop.size, 1), PROT_READ | PROT_WRITE,
 			   MAP_SHARED, fd, 0);
+  file.mmap_handle.h[0] = (u64)file.content;
   return file;
 }
 
 inline fn bool fs_fclose(File *file) {
-  return close(file->handle.h[0]) >= 0;
+  return munmap((void *)file->mmap_handle.h[0], file->prop.size) == 0 &&
+	 close(file->file_handle.h[0]) >= 0;
 }
 
 inline fn bool fs_fresize(File *file, usize size) {
-  if (ftruncate(file->handle.h[0], size) < 0) {
+  if (ftruncate(file->file_handle.h[0], size) < 0) {
     return false;
   }
 
   (void)munmap(file->content, file->prop.size);
   return (bool)(file->content = (u8*)mmap(0, size, PROT_READ | PROT_WRITE,
-					  MAP_SHARED, file->handle.h[0], 0));
+					  MAP_SHARED, file->file_handle.h[0], 0));
 }
 
 inline fn void fs_fwrite(File *file, String8 content) {
@@ -159,7 +168,7 @@ inline fn void fs_fwrite(File *file, String8 content) {
 }
 
 inline fn bool fs_fileHasChanged(File *file) {
-  FS_Properties prop = fs_getProp(file->handle);
+  FS_Properties prop = fs_getProp(file->file_handle);
   return (file->prop.last_access_time != prop.last_access_time) ||
 	 (file->prop.last_modification_time != prop.last_modification_time) ||
 	 (file->prop.last_status_change_time != prop.last_status_change_time);
