@@ -45,7 +45,8 @@ typedef struct StringNode {
 typedef struct StringStream {
   StringNode *first;
   StringNode *last;
-  isize size;
+  isize node_count;
+  isize total_size;
 } StringStream;
 
 fn String8 str8FromStream(Arena *arena, StringStream stream);
@@ -62,9 +63,9 @@ fn bool strEq(String8 s1, String8 s2);
 fn bool strEqCstr(String8 s, const char *cstr);
 fn bool cstrEq(char *s1, char *s2);
 
-       fn bool strIsSignedInteger(String8 s);
-       fn bool strIsInteger(String8 s);
-       fn bool strIsFloating(String8 s);
+fn bool strIsSignedInteger(String8 s);
+fn bool strIsInteger(String8 s);
+fn bool strIsFloating(String8 s);
 inline fn bool strIsNumerical(String8 s);
 fn i64 i64FromStr(String8 s);
 fn u64 u64FromStr(String8 s);
