@@ -1,3 +1,5 @@
+////////////////////////////////
+//- km: Thread functions
 fn OS_W32_Thread* 
 os_w32_thread_alloc(void)
 {
@@ -57,6 +59,9 @@ os_w32_thread_entry_point(void *ptr)
   return 0;
 }
 
+////////////////////////////////
+//- km: Dynamic libraries
+
 fn OS_Handle os_lib_open(String8 path){
   OS_Handle result = {0};
   Scratch scratch = ScratchBegin(0,0);
@@ -84,6 +89,8 @@ fn i32 os_lib_close(OS_Handle lib){
   return result;
 }
 
+////////////////////////////////
+//- km: File operations
 
 fn OS_Handle fs_open(String8 filepath, OS_AccessFlags flags) {
   OS_Handle result = {0};
@@ -180,6 +187,8 @@ fn File fs_fileOpen(Arena *arena, String8 filepath) {
   return result;
 }
 
+////////////////////////////////
+//- km: File iterator
 
 fn OS_FileIter* 
 os_file_iter_begin(Arena *arena, String8 path)

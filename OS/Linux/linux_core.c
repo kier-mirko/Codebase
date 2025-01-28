@@ -1,4 +1,5 @@
 global OS_SystemInfo lnx_info = {0};
+global Arena *lnx_arena = 0;
 
 fn String8 lnx_gethostname() {
   char name[HOST_NAME_MAX];
@@ -13,6 +14,25 @@ fn String8 lnx_gethostname() {
 
 // TODO(lb): parse /proc/meminfo
 fn void lnx_parseMeminfo() {
+  OS_Handle meminfo = fs_open(Strlit("/proc/meminfo"), OS_acfRead);
+  StringStream lines = strSplit(lnx_arena, fs_readVirtual(lnx_arena, meminfo, 4096), '\n');
+  for (StringNode *curr_line = lines.first; curr_line; curr_line = curr_line->next) {
+    StringStream ss = strSplit(lnx_arena, curr_line->value, ':');
+    for (StringNode *curr = ss.first; curr; curr = curr->next) {
+      if (strEq(curr->value, Strlit("MemTotal"))) {
+	curr = curr->next;
+	lnx_info.total_memory = KiB(1) *
+				u64FromStr(strSplit(lnx_arena, strTrim(curr->value),
+						    ' ').first->value);
+      } else if (strEq(curr->value, Strlit("Hugepagesize"))) {
+	curr = curr->next;
+	lnx_info.hugepage_size = KiB(1) *
+				 u64FromStr(strSplit(lnx_arena, strTrim(curr->value),
+						     ' ').first->value);
+	return;
+      }
+    }
+  }
 }
 
 fn OS_SystemInfo *os_getSystemInfo() {
@@ -57,7 +77,9 @@ i32 main(i32 argc, char **argv) {
   lnx_info.core_count = get_nprocs();
   lnx_info.page_size = getpagesize();
   lnx_info.hostname = lnx_gethostname();
-  lnx_parseMeminfo();
+
+  lnx_arena = ArenaBuild();
+  TimeTrack(lnx_parseMeminfo());
   // TODO(lb): get IPv4&6
 
   // TODO(lb): put `argv` in a String8*

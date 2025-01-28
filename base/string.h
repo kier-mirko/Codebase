@@ -27,7 +27,7 @@ inline fn u8 encodeUTF32(u32 *res, Codepoint cp);
 
 typedef struct String8 {
   u8 *str;
-  usize size;
+  isize size;
 
 #if CPP
   inline char operator[](usize idx) {
@@ -45,13 +45,13 @@ typedef struct StringNode {
 typedef struct StringStream {
   StringNode *first;
   StringNode *last;
-  usize size;
+  isize size;
 } StringStream;
 
 fn String8 str8FromStream(Arena *arena, StringStream stream);
 fn void stringstreamAppend(Arena *arena, StringStream *strlist, String8 other);
 
-inline fn String8 str8(u8 *chars, usize len);
+inline fn String8 str8(u8 *chars, isize len);
 inline fn String8 strFromCstr(char *chars);
 inline fn String8 strFromDateTime(Arena *arena, DateTime dt);
 inline fn String8 strFromUnixTime(Arena *arena, u64 unix_timestamp);
@@ -76,7 +76,7 @@ fn String8 stringifyI64(Arena *arena, i64 n);
 fn String8 stringifyU64(Arena *arena, u64 n);
 fn String8 stringifyF64(Arena *arena, f64 n);
 
-fn usize str8len(char *chars);
+fn isize str8len(char *chars);
 
 fn String8 strFormat(Arena *arena, const char *fmt, ...);
 fn String8 strFormatVa(Arena *arena, const char *fmt, va_list args);
@@ -109,6 +109,8 @@ fn u8 charToUpper(u8 ch);
 fn u8 charToLower(u8 ch);
 fn u8 getCorrectPathSeparator();
 
+fn String8 strTrim(String8 s);
+
 #if CPP
 inline fn bool operator==(String8 s1, String8 s2) {
   return strEq(s1, s2);
@@ -124,12 +126,12 @@ inline fn bool operator!=(String8 s1, String8 s2) {
 
 typedef struct {
   u16 *str;
-  usize size;
+  isize size;
 } String16;
 
 typedef struct {
   u32 *str;
-  usize size;
+  isize size;
 } String32;
 
 fn bool str16Eq(String16 s1, String16 s2);
