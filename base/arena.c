@@ -49,7 +49,12 @@ fn Arena *_arenaBuild(ArenaArgs args) {
 
 inline fn void arenaPop(Arena *arena, usize bytes) {
   arena->head = ClampBot((isize)arena->head - (isize)bytes, 0);
-  /* TODO(lb): decommit pages */
+  if (arena->head < (arena->commits - 1) * arena->commit_size) {
+    arena->commits -= 1;
+    os_decommit((void *)forwardAlign((usize)arena->base + arena->head,
+				     arena->commit_size),
+		arena->commit_size);
+  }
 }
 
 inline fn void arenaFree(Arena *arena) {

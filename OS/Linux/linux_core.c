@@ -12,7 +12,6 @@ fn String8 lnx_gethostname() {
   return namestr;
 }
 
-// TODO(lb): parse /proc/meminfo
 fn void lnx_parseMeminfo() {
   OS_Handle meminfo = fs_open(Strlit("/proc/meminfo"), OS_acfRead);
   StringStream lines = strSplit(lnx_arena, fs_readVirtual(lnx_arena, meminfo, 4096), '\n');
