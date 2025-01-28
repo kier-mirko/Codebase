@@ -223,7 +223,7 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, Arena *map_arena, CSV config,
       stringstreamAppend(scratch.arena, &ss, row_entries[i]);
     }
     stringstreamAppend(scratch.arena, &ss, Strlit("\n"));
-    fs_fwrite(file, str8FromStream(scratch.arena, &ss));
+    fs_fwrite(file, str8FromStream(scratch.arena, ss));
     ScratchEnd(scratch);
   }
 
