@@ -13,12 +13,14 @@ fn Arena *_arenaBuild(ArenaArgs args) {
   void *mem = 0;
   usize reserve, commit;
 
+#if CPP
   if (args.commit_size == 0) {
     args.commit_size = ArenaDefaultCommitSize;
   }
   if (args.reserve_size == 0) {
     args.reserve_size = ArenaDefaultReserveSize;
   }
+#endif
 
   if (args.flags & Arena_UseHugePage) {
     reserve = forwardAlign(args.reserve_size, os_getSystemInfo()->hugepage_size);
