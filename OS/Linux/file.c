@@ -30,6 +30,20 @@ fn OS_Handle fs_open(String8 filepath, OS_AccessFlags flags) {
   return res;
 }
 
+fn String8 fs_readVirtual(Arena *arena, OS_Handle file, usize size) {
+  int fd = file.h[0];
+  String8 result = {0};
+  if(!fd) { return result; }
+
+  u8 *buffer = New(arena, u8, size);
+  if(pread(fd, buffer, size, 0) >= 0) {
+    result.str = buffer;
+    result.size = str8len((char *)buffer);
+  }
+
+  return result;
+}
+
 fn String8 fs_read(Arena *arena, OS_Handle file) {
   int fd = file.h[0];
   String8 result = {0};

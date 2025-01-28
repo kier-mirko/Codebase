@@ -134,7 +134,7 @@ fn void stringstreamAppend(Arena *arena, StringStream *strlist, String8 other) {
   DLLPushBack(strlist->first, strlist->last, str);
 }
 
-inline fn String8 str8(u8 *chars, usize len) {
+inline fn String8 str8(u8 *chars, isize len) {
   String8 res = {chars, len};
   return res;
 }
@@ -364,7 +364,7 @@ fn String8 stringifyF64(Arena *arena, f64 n) {
   return str8(str, size);
 }
 
-fn usize str8len(char *chars) {
+fn isize str8len(char *chars) {
   char *start = chars;
   for (; *start; ++start)
     ;
@@ -586,6 +586,22 @@ fn u8 getCorrectPathSeparator() {
 #endif
 }
 
+fn String8 strTrim(String8 s) {
+  isize start = 0;
+  for (; start < s.size && (s.str[start] == ' ' || s.str[start] == '\t' ||
+			    s.str[start] == '\n' || s.str[start] == '\r'); ++start);
+
+  isize end = s.size;
+  for (; end >= 0 && (s.str[end] == ' ' || s.str[end] == '\t' ||
+		      s.str[end] == '\n') || s.str[end] == '\r'; --end);
+
+  String8 res = {
+    .str = s.str + start,
+    .size = end - start,
+  };
+  return res;
+}
+
 // =============================================================================
 // Other UTF strings
 bool str16Eq(String16 s1, String16 s2) {
@@ -655,7 +671,7 @@ fn String8 UTF8From32(Arena *arena, String32 *in) {
 }
 
 fn String16 UTF16From8(Arena *arena, String8 *in) {
-  usize res_size = 0, approx_size = in->size * 2;
+  isize res_size = 0, approx_size = in->size * 2;
   u16 *words = New(arena, u16, approx_size), *res_offset = words;
 
   Codepoint codepoint = {0};
@@ -674,7 +690,7 @@ fn String16 UTF16From8(Arena *arena, String8 *in) {
 }
 
 fn String16 UTF16From32(Arena *arena, String32 *in) {
-  usize res_size = 0, approx_size = in->size * 2;
+  isize res_size = 0, approx_size = in->size * 2;
   u16 *words = New(arena, u16, approx_size), *res_offset = words;
 
   Codepoint codepoint = {0};
@@ -693,7 +709,7 @@ fn String16 UTF16From32(Arena *arena, String32 *in) {
 }
 
 fn String32 UTF32From8(Arena *arena, String8 *in) {
-  usize res_size = 0, approx_size = in->size * 2;
+  isize res_size = 0, approx_size = in->size * 2;
   u32 *dwords = New(arena, u32, approx_size), *res_offset = dwords;
 
   Codepoint cp = {0};
@@ -709,7 +725,7 @@ fn String32 UTF32From8(Arena *arena, String8 *in) {
 }
 
 fn String32 UTF32From16(Arena *arena, String16 *in) {
-  usize res_size = 0, approx_size = in->size * 2;
+  isize res_size = 0, approx_size = in->size * 2;
   u32 *dwords = New(arena, u32, approx_size), *res_offset = dwords;
 
   Codepoint cp = {0};
