@@ -80,5 +80,13 @@ i32 main(i32 argc, char **argv) {
   lnx_arena = ArenaBuild();
   lnx_parseMeminfo();
 
-  start(0);
+  CmdLine cli = {0};
+  cli.count = argc - 1;
+  cli.exe = strFromCstr(argv[0]);
+  cli.args = New(lnx_arena, String8, argc - 1);
+  for (isize i = 1; i < argc; ++i) {
+    cli.args[i - 1] = strFromCstr(argv[i]);
+  }
+
+  start(&cli);
 }

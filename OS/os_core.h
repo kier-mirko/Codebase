@@ -21,9 +21,9 @@ typedef struct {
 } OS_SystemInfo;
 
 typedef struct{
-  String8 *first;
-  String8 *last;
   i64 count;
+  String8 exe;
+  String8 *args;
 } CmdLine;
 
 typedef u8 OS_Permissions;
