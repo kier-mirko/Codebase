@@ -28,7 +28,7 @@ inline fn u8 encodeUTF32(u32 *res, Codepoint cp);
 typedef struct String8 {
   u8 *str;
   isize size;
-
+  
 #if CPP
   inline char operator[](usize idx) {
     return (char)str[idx];
@@ -81,10 +81,10 @@ fn isize str8len(char *chars);
 fn String8 strFormat(Arena *arena, const char *fmt, ...);
 fn String8 strFormatVa(Arena *arena, const char *fmt, va_list args);
 
-fn String8 strPrefix(String8 s, usize end);
-fn String8 strPostfix(String8 s, usize start);
-fn String8 substr(String8 s, usize end);
-fn String8 strRange(String8 s, usize start, usize end);
+fn String8 strPrefix(String8 s, isize end);
+fn String8 strPostfix(String8 s, isize start);
+fn String8 substr(String8 s, isize end);
+fn String8 strRange(String8 s, isize start, isize end);
 fn bool strEndsWith(String8 s, char ch);
 fn String8 longestCommonSubstring(Arena *arena, String8 s1, String8 s2);
 
