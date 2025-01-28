@@ -99,10 +99,10 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, Arena *map_arena, CSV config,
   usize row_count = 0;
 
   /* Occurrences counter */
-  for (StringStream row = csv_nextRow(map_arena, &config); row.size != 0;
+  for (StringStream row = csv_nextRow(map_arena, &config); row.node_count != 0;
        row = csv_header(map_arena, &config), ++row_count) {
     usize i = 0;
-    String8 *row_entries = New(map_arena, String8, row.size);
+    String8 *row_entries = New(map_arena, String8, row.node_count);
     for (StringNode *r = row.first; r && i < n_features; r = r->next, ++i) {
       row_entries[i] = r->value;
     }
@@ -197,10 +197,10 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, Arena *map_arena, CSV config,
   /*   file the CSV row. */
   config.offset = data_row_start_at;
   HashMap<String8, File> file_map(map_arena, strHash, branches);
-  for (StringStream row = csv_nextRow(map_arena, &config); row.size != 0;
+  for (StringStream row = csv_nextRow(map_arena, &config); row.node_count != 0;
        row = csv_header(map_arena, &config), ++row_count) {
     usize i = 0;
-    String8 *row_entries = New(map_arena, String8, row.size);
+    String8 *row_entries = New(map_arena, String8, row.node_count);
     for (StringNode *r = row.first; r && i < n_features; r = r->next, ++i) {
       row_entries[i] = r->value;
     }
@@ -215,7 +215,7 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, Arena *map_arena, CSV config,
     stringstreamAppend(scratch.arena, &ss, str8(file->content, file->prop.size));
     stringstreamAppend(scratch.arena, &ss, row_entries[i++]);
 
-    for (; i < row.size; ++i) {
+    for (; i < row.node_count; ++i) {
       if (i == feature2split_by) {
         continue;
       }
@@ -238,7 +238,7 @@ fn DecisionTreeNode *ai_makeDTNode(Arena *arena, Arena *map_arena, CSV config,
       dt->label = curr->value;
       curr->prev->next = curr->next;
       curr->next->prev = curr->prev;
-      --header.size;
+      --header.node_count;
       break;
     }
   }
