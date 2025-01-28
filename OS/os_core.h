@@ -17,9 +17,6 @@ typedef struct {
 
   u8 core_count;
   u64 total_memory;
-
-  u8 ipv4[4];
-  u16 ipv6[4];
   String8 hostname;
 } OS_SystemInfo;
 

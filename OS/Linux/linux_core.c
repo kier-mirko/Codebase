@@ -79,7 +79,6 @@ i32 main(i32 argc, char **argv) {
 
   lnx_arena = ArenaBuild();
   lnx_parseMeminfo();
-  // TODO(lb): get IPv4&6
 
   start(0);
 }
