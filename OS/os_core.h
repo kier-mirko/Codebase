@@ -79,6 +79,15 @@ typedef struct {
   FilenameNode *last;
 } FilenameList;
 
+typedef struct{
+  String8 name;
+  FS_Properties properties;
+} OS_FileInfo;
+
+typedef struct{
+  u8 memory[640];
+} OS_FileIter;
+
 typedef void VoidFunc(void);
 typedef void ThreadFunc(void*);
 
@@ -112,10 +121,10 @@ fn i32 os_lib_close(OS_Handle lib);
 
 // =============================================================================
 // File reading and writing/appending
-       fn OS_Handle fs_open(String8 filepath, OS_AccessFlags flags);
-       fn String8 fs_readVirtual(Arena *arena, OS_Handle file, usize size);
-       fn String8 fs_read(Arena *arena, OS_Handle file);
-inline fn bool fs_write(OS_Handle file, String8 content);
+fn OS_Handle fs_open(String8 filepath, OS_AccessFlags flags);
+fn String8 fs_readVirtual(Arena *arena, OS_Handle file, usize size);
+fn String8 fs_read(Arena *arena, OS_Handle file);
+fn bool fs_write(OS_Handle file, String8 content);
 
 fn FS_Properties fs_getProp(OS_Handle file);
 

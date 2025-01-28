@@ -28,7 +28,7 @@ inline fn u8 encodeUTF32(u32 *res, Codepoint cp);
 typedef struct String8 {
   u8 *str;
   isize size;
-
+  
 #if CPP
   inline char operator[](usize idx) {
     return (char)str[idx];
@@ -45,7 +45,8 @@ typedef struct StringNode {
 typedef struct StringStream {
   StringNode *first;
   StringNode *last;
-  isize size;
+  isize node_count;
+  isize total_size;
 } StringStream;
 
 fn String8 str8FromStream(Arena *arena, StringStream stream);
@@ -62,9 +63,9 @@ fn bool strEq(String8 s1, String8 s2);
 fn bool strEqCstr(String8 s, const char *cstr);
 fn bool cstrEq(char *s1, char *s2);
 
-       fn bool strIsSignedInteger(String8 s);
-       fn bool strIsInteger(String8 s);
-       fn bool strIsFloating(String8 s);
+fn bool strIsSignedInteger(String8 s);
+fn bool strIsInteger(String8 s);
+fn bool strIsFloating(String8 s);
 inline fn bool strIsNumerical(String8 s);
 fn i64 i64FromStr(String8 s);
 fn u64 u64FromStr(String8 s);
@@ -81,10 +82,10 @@ fn isize str8len(char *chars);
 fn String8 strFormat(Arena *arena, const char *fmt, ...);
 fn String8 strFormatVa(Arena *arena, const char *fmt, va_list args);
 
-fn String8 strPrefix(String8 s, usize end);
-fn String8 strPostfix(String8 s, usize start);
-fn String8 substr(String8 s, usize end);
-fn String8 strRange(String8 s, usize start, usize end);
+fn String8 strPrefix(String8 s, isize end);
+fn String8 strPostfix(String8 s, isize start);
+fn String8 substr(String8 s, isize end);
+fn String8 strRange(String8 s, isize start, isize end);
 fn bool strEndsWith(String8 s, char ch);
 fn String8 longestCommonSubstring(Arena *arena, String8 s1, String8 s2);
 
@@ -136,18 +137,19 @@ typedef struct {
 
 fn bool str16Eq(String16 s1, String16 s2);
 fn bool str32Eq(String32 s1, String32 s2);
-
+fn usize cstring16_length(u16 *str);
+fn String16 str16_cstr(u16 *str);
 // =============================================================================
 // UTF string conversion
 
-fn String8 UTF8From16(Arena *arena, String16 *in);
-fn String8 UTF8From32(Arena *arena, String32 *in);
+fn String8 UTF8From16(Arena *arena, String16 in);
+fn String8 UTF8From32(Arena *arena, String32 in);
 
-fn String16 UTF16From8(Arena *arena, String8 *in);
-fn String16 UTF16From32(Arena *arena, String32 *in);
+fn String16 UTF16From8(Arena *arena, String8 in);
+fn String16 UTF16From32(Arena *arena, String32 in);
 
-fn String32 UTF32From8(Arena *arena, String8 *in);
-fn String32 UTF32From16(Arena *arena, String16 *in);
+fn String32 UTF32From8(Arena *arena, String8 in);
+fn String32 UTF32From16(Arena *arena, String16 in);
 
 // =============================================================================
 
