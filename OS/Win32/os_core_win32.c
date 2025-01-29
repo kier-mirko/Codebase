@@ -319,10 +319,10 @@ w32_entry_point_caller(int argc, WCHAR **wargv)
   Arena *args_arena = ArenaBuild();
   CmdLine *cmdln = New(args_arena, CmdLine);
   cmdln->count = argc - 1;
-  cmdln->exe = UTF8From16(args_arena, str16_cstr(wargv[0]));
+  cmdln->exe = UTF8From16(args_arena, str16_cstr((u16*)wargv[0]));
   for(int i = 1; i < argc; ++i)
   {
-    cmdln->args[i - 1] = UTF8From16(args_arena, str16_cstr(wargv[i]));
+    cmdln->args[i - 1] = UTF8From16(args_arena, str16_cstr((u16*)wargv[i]));
   }
   
   start(cmdln);
