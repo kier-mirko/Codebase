@@ -1,18 +1,43 @@
 #ifndef OS_LINUX_CORE_H
 #define OS_LINUX_CORE_H
 
+typedef u64 LNX_PrimitiveType;
+enum {
+  LNX_Primitive_Process,
+  LNX_Primitive_Thread,
+  LNX_Primitive_Rwlock,
+  LNX_Primitive_Mutex,
+};
+
+typedef struct LNX_Primitive {
+  struct LNX_Primitive *next;
+  LNX_PrimitiveType type;
+
+  union {
+    pthread_mutex_t mutex;
+    pthread_rwlock_t rwlock;
+    pid_t proc;
+    struct {
+      pthread_t handle;
+      ThreadFunc *func;
+      void *args;
+    } thread;
+  };
+} LNX_Primitive;
+
 typedef struct {
   Arena *arena;
   OS_SystemInfo info;
+  pthread_mutex_t primitive_lock;
+  LNX_Primitive *primitive_freelist;
 } LNX_State;
 
-typedef struct {
-  ThreadFunc *func;
-  void *args;
-} lnx_thdData;
+fn LNX_Primitive* lnx_primitiveAlloc(LNX_PrimitiveType type);
+fn void lnx_primitiveFree(LNX_Primitive *ptr);
 
-fn void* lnx_thdEntry(void *args);
+fn void* lnx_threadEntry(void *args);
 
 fn String8 lnx_getHostname();
+fn void lnx_parseMeminfo();
 
 #endif

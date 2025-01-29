@@ -12,6 +12,11 @@ typedef struct {
 } OS_Handle;
 
 typedef struct {
+  bool is_child;
+  OS_Handle handle;
+} OS_ProcHandle;
+
+typedef struct {
   u64 page_size;
   u64 hugepage_size;
 
@@ -104,6 +109,10 @@ fn void start(CmdLine *cmdln);
 fn OS_SystemInfo *os_getSystemInfo();
 
 // =============================================================================
+// Misc
+fn void os_sleep(usize ms);
+
+// =============================================================================
 // Memory allocation
 fn void* os_reserve(usize base_addr, usize size);
 fn void* os_reserveHuge(usize base_addr, usize size);
@@ -113,9 +122,30 @@ fn void os_commit(void *base, usize size);
 fn void os_decommit(void *base, usize size);
 
 // =============================================================================
-// Threading
+// Threads & Processes stuff
 fn OS_Handle os_thread_start(ThreadFunc *thread_main, void *args);
-fn bool os_thread_join(OS_Handle ids);
+fn void os_thread_kill(OS_Handle thd);
+fn bool os_thread_join(OS_Handle thd);
+
+fn OS_ProcHandle os_proc_spawn();
+fn void os_proc_kill(OS_ProcHandle proc);
+fn void os_proc_wait(OS_ProcHandle proc);
+// TODO(lb): Handle status code returned by child process
+
+fn OS_Handle os_mutex_alloc();
+fn bool os_mutex_lock(OS_Handle handle);
+fn bool os_mutex_trylock(OS_Handle handle);
+fn bool os_mutex_unlock(OS_Handle handle);
+fn void os_mutex_free(OS_Handle handle);
+
+fn OS_Handle os_rwlock_alloc();
+fn bool os_rwlock_read_lock(OS_Handle handle);
+fn bool os_rwlock_read_trylock(OS_Handle handle);
+fn bool os_rwlock_read_unlock(OS_Handle handle);
+fn bool os_rwlock_write_lock(OS_Handle handle);
+fn bool os_rwlock_write_trylock(OS_Handle handle);
+fn bool os_rwlock_write_unlock(OS_Handle handle);
+fn void os_rwlock_free(OS_Handle handle);
 
 // =============================================================================
 // Dynamic libraries
