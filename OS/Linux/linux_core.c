@@ -1,5 +1,73 @@
-global OS_SystemInfo lnx_info = {0};
-global Arena *lnx_arena = 0;
+#include <dlfcn.h>
+#include <unistd.h>
+#include <sys/sysinfo.h>
+
+global LNX_State lnx_state = {0};
+
+fn OS_Handle os_lib_open(String8 path){
+  OS_Handle result = {0};
+  Scratch scratch = ScratchBegin(0, 0);
+  char *path_cstr = strToCstr(scratch.arena, path);
+
+  void *handle = dlopen(path_cstr, RTLD_LAZY);
+  if(handle){
+    result.h[0] = (u64)handle;
+  }
+  ScratchEnd(scratch);
+  return result;
+}
+
+fn VoidFunc *os_lib_lookup(OS_Handle lib, String8 symbol){
+  Scratch scratch = ScratchBegin(0, 0);
+  void *handle = (void*)lib.h[0];
+  char *symbol_cstr = strToCstr(scratch.arena, symbol);
+  VoidFunc *result = (VoidFunc*)(u64)dlsym(handle, symbol_cstr);
+  ScratchEnd(scratch);
+  return result;
+}
+
+fn i32 os_lib_close(OS_Handle lib){
+  void *handle = (void*)lib.h[0];
+  return dlclose(handle);
+}
+
+fn void* lnx_thdEntry(void *args) {
+  lnx_thdData *wrap_args = (lnx_thdData *)args;
+  ThreadFunc *func = (ThreadFunc *)wrap_args->func;
+  func(wrap_args->args);
+  return 0;
+}
+
+fn OS_Handle os_thdSpawn(ThreadFunc *thread_main, void *args) {
+  Assert(thread_main);
+
+  // TODO(lb): build a freelist on top of the lnxtem arena that handles this kind of allocation and remove this scratch part.
+  /* NOTE(lb): i'm pretty sure this isn't the right approach but
+     i don't want this function to receive an arena and i don't have a way
+     to ask the os to allocate memory that isn't inside an arena right now.
+     Another idea would be to have a global arena that is used only for these
+     OS functions idk. */
+  Scratch scr = ScratchBegin(0, 0);
+  lnx_thdData *wrap_args = New(scr.arena, lnx_thdData);
+  wrap_args->func = thread_main;
+  wrap_args->args = args;
+
+  OS_Handle res = {0};
+  pthread_t *thread_id = (pthread_t *)&res.h;
+  i32 maybeErr = pthread_create(thread_id, 0, lnx_thdEntry, wrap_args);
+  ScratchEnd(scr);
+
+  if (maybeErr == 0) {
+    return res;
+  } else {
+    res.h[0] = 0;
+    return res;
+  }
+}
+
+fn void os_thdJoin(OS_Handle thd_handle, void **return_buff) {
+  (void)pthread_join((pthread_t)thd_handle.h[0], return_buff);
+}
 
 fn String8 lnx_gethostname() {
   char name[HOST_NAME_MAX];
@@ -14,19 +82,19 @@ fn String8 lnx_gethostname() {
 
 fn void lnx_parseMeminfo() {
   OS_Handle meminfo = fs_open(Strlit("/proc/meminfo"), OS_acfRead);
-  StringStream lines = strSplit(lnx_arena, fs_readVirtual(lnx_arena, meminfo, 4096), '\n');
+  StringStream lines = strSplit(lnx_state.arena, fs_readVirtual(lnx_state.arena, meminfo, 4096), '\n');
   for (StringNode *curr_line = lines.first; curr_line; curr_line = curr_line->next) {
-    StringStream ss = strSplit(lnx_arena, curr_line->value, ':');
+    StringStream ss = strSplit(lnx_state.arena, curr_line->value, ':');
     for (StringNode *curr = ss.first; curr; curr = curr->next) {
       if (strEq(curr->value, Strlit("MemTotal"))) {
 	curr = curr->next;
-	lnx_info.total_memory = KiB(1) *
-				u64FromStr(strSplit(lnx_arena, strTrim(curr->value),
+	lnx_state.info.total_memory = KiB(1) *
+				u64FromStr(strSplit(lnx_state.arena, strTrim(curr->value),
 						    ' ').first->value);
       } else if (strEq(curr->value, Strlit("Hugepagesize"))) {
 	curr = curr->next;
-	lnx_info.hugepage_size = KiB(1) *
-				 u64FromStr(strSplit(lnx_arena, strTrim(curr->value),
+	lnx_state.info.hugepage_size = KiB(1) *
+				 u64FromStr(strSplit(lnx_state.arena, strTrim(curr->value),
 						     ' ').first->value);
 	return;
       }
@@ -35,7 +103,7 @@ fn void lnx_parseMeminfo() {
 }
 
 fn OS_SystemInfo *os_getSystemInfo() {
-  return &lnx_info;
+  return &lnx_state.info;
 }
 
 fn void* os_reserve(usize base_addr, usize size) {
@@ -73,17 +141,17 @@ fn void os_decommit(void *base, usize size) {
 }
 
 i32 main(i32 argc, char **argv) {
-  lnx_info.core_count = get_nprocs();
-  lnx_info.page_size = getpagesize();
-  lnx_info.hostname = lnx_gethostname();
+  lnx_state.info.core_count = get_nprocs();
+  lnx_state.info.page_size = getpagesize();
+  lnx_state.info.hostname = lnx_gethostname();
 
-  lnx_arena = ArenaBuild();
+  lnx_state.arena = ArenaBuild();
   lnx_parseMeminfo();
 
   CmdLine cli = {0};
   cli.count = argc - 1;
   cli.exe = strFromCstr(argv[0]);
-  cli.args = New(lnx_arena, String8, argc - 1);
+  cli.args = New(lnx_state.arena, String8, argc - 1);
   for (isize i = 1; i < argc; ++i) {
     cli.args[i - 1] = strFromCstr(argv[i]);
   }

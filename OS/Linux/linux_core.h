@@ -1,7 +1,10 @@
 #ifndef OS_LINUX_CORE_H
 #define OS_LINUX_CORE_H
 
-#include <sys/sysinfo.h>
+typedef struct {
+  Arena *arena;
+  OS_SystemInfo info;
+} LNX_State;
 
 typedef struct {
   ThreadFunc *func;

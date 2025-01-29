@@ -30,7 +30,7 @@ fn OS_Handle fs_open(String8 filepath, OS_AccessFlags flags) {
     // allocating more memory (preferred but still shit) or using the system arena
     // (can't remove the path from the arena without introducing internal fragmentation),
     // so paths will be relative to the cwd until a better solution.
-    bsd_filemap[fd] = filepath;
+    bsd_state.filemap[fd] = filepath;
   }
 
   OS_Handle res = {(u64)fd};
@@ -39,8 +39,8 @@ fn OS_Handle fs_open(String8 filepath, OS_AccessFlags flags) {
 
 fn bool fs_close(OS_Handle fd) {
   if (close(fd.h[0]) == 0) {
-    bsd_filemap[fd.h[0]].str = 0;
-    bsd_filemap[fd.h[0]].size = 0;
+    bsd_state.filemap[fd.h[0]].str = 0;
+    bsd_state.filemap[fd.h[0]].size = 0;
     return true;
   } else {
     return false;
@@ -118,7 +118,7 @@ fn FS_Properties fs_getProp(OS_Handle file) {
 }
 
 fn String8 fs_pathFromHandle(Arena *arena, OS_Handle fd) {
-  return bsd_filemap[fd.h[0]];
+  return bsd_state.filemap[fd.h[0]];
 }
 
 // =============================================================================

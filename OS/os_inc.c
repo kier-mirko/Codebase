@@ -1,9 +1,6 @@
 #if OS_LINUX
-#  include "Linux/dynlib.c"
-#  include "Linux/file.c"
-#  include "Linux/thread.c"
 #  include "Linux/linux_core.c"
-
+#  include "Linux/file.c"
 #  include "Linux/X11/window.c"
 #elif OS_BSD
 #  include "BSD/bsd_core.c"
