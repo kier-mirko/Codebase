@@ -6,7 +6,7 @@ enum
 {
   OS_W32_Primitive_Nil,
   OS_W32_Primitive_Thread,
-  OS_W32_Primitive_Rwlock,
+  OS_W32_Primitive_RWLock,
   OS_W32_Primitive_Mutex,
 };
 
@@ -52,8 +52,8 @@ global OS_W32_State w32_state;
 global OS_SystemInfo w32_info;
 
 
-fn OS_W32_Primitive* os_w32_thread_alloc(void);
-fn void os_w32_thread_release(OS_W32_Thread *thread);
+fn OS_W32_Primitive* os_w32_primitive_alloc(OS_W32_PrimitiveType kind);
+fn void os_w32_primitive_release(OS_W32_Primitive *primitive);
 fn DWORD os_w32_thread_entry_point(void *ptr);
 
 

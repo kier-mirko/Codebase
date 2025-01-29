@@ -42,9 +42,9 @@ os_decommit(void *base, usize size)
 ////////////////////////////////
 //- km: Thread functions
 fn OS_W32_Primitive* 
-os_w32_primitive_alloc(OS_W32_Primitive kind)
+os_w32_primitive_alloc(OS_W32_PrimitiveType kind)
 {
-  OS_W32_Thread *result = w32_state.free_list;
+  OS_W32_Primitive *result = w32_state.free_list;
   if(result)
   {
     StackPop(w32_state.free_list);
@@ -60,9 +60,9 @@ os_w32_primitive_alloc(OS_W32_Primitive kind)
 }
 
 fn void 
-os_w32_primitive_release(OS_W32_Primitive *thread)
+os_w32_primitive_release(OS_W32_Primitive *primitive)
 {
-  StackPush(w32_state.free_list, thread);
+  StackPush(w32_state.free_list, primitive);
 }
 
 fn OS_Handle 
@@ -96,6 +96,17 @@ os_thread_kill(OS_Handle thd)
 {
   (void)0;
 }
+
+fn DWORD 
+os_w32_thread_entry_point(void *ptr)
+{
+  OS_W32_Thread *thread = (OS_W32_Thread*)ptr;
+  ThreadFunc *func = thread->func;
+  func(thread->arg);
+  return 0;
+}
+
+//- km: critical section mutex
 
 fn OS_Handle 
 os_mutex_alloc()
@@ -133,62 +144,68 @@ os_mutex_free(OS_Handle handle)
 {
   OS_W32_Primitive *primitive = (OS_W32_Primitive*)handle.h[0];
   DeleteCriticalSection(&primitive->mutex);
+  os_w32_primitive_release(primitive);
 }
+
+//- km read/write mutexes
 
 fn OS_Handle os_rwlock_alloc()
 {
-  
+  OS_W32_Primitive *primitive = os_w32_primitive_alloc(OS_W32_Primitive_RWLock);
+  InitializeSRWLock(&primitive->rw_mutex);
+  OS_Handle result = {(u64)primitive};
+  return result;
 }
 
-fn bool 
+fn void 
 os_rwlock_read_lock(OS_Handle handle)
 {
-  
+  OS_W32_Primitive *primitive = (OS_W32_Primitive*)handle.h[0];
+  AcquireSRWLockShared(&primitive->rw_mutex);
 }
 
 fn bool 
 os_rwlock_read_trylock(OS_Handle handle)
 {
-  
+  OS_W32_Primitive *primitive = (OS_W32_Primitive*)handle.h[0];
+  BOOLEAN result = TryAcquireSRWLockShared(&primitive->rw_mutex);
+  return result;
 }
 
-fn bool 
+fn void
 os_rwlock_read_unlock(OS_Handle handle)
 {
-  
+  OS_W32_Primitive *primitive = (OS_W32_Primitive*)handle.h[0];
+  ReleaseSRWLockShared(&primitive->rw_mutex);
 }
 
-fn bool 
+fn void 
 os_rwlock_write_lock(OS_Handle handle)
 {
-  
+  OS_W32_Primitive *primitive = (OS_W32_Primitive*)handle.h[0];
+  AcquireSRWLockExclusive(&primitive->rw_mutex);
 }
 
 fn bool 
 os_rwlock_write_trylock(OS_Handle handle)
 {
-  
+  OS_W32_Primitive *primitive = (OS_W32_Primitive*)handle.h[0];
+  BOOLEAN result = TryAcquireSRWLockExclusive(&primitive->rw_mutex);
+  return result;
 }
 
-fn bool 
+fn void 
 os_rwlock_write_unlock(OS_Handle handle)
 {
-  
+  OS_W32_Primitive *primitive = (OS_W32_Primitive*)handle.h[0];
+  ReleaseSRWLockExclusive(&primitive->rw_mutex);
 }
 
 fn void 
 os_rwlock_free(OS_Handle handle)
 {
-  
-}
-
-fn DWORD 
-os_w32_thread_entry_point(void *ptr)
-{
-  OS_W32_Thread *thread = (OS_W32_Thread*)ptr;
-  ThreadFunc *func = thread->func;
-  func(thread->arg);
-  return 0;
+  OS_W32_Primitive *primitive = (OS_W32_Primitive*)handle.h[0];
+  os_w32_primitive_release(primitive);
 }
 
 ////////////////////////////////
