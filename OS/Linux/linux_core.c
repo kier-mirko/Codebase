@@ -41,7 +41,7 @@ fn void* lnx_thdEntry(void *args) {
 fn OS_Handle os_thdSpawn(ThreadFunc *thread_main, void *args) {
   Assert(thread_main);
 
-  // TODO(lb): build a freelist on top of the lnxtem arena that handles this kind of allocation and remove this scratch part.
+  // TODO(lb): build a freelist on top of the system arena that handles this kind of allocation and remove this scratch part.
   /* NOTE(lb): i'm pretty sure this isn't the right approach but
      i don't want this function to receive an arena and i don't have a way
      to ask the os to allocate memory that isn't inside an arena right now.
