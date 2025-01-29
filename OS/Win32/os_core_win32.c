@@ -41,8 +41,8 @@ os_decommit(void *base, usize size)
 
 ////////////////////////////////
 //- km: Thread functions
-fn OS_W32_Thread* 
-os_w32_thread_alloc(void)
+fn OS_W32_Primitive* 
+os_w32_primitive_alloc(OS_W32_Primitive kind)
 {
   OS_W32_Thread *result = w32_state.free_list;
   if(result)
@@ -51,16 +51,16 @@ os_w32_thread_alloc(void)
   }
   else
   {
-    Assert(w32_state.pos < 256);
-    result = &w32_state.thread_pool[w32_state.pos];
-    w32_state.pos += 1;
+    result = New(w32_state.arena, OS_W32_Primitive);
+    
   }
   memset(result, 0, sizeof(*result));
+  result.kind = kind;
   return result;
 }
 
 fn void 
-os_w32_thread_release(OS_W32_Thread *thread)
+os_w32_primitive_release(OS_W32_Primitive *thread)
 {
   StackPush(w32_state.free_list, thread);
 }
@@ -68,7 +68,7 @@ os_w32_thread_release(OS_W32_Thread *thread)
 fn OS_Handle 
 os_thread_start(ThreadFunc *func, void *arg)
 {
-  OS_W32_Thread *thread = os_w32_thread_alloc();
+  OS_W32_Primitive *thread = os_w32_primitive_alloc(OS_W32_Primitive_Thread);
   HANDLE handle = CreateThread(0, 0, os_w32_thread_entry_point, thread, 0, &thread->tid);
   thread->func = func;
   thread->arg = arg;
@@ -80,15 +80,106 @@ os_thread_start(ThreadFunc *func, void *arg)
 fn bool
 os_thread_join(OS_Handle handle)
 {
-  OS_W32_Thread *thread = (OS_W32_Thread*)handle.h[0];
+  OS_W32_Primitive *thread = (OS_W32_Primitive*)handle.h[0];
   DWORD wait = WAIT_OBJECT_0;
   if(thread)
   {
     wait = WaitForSingleObject(thread->handle, INFINITE);
     CloseHandle(thread->handle);
-    os_w32_thread_release(thread);
+    os_w32_primitive_release(thread);
   }
   return wait == WAIT_OBJECT_0;
+}
+
+fn void 
+os_thread_kill(OS_Handle thd)
+{
+  (void)0;
+}
+
+fn OS_Handle 
+os_mutex_alloc()
+{
+  OS_W32_Primitive *primitive = os_w32_primitive_alloc(OS_W32_Primitive_Mutex);
+  InitializeCriticalSection(&primitive->mutex);
+  OS_Handle result = {(u64)primitive};
+  return result;
+}
+
+fn void 
+os_mutex_lock(OS_Handle handle)
+{
+  OS_W32_Primitive *primitive = (OS_W32_Primitive*)handle.h[0];
+  EnterCriticalSection(&primitive->mutex);
+}
+
+fn bool 
+os_mutex_trylock(OS_Handle handle)
+{
+  OS_W32_Primitive *primitive = (OS_W32_Primitive*)handle.h[0];
+  BOOL result = TryEnterCriticalSection(&primitive->mutex);
+  return result;
+}
+
+fn void
+os_mutex_unlock(OS_Handle handle)
+{
+  OS_W32_Primitive *primitive = (OS_W32_Primitive*)handle.h[0];
+  LeaveCriticalSection(&primitive->mutex);
+}
+
+fn void 
+os_mutex_free(OS_Handle handle)
+{
+  OS_W32_Primitive *primitive = (OS_W32_Primitive*)handle.h[0];
+  DeleteCriticalSection(&primitive->mutex);
+}
+
+fn OS_Handle os_rwlock_alloc()
+{
+  
+}
+
+fn bool 
+os_rwlock_read_lock(OS_Handle handle)
+{
+  
+}
+
+fn bool 
+os_rwlock_read_trylock(OS_Handle handle)
+{
+  
+}
+
+fn bool 
+os_rwlock_read_unlock(OS_Handle handle)
+{
+  
+}
+
+fn bool 
+os_rwlock_write_lock(OS_Handle handle)
+{
+  
+}
+
+fn bool 
+os_rwlock_write_trylock(OS_Handle handle)
+{
+  
+}
+
+fn bool 
+os_rwlock_write_unlock(OS_Handle handle)
+{
+  
+}
+
+fn void 
+os_rwlock_free(OS_Handle handle)
+{
+  
 }
 
 fn DWORD 

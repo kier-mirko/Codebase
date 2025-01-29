@@ -133,9 +133,9 @@ fn void os_proc_wait(OS_ProcHandle proc);
 // TODO(lb): Handle status code returned by child process
 
 fn OS_Handle os_mutex_alloc();
-fn bool os_mutex_lock(OS_Handle handle);
+fn void os_mutex_lock(OS_Handle handle);
 fn bool os_mutex_trylock(OS_Handle handle);
-fn bool os_mutex_unlock(OS_Handle handle);
+fn void os_mutex_unlock(OS_Handle handle);
 fn void os_mutex_free(OS_Handle handle);
 
 fn OS_Handle os_rwlock_alloc();
