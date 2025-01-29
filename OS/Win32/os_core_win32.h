@@ -13,7 +13,7 @@ enum
 typedef struct OS_W32_Primitive OS_W32_Primitive;
 struct OS_W32_Primitive
 {
-  OS_W32_PrimitiveType *next;
+  OS_W32_Primitive *next;
   OS_W32_PrimitiveType kind;
   union
   {
@@ -27,15 +27,16 @@ struct OS_W32_Primitive
     
     CRITICAL_SECTION mutex;
     SRWLOCK rw_mutex;
-  }
+  };
 };
 
 typedef struct OS_W32_State OS_W32_State;
 struct OS_W32_State
 {
   Arena *arena;
-  OS_W32_Thread *free_list;
-  u64 pos;
+  OS_SystemInfo *info;
+  OS_W32_Primitive *free_list;
+  CRITICAL_SECTION mutex;
 };
 
 typedef struct OS_W32_FileIter OS_W32_FileIter;
@@ -49,7 +50,6 @@ struct OS_W32_FileIter
 StaticAssert(sizeof(OS_W32_FileIter) <= sizeof(OS_FileIter), file_iter_size_check);
 
 global OS_W32_State w32_state;
-global OS_SystemInfo w32_info;
 
 
 fn OS_W32_Primitive* os_w32_primitive_alloc(OS_W32_PrimitiveType kind);
