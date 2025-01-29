@@ -4,8 +4,9 @@
 #include <unistd.h>
 #include <dlfcn.h>
 
-global OS_SystemInfo bsd_info = {0};
 global Arena *bsd_arena = 0;
+global OS_SystemInfo bsd_info = {0};
+global String8 bsd_filemap[MEMFILES_ALLOWED] = {0};
 
 fn void* bsd_thdEntry(void *args) {
   bsd_thdData *wrap_args = (bsd_thdData *)args;
@@ -132,6 +133,15 @@ i32 main(i32 argc, char **argv) {
 #endif
 
   bsd_info.hostname = bsd_gethostname();
+  bsd_arena = ArenaBuild();
 
-  start(argc, 0);
+  CmdLine cli = {0};
+  cli.count = argc - 1;
+  cli.exe = strFromCstr(argv[0]);
+  cli.args = New(bsd_arena, String8, argc - 1);
+  for (isize i = 1; i < argc; ++i) {
+    cli.args[i - 1] = strFromCstr(argv[i]);
+  }
+
+  start(&cli);
 }

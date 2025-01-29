@@ -8,4 +8,8 @@ typedef struct {
   void *args;
 } bsd_thdData;
 
+#ifndef MEMFILES_ALLOWED
+#  define MEMFILES_ALLOWED 234414
+#endif
+
 #endif

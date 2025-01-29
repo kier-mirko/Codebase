@@ -126,12 +126,14 @@ fn i32 os_lib_close(OS_Handle lib);
 // =============================================================================
 // File reading and writing/appending
 fn OS_Handle fs_open(String8 filepath, OS_AccessFlags flags);
+fn bool fs_close(OS_Handle fd);
 fn String8 fs_readVirtual(Arena *arena, OS_Handle file, usize size);
 fn String8 fs_read(Arena *arena, OS_Handle file);
 fn bool fs_write(OS_Handle file, String8 content);
 
 fn FS_Properties fs_getProp(OS_Handle file);
 fn String8 fs_pathFromHandle(Arena *arena, OS_Handle file);
+fn String8 fs_readlink(Arena *arena, String8 path);
 
 // =============================================================================
 // Memory mapping files

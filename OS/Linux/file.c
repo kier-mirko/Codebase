@@ -30,6 +30,10 @@ fn OS_Handle fs_open(String8 filepath, OS_AccessFlags flags) {
   return res;
 }
 
+fn bool fs_close(OS_Handle fd) {
+  return close(fd.h[0]) == 0;
+}
+
 fn String8 fs_readVirtual(Arena *arena, OS_Handle file, usize size) {
   int fd = file.h[0];
   String8 result = {0};
@@ -102,18 +106,25 @@ fn FS_Properties fs_getProp(OS_Handle file) {
 
 fn String8 fs_pathFromHandle(Arena *arena, OS_Handle fd) {
   char path[PATH_MAX];
-  snprintf(path, sizeof(path), "/proc/self/fd/%ld", fd.h[0]);
+  isize len = snprintf(path, sizeof(path), "/proc/self/fd/%ld", fd.h[0]);
+  return fs_readlink(arena, str8((u8 *)path, len));
+}
 
+fn String8 fs_readlink(Arena *arena, String8 path) {
   String8 res = {0};
-  res.size = readlink(path, path, sizeof(path));
-  res.str = New(arena, u8, res.size);
-  memCopy(res.str, path, res.size);
+  res.str = New(arena, u8, PATH_MAX);
+  res.size = readlink((char *)path.str, (char *)res.str, PATH_MAX);
+  if (res.size <= 0) {
+    res.str = 0;
+    res.size = 0;
+  }
+
+  arenaPop(arena, PATH_MAX - res.size);
   return res;
 }
 
 // =============================================================================
 // Memory mapping files for easier and faster handling
-
 fn File fs_fopen(Arena *arena, OS_Handle fd) {
   File file = {0};
   file.file_handle = fd;

@@ -24,10 +24,41 @@ fn OS_Handle fs_open(String8 filepath, OS_AccessFlags flags) {
 		S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if(fd < 0) {
     fd = 0;
+  } else {
+    // NOTE(lb): there is no other way that i know of to keep track of the path
+    // other than tracking it myself. Getting the fullpath would require either
+    // allocating more memory (preferred but still shit) or using the system arena
+    // (can't remove the path from the arena without introducing internal fragmentation),
+    // so paths will be relative to the cwd until a better solution.
+    bsd_filemap[fd] = filepath;
   }
 
   OS_Handle res = {(u64)fd};
   return res;
+}
+
+fn bool fs_close(OS_Handle fd) {
+  if (close(fd.h[0]) == 0) {
+    bsd_filemap[fd.h[0]].str = 0;
+    bsd_filemap[fd.h[0]].size = 0;
+    return true;
+  } else {
+    return false;
+  }
+}
+
+fn String8 fs_readVirtual(Arena *arena, OS_Handle file, usize size) {
+  int fd = file.h[0];
+  String8 result = {0};
+  if(!fd) { return result; }
+
+  u8 *buffer = New(arena, u8, size);
+  if(pread(fd, buffer, size, 0) >= 0) {
+    result.str = buffer;
+    result.size = str8len((char *)buffer);
+  }
+
+  return result;
 }
 
 fn String8 fs_read(Arena *arena, OS_Handle file) {
@@ -86,20 +117,21 @@ fn FS_Properties fs_getProp(OS_Handle file) {
   return res;
 }
 
+fn String8 fs_pathFromHandle(Arena *arena, OS_Handle fd) {
+  return bsd_filemap[fd.h[0]];
+}
+
 // =============================================================================
 // Memory mapping files for easier and faster handling
 
-fn File fs_fopen(String8 filepath) {
+fn File fs_fopen(Arena *arena, OS_Handle fd) {
   File file = {0};
-  i32 fd = open((char *)filepath.str, O_RDWR | O_CREAT,
-		S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-  if (fd >= 0) {
-    file.handle.h[0] = fd;
-    file.path = filepath;
-    file.prop = fs_getProp(file.handle);
-    file.content = (u8 *)mmap(0, ClampBot(file.prop.size, 1), PROT_READ | PROT_WRITE,
-				MAP_SHARED, fd, 0);
-  }
+  file.file_handle = fd;
+  file.path = fs_pathFromHandle(arena, fd);
+  file.prop = fs_getProp(file.file_handle);
+  file.content = (u8 *)mmap(0, ClampBot(file.prop.size, 1), PROT_READ | PROT_WRITE,
+			    MAP_SHARED, fd.h[0], 0);
+  file.mmap_handle.h[0] = (u64)file.content;
 
   return file;
 }
@@ -115,26 +147,28 @@ fn File fs_fopenTmp(Arena *arena) {
   memCopy(pathstr.str, path, Arrsize(path));
 
   File file = {0};
-  file.handle.h[0] = fd;
+  file.file_handle.h[0] = fd;
   file.path = pathstr;
-  file.prop = fs_getProp(file.handle);
+  file.prop = fs_getProp(file.file_handle);
   file.content = (u8*)mmap(0, ClampBot(file.prop.size, 1), PROT_READ | PROT_WRITE,
 			   MAP_SHARED, fd, 0);
+  file.mmap_handle.h[0] = (u64)file.content;
   return file;
 }
 
 fn bool fs_fclose(File *file) {
-  return close(file->handle.h[0]) >= 0;
+  return munmap((void *)file->mmap_handle.h[0], file->prop.size) == 0 &&
+	 close(file->file_handle.h[0]) >= 0;
 }
 
 inline fn bool fs_fresize(File *file, usize size) {
-  if (ftruncate(file->handle.h[0], size) < 0) {
+  if (ftruncate(file->file_handle.h[0], size) < 0) {
     return false;
   }
 
   (void)munmap(file->content, file->prop.size);
   return (bool)(file->content = (u8*)mmap(0, size, PROT_READ | PROT_WRITE,
-					  MAP_SHARED, file->handle.h[0], 0));
+					  MAP_SHARED, file->file_handle.h[0], 0));
 }
 
 inline fn void fs_fwrite(File *file, String8 content) {
@@ -144,7 +178,7 @@ inline fn void fs_fwrite(File *file, String8 content) {
 }
 
 inline fn bool fs_fileHasChanged(File *file) {
-  FS_Properties prop = fs_getProp(file->handle);
+  FS_Properties prop = fs_getProp(file->file_handle);
   return (file->prop.last_access_time != prop.last_access_time) ||
 	 (file->prop.last_modification_time != prop.last_modification_time) ||
 	 (file->prop.last_status_change_time != prop.last_status_change_time);
