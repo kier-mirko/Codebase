@@ -4,8 +4,8 @@
 typedef struct {
   char delimiter;
   File file;
-
-  usize offset;
+  
+  isize offset;
 } CSV;
 
 fn StringStream csv_header(Arena *arena, CSV *config);
