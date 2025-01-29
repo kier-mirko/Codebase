@@ -232,29 +232,9 @@ fn FS_Properties fs_getProp(OS_Handle file) {
   return properties;
 }
 
-fn File fs_fileOpen(Arena *arena, String8 filepath) {
+fn File fs_fileOpen(Arena *arena, OS_Handle file) {
   File result = {0};
-  Scratch scratch = ScratchBegin(&arena, 1);
-  String16 path = UTF16From8(scratch.arena, filepath);
   
-  SECURITY_ATTRIBUTES security_attributes = {sizeof(SECURITY_ATTRIBUTES), 0, 0};
-  DWORD access_flags = GENERIC_READ | GENERIC_WRITE;
-  DWORD share_mode = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
-  HANDLE file = CreateFileW((WCHAR*)path.str, access_flags, share_mode, 
-                            &security_attributes, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
-  
-  if(file != INVALID_HANDLE_VALUE) {
-    LARGE_INTEGER file_size;
-    if(GetFileSizeEx(file, &file_size)) {
-      HANDLE file_mapped = CreateFileMappingW(file, 0, PAGE_READWRITE, 0, 0, 0);
-      if(file_mapped != INVALID_HANDLE_VALUE) {
-        result.handle.h[0] = (u64)file_mapped;
-        result.path = filepath;
-        result.prop = fs_getProp(result.handle);
-        result.content = (u8*)MapViewOfFileEx(file_mapped, FILE_MAP_ALL_ACCESS, 0, 0, 0, 0);
-      }
-    }
-  }
   return result;
 }
 
@@ -336,7 +316,16 @@ w32_entry_point_caller(int argc, WCHAR **wargv)
   w32_info.page_size = sys_info.dwPageSize;
   w32_info.hugepage_size = GetLargePageMinimum();
   
-  start(0, 0);
+  Arena *args_arena = ArenaBuild();
+  CmdLine *cmdln = New(args_arena, CmdLine);
+  cmdln->count = argc - 1;
+  cmdln->exe = UTF8From16(args_arena, str16_cstr(wargv[0]));
+  for(int i = 1; i < argc; ++i)
+  {
+    cmdln->args[i - 1] = UTF8From16(args_arena, str16_cstr(wargv[i]));
+  }
+  
+  start(cmdln);
 }
 
 #if BUILD_CONSOLE_INTEFACE
