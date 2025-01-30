@@ -1,7 +1,7 @@
 fn OS_SystemInfo*
 os_getSystemInfo(void)
 {
-  return &w32_info;
+  return &w32_state.info;
 }
 
 fn void* 
@@ -41,63 +41,176 @@ os_decommit(void *base, usize size)
 
 ////////////////////////////////
 //- km: Thread functions
-fn OS_W32_Thread* 
-os_w32_thread_alloc(void)
+fn OS_W32_Primitive* 
+os_w32_primitive_alloc(OS_W32_PrimitiveType kind)
 {
-  OS_W32_Thread *result = w32_state.free_list;
+  EnterCriticalSection(&w32_state.mutex);
+  OS_W32_Primitive *result = w32_state.free_list;
   if(result)
   {
     StackPop(w32_state.free_list);
   }
   else
   {
-    Assert(w32_state.pos < 256);
-    result = &w32_state.thread_pool[w32_state.pos];
-    w32_state.pos += 1;
+    result = New(w32_state.arena, OS_W32_Primitive);
+    
   }
   memset(result, 0, sizeof(*result));
+  result->kind = kind;
+  LeaveCriticalSection(&w32_state.mutex);
   return result;
 }
 
 fn void 
-os_w32_thread_release(OS_W32_Thread *thread)
+os_w32_primitive_release(OS_W32_Primitive *primitive)
 {
-  StackPush(w32_state.free_list, thread);
+  primitive->kind = OS_W32_Primitive_Nil;
+  EnterCriticalSection(&w32_state.mutex);
+  StackPush(w32_state.free_list, primitive);
+  LeaveCriticalSection(&w32_state.mutex);
 }
 
 fn OS_Handle 
 os_thread_start(ThreadFunc *func, void *arg)
 {
-  OS_W32_Thread *thread = os_w32_thread_alloc();
-  HANDLE handle = CreateThread(0, 0, os_w32_thread_entry_point, thread, 0, &thread->tid);
-  thread->func = func;
-  thread->arg = arg;
-  thread->handle = handle;
-  OS_Handle result = {(u64)thread};
+  OS_W32_Primitive *primitive = os_w32_primitive_alloc(OS_W32_Primitive_Thread);
+  HANDLE handle = CreateThread(0, 0, os_w32_thread_entry_point, primitive, 0, &primitive->thread.tid);
+  primitive->thread.func = func;
+  primitive->thread.arg = arg;
+  primitive->thread.handle = handle;
+  OS_Handle result = {(u64)primitive};
   return result;
 }
 
 fn bool
 os_thread_join(OS_Handle handle)
 {
-  OS_W32_Thread *thread = (OS_W32_Thread*)handle.h[0];
+  OS_W32_Primitive *primitive = (OS_W32_Primitive*)handle.h[0];
   DWORD wait = WAIT_OBJECT_0;
-  if(thread)
+  if(primitive)
   {
-    wait = WaitForSingleObject(thread->handle, INFINITE);
-    CloseHandle(thread->handle);
-    os_w32_thread_release(thread);
+    wait = WaitForSingleObject(primitive->thread.handle, INFINITE);
+    CloseHandle(primitive->thread.handle);
+    os_w32_primitive_release(primitive);
   }
   return wait == WAIT_OBJECT_0;
+}
+
+fn void 
+os_thread_kill(OS_Handle thd)
+{
+  (void)0;
 }
 
 fn DWORD 
 os_w32_thread_entry_point(void *ptr)
 {
-  OS_W32_Thread *thread = (OS_W32_Thread*)ptr;
-  ThreadFunc *func = thread->func;
-  func(thread->arg);
+  OS_W32_Primitive *primitive = (OS_W32_Primitive*)ptr;
+  ThreadFunc *func = primitive->thread.func;
+  func(primitive->thread.arg);
   return 0;
+}
+
+//- km: critical section mutex
+
+fn OS_Handle 
+os_mutex_alloc()
+{
+  OS_W32_Primitive *primitive = os_w32_primitive_alloc(OS_W32_Primitive_Mutex);
+  InitializeCriticalSection(&primitive->mutex);
+  OS_Handle result = {(u64)primitive};
+  return result;
+}
+
+fn void 
+os_mutex_lock(OS_Handle handle)
+{
+  OS_W32_Primitive *primitive = (OS_W32_Primitive*)handle.h[0];
+  EnterCriticalSection(&primitive->mutex);
+}
+
+fn bool 
+os_mutex_trylock(OS_Handle handle)
+{
+  OS_W32_Primitive *primitive = (OS_W32_Primitive*)handle.h[0];
+  BOOL result = TryEnterCriticalSection(&primitive->mutex);
+  return result;
+}
+
+fn void
+os_mutex_unlock(OS_Handle handle)
+{
+  OS_W32_Primitive *primitive = (OS_W32_Primitive*)handle.h[0];
+  LeaveCriticalSection(&primitive->mutex);
+}
+
+fn void 
+os_mutex_free(OS_Handle handle)
+{
+  OS_W32_Primitive *primitive = (OS_W32_Primitive*)handle.h[0];
+  DeleteCriticalSection(&primitive->mutex);
+  os_w32_primitive_release(primitive);
+}
+
+//- km read/write mutexes
+
+fn OS_Handle os_rwlock_alloc()
+{
+  OS_W32_Primitive *primitive = os_w32_primitive_alloc(OS_W32_Primitive_RWLock);
+  InitializeSRWLock(&primitive->rw_mutex);
+  OS_Handle result = {(u64)primitive};
+  return result;
+}
+
+fn void 
+os_rwlock_read_lock(OS_Handle handle)
+{
+  OS_W32_Primitive *primitive = (OS_W32_Primitive*)handle.h[0];
+  AcquireSRWLockShared(&primitive->rw_mutex);
+}
+
+fn bool 
+os_rwlock_read_trylock(OS_Handle handle)
+{
+  OS_W32_Primitive *primitive = (OS_W32_Primitive*)handle.h[0];
+  BOOLEAN result = TryAcquireSRWLockShared(&primitive->rw_mutex);
+  return result;
+}
+
+fn void
+os_rwlock_read_unlock(OS_Handle handle)
+{
+  OS_W32_Primitive *primitive = (OS_W32_Primitive*)handle.h[0];
+  ReleaseSRWLockShared(&primitive->rw_mutex);
+}
+
+fn void 
+os_rwlock_write_lock(OS_Handle handle)
+{
+  OS_W32_Primitive *primitive = (OS_W32_Primitive*)handle.h[0];
+  AcquireSRWLockExclusive(&primitive->rw_mutex);
+}
+
+fn bool 
+os_rwlock_write_trylock(OS_Handle handle)
+{
+  OS_W32_Primitive *primitive = (OS_W32_Primitive*)handle.h[0];
+  BOOLEAN result = TryAcquireSRWLockExclusive(&primitive->rw_mutex);
+  return result;
+}
+
+fn void 
+os_rwlock_write_unlock(OS_Handle handle)
+{
+  OS_W32_Primitive *primitive = (OS_W32_Primitive*)handle.h[0];
+  ReleaseSRWLockExclusive(&primitive->rw_mutex);
+}
+
+fn void 
+os_rwlock_free(OS_Handle handle)
+{
+  OS_W32_Primitive *primitive = (OS_W32_Primitive*)handle.h[0];
+  os_w32_primitive_release(primitive);
 }
 
 ////////////////////////////////
@@ -312,9 +425,12 @@ w32_entry_point_caller(int argc, WCHAR **wargv)
   SYSTEM_INFO sys_info = {0};
   GetSystemInfo(&sys_info);
   
-  w32_info.core_count = (u8)sys_info.dwNumberOfProcessors;
-  w32_info.page_size = sys_info.dwPageSize;
-  w32_info.hugepage_size = GetLargePageMinimum();
+  w32_state.info.core_count = (u8)sys_info.dwNumberOfProcessors;
+  w32_state.info.page_size = sys_info.dwPageSize;
+  w32_state.info.hugepage_size = GetLargePageMinimum();
+  
+  w32_state.arena = ArenaBuild(.reserve_size = GB(1));
+  InitializeCriticalSection(&w32_state.mutex);
   
   Arena *args_arena = ArenaBuild();
   CmdLine *cmdln = New(args_arena, CmdLine);
@@ -326,6 +442,7 @@ w32_entry_point_caller(int argc, WCHAR **wargv)
   }
   
   start(cmdln);
+  DeleteCriticalSection(&w32_state.mutex);
 }
 
 #if BUILD_CONSOLE_INTEFACE
@@ -333,10 +450,12 @@ int
 wmain(int argc, WCHAR **argv)
 {
   w32_entry_point_caller(argv, argv);
+  return 0;
 }
 #else
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, PWSTR cmdln, int cmd_show)
 {
   w32_entry_point_caller(__argc, __wargv);
+  return 0;
 }
 #endif

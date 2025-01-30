@@ -35,17 +35,17 @@ typedef u8 OS_Permissions;
 enum {
   OS_Permissions_Unknown = 0,
   OS_Permissions_Execute = 1 << 0,
-  OS_Permissions_Write = 1 << 1,
-  OS_Permissions_Read = 1 << 2,
+  OS_Permissions_Write   = 1 << 1,
+  OS_Permissions_Read    = 1 << 2,
 };
 
 typedef u32 OS_AccessFlags;
 enum {
-  OS_acfRead = 1 << 0,
-  OS_acfWrite = 1 << 1,
-  OS_acfExecute = 1 << 2,
-  OS_acfAppend = 1 << 3,
-  OS_acfShareRead = 1 << 4,
+  OS_acfRead       = 1 << 0,
+  OS_acfWrite      = 1 << 1,
+  OS_acfExecute    = 1 << 2,
+  OS_acfAppend     = 1 << 3,
+  OS_acfShareRead  = 1 << 4,
   OS_acfShareWrite = 1 << 5,
 };
 
@@ -133,18 +133,18 @@ fn void os_proc_wait(OS_ProcHandle proc);
 // TODO(lb): Handle status code returned by child process
 
 fn OS_Handle os_mutex_alloc();
-fn bool os_mutex_lock(OS_Handle handle);
+fn void os_mutex_lock(OS_Handle handle);
 fn bool os_mutex_trylock(OS_Handle handle);
-fn bool os_mutex_unlock(OS_Handle handle);
+fn void os_mutex_unlock(OS_Handle handle);
 fn void os_mutex_free(OS_Handle handle);
 
 fn OS_Handle os_rwlock_alloc();
-fn bool os_rwlock_read_lock(OS_Handle handle);
+fn void os_rwlock_read_lock(OS_Handle handle);
 fn bool os_rwlock_read_trylock(OS_Handle handle);
-fn bool os_rwlock_read_unlock(OS_Handle handle);
-fn bool os_rwlock_write_lock(OS_Handle handle);
+fn void os_rwlock_read_unlock(OS_Handle handle);
+fn void os_rwlock_write_lock(OS_Handle handle);
 fn bool os_rwlock_write_trylock(OS_Handle handle);
-fn bool os_rwlock_write_unlock(OS_Handle handle);
+fn void os_rwlock_write_unlock(OS_Handle handle);
 fn void os_rwlock_free(OS_Handle handle);
 
 // =============================================================================
@@ -190,4 +190,7 @@ inline fn bool fs_rmdir(String8 path);
 fn FilenameList fs_iterFiles(Arena *arena, String8 dirname);
 fn bool fs_rmIter(String8 dirname);
 
+fn OS_FileIter* os_file_iter_begin(Arena *arena, String8 path);
+fn bool         os_file_iter_next(Arena *arena, OS_FileIter *iter, OS_FileInfo *info_out);
+fn void         os_file_iter_end(OS_FileIter *iter);
 #endif
