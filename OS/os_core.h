@@ -124,6 +124,7 @@ fn OS_SystemInfo *os_getSystemInfo();
 // =============================================================================
 // Misc
 fn void os_sleep(usize ms);
+fn DateTime os_currentDateTime();
 
 // =============================================================================
 // Memory allocation

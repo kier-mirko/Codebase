@@ -111,6 +111,10 @@ fn void os_sleep(usize ms) {
   usleep(ms * 1000);
 }
 
+fn DateTime os_currentDateTime() {
+  return dateTimeFromUnix(time(0));
+}
+
 fn void* os_reserve(usize base_addr, usize size) {
   void *res = mmap((void *)base_addr, size, PROT_NONE,
                    MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);

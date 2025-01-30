@@ -3,20 +3,8 @@ inline fn bool isLeapYear(u32 year) {
 	   (year % 400 == 0);
 }
 
-inline fn DateTime currentDateTime() {
-#if OS_LINUX || OS_BSD || OS_MAC
-  u64 now = time(0);
-  return dateTimeFromUnix(now);
-#elif OS_WINDOWS
-  // TODO: i don't know whats used by Windows
-  Assert(false);
-#else
-  return (DateTime) {0};
-#endif
-}
-
 inline fn DateTime localCurrentDateTime(i8 utc_offset) {
-  return localizeDateTime(currentDateTime(), utc_offset);
+  return localizeDateTime(os_currentDateTime(), utc_offset);
 }
 
 DateTime dateTimeFromUnix(u64 timestamp) {
@@ -45,18 +33,18 @@ DateTime dateTimeFromUnix(u64 timestamp) {
     timestamp -= secondsXmonth;
     ++dt.month;
   }
-  
+
   dt.day += (u8)(timestamp / UNIX_DAY);
   timestamp %= UNIX_DAY;
-  
+
   dt.hour = (u8)(timestamp / UNIX_HOUR);
   timestamp %= UNIX_HOUR;
-  
+
   dt.minute = (u8)(timestamp / UNIX_MINUTE);
   timestamp %= UNIX_MINUTE;
-  
+
   dt.second = (u8)timestamp;
-  
+
   return dt;
 }
 
