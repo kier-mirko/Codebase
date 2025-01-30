@@ -35,17 +35,17 @@ typedef u8 OS_Permissions;
 enum {
   OS_Permissions_Unknown = 0,
   OS_Permissions_Execute = 1 << 0,
-  OS_Permissions_Write = 1 << 1,
-  OS_Permissions_Read = 1 << 2,
+  OS_Permissions_Write   = 1 << 1,
+  OS_Permissions_Read    = 1 << 2,
 };
 
 typedef u32 OS_AccessFlags;
 enum {
-  OS_acfRead = 1 << 0,
-  OS_acfWrite = 1 << 1,
-  OS_acfExecute = 1 << 2,
-  OS_acfAppend = 1 << 3,
-  OS_acfShareRead = 1 << 4,
+  OS_acfRead       = 1 << 0,
+  OS_acfWrite      = 1 << 1,
+  OS_acfExecute    = 1 << 2,
+  OS_acfAppend     = 1 << 3,
+  OS_acfShareRead  = 1 << 4,
   OS_acfShareWrite = 1 << 5,
 };
 
@@ -190,4 +190,7 @@ inline fn bool fs_rmdir(String8 path);
 fn FilenameList fs_iterFiles(Arena *arena, String8 dirname);
 fn bool fs_rmIter(String8 dirname);
 
+fn OS_FileIter* os_file_iter_begin(Arena *arena, String8 path);
+fn bool         os_file_iter_next(Arena *arena, OS_FileIter *iter, OS_FileInfo *info_out);
+fn void         os_file_iter_end(OS_FileIter *iter);
 #endif
