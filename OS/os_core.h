@@ -49,10 +49,22 @@ enum {
   OS_acfShareWrite = 1 << 5,
 };
 
+typedef u64 OS_FileType;
+enum {
+  OS_FileType_BlkDevice  = 1 << 0,
+  OS_FileType_CharDevice = 1 << 1,
+  OS_FileType_Dir        = 1 << 2,
+  OS_FileType_Pipe       = 1 << 3,
+  OS_FileType_Link       = 1 << 4,
+  OS_FileType_Socket     = 1 << 5,
+  OS_FileType_Regular    = 1 << 6,
+};
+
 typedef struct {
   u32 ownerID;
   u32 groupID;
   usize size;
+  OS_FileType type;
 
   u64 last_access_time;
   u64 last_modification_time;
@@ -93,7 +105,19 @@ typedef struct{
   FS_Properties properties;
 } OS_FileInfo;
 
+typedef u64 OS_FileIterFlag;
+enum {
+  OS_FileIterFlag_SkipBlkDevice  = 1 << 0,
+  OS_FileIterFlag_SkipCharDevice = 1 << 1,
+  OS_FileIterFlag_SkipDir        = 1 << 2,
+  OS_FileIterFlag_SkipPipe       = 1 << 3,
+  OS_FileIterFlag_SkipLink       = 1 << 4,
+  OS_FileIterFlag_SkipSocket     = 1 << 5,
+  OS_FileIterFlag_SkipRegular    = 1 << 6,
+};
+
 typedef struct{
+  OS_FileIterFlag flags;
   u8 memory[640];
 } OS_FileIter;
 
@@ -187,10 +211,11 @@ inline fn bool fs_rmdir(String8 path);
 
 // =============================================================================
 // File iteration
-fn FilenameList fs_iterFiles(Arena *arena, String8 dirname);
+fn FilenameList fs_fileList(Arena *arena, String8 dirname);
 fn bool fs_rmIter(String8 dirname);
 
-fn OS_FileIter* os_file_iter_begin(Arena *arena, String8 path);
-fn bool         os_file_iter_next(Arena *arena, OS_FileIter *iter, OS_FileInfo *info_out);
-fn void         os_file_iter_end(OS_FileIter *iter);
+fn OS_FileIter* fs_iter_begin(Arena *arena, String8 path);
+fn bool fs_iter_next(Arena *arena, OS_FileIter *iter, OS_FileInfo *info_out);
+fn void fs_iter_end(OS_FileIter *iter);
+
 #endif

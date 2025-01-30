@@ -32,6 +32,44 @@ fn void* lnx_threadEntry(void *args) {
   return 0;
 }
 
+fn FS_Properties lnx_propertiesFromStat(struct stat *stat) {
+  FS_Properties result = {0};
+
+  result.ownerID = stat->st_uid;
+  result.groupID = stat->st_gid;
+  result.size = (usize)stat->st_size;
+  result.last_access_time = (u64)stat->st_atime;
+  result.last_modification_time = (u64)stat->st_mtime;
+  result.last_status_change_time = (u64)stat->st_ctime;
+
+  switch (stat->st_mode & S_IFMT) {
+  case S_IFBLK:  result.type = OS_FileType_BlkDevice;  break;
+  case S_IFCHR:  result.type = OS_FileType_CharDevice; break;
+  case S_IFDIR:  result.type = OS_FileType_Dir;        break;
+  case S_IFIFO:  result.type = OS_FileType_Pipe;       break;
+  case S_IFLNK:  result.type = OS_FileType_Link;       break;
+  case S_IFSOCK: result.type = OS_FileType_Socket;     break;
+  case S_IFREG:  result.type = OS_FileType_Regular;    break;
+  }
+
+  result.user = OS_Permissions_Unknown;
+  if (stat->st_mode & S_IRUSR) { result.user |= OS_Permissions_Read; }
+  if (stat->st_mode & S_IWUSR) { result.user |= OS_Permissions_Write; }
+  if (stat->st_mode & S_IXUSR) { result.user |= OS_Permissions_Execute; }
+
+  result.group = OS_Permissions_Unknown;
+  if (stat->st_mode & S_IRGRP) { result.group |= OS_Permissions_Read; }
+  if (stat->st_mode & S_IWGRP) { result.group |= OS_Permissions_Write; }
+  if (stat->st_mode & S_IXGRP) { result.group |= OS_Permissions_Execute; }
+
+  result.other = OS_Permissions_Unknown;
+  if (stat->st_mode & S_IROTH) { result.other |= OS_Permissions_Read; }
+  if (stat->st_mode & S_IWOTH) { result.other |= OS_Permissions_Write; }
+  if (stat->st_mode & S_IXOTH) { result.other |= OS_Permissions_Execute; }
+
+  return result;
+}
+
 fn String8 lnx_gethostname() {
   char name[HOST_NAME_MAX];
   (void)gethostname(name, HOST_NAME_MAX);
@@ -171,9 +209,9 @@ fn OS_Handle os_mutex_alloc() {
   return res;
 }
 
-fn bool os_mutex_lock(OS_Handle handle) {
+fn void os_mutex_lock(OS_Handle handle) {
   LNX_Primitive *prim = (LNX_Primitive *)handle.h[0];
-  return pthread_mutex_lock(&prim->mutex) == 0;
+  (void)pthread_mutex_lock(&prim->mutex);
 }
 
 fn bool os_mutex_trylock(OS_Handle handle) {
@@ -181,9 +219,9 @@ fn bool os_mutex_trylock(OS_Handle handle) {
   return pthread_mutex_trylock(&prim->mutex) == 0;
 }
 
-fn bool os_mutex_unlock(OS_Handle handle) {
+fn void os_mutex_unlock(OS_Handle handle) {
   LNX_Primitive *prim = (LNX_Primitive *)handle.h[0];
-  return pthread_mutex_unlock(&prim->mutex) == 0;
+  (void)pthread_mutex_unlock(&prim->mutex);
 }
 
 fn void os_mutex_free(OS_Handle handle) {
@@ -200,9 +238,9 @@ fn OS_Handle os_rwlock_alloc() {
   return res;
 }
 
-fn bool os_rwlock_read_lock(OS_Handle handle) {
+fn void os_rwlock_read_lock(OS_Handle handle) {
   LNX_Primitive *prim = (LNX_Primitive *)handle.h[0];
-  return pthread_rwlock_rdlock(&prim->rwlock) == 0;
+  (void)pthread_rwlock_rdlock(&prim->rwlock);
 }
 
 fn bool os_rwlock_read_trylock(OS_Handle handle) {
@@ -210,14 +248,14 @@ fn bool os_rwlock_read_trylock(OS_Handle handle) {
   return pthread_rwlock_tryrdlock(&prim->rwlock) == 0;
 }
 
-fn bool os_rwlock_read_unlock(OS_Handle handle) {
+fn void os_rwlock_read_unlock(OS_Handle handle) {
   LNX_Primitive *prim = (LNX_Primitive *)handle.h[0];
-  return pthread_rwlock_unlock(&prim->rwlock) == 0;
+  (void)pthread_rwlock_unlock(&prim->rwlock);
 }
 
-fn bool os_rwlock_write_lock(OS_Handle handle) {
+fn void os_rwlock_write_lock(OS_Handle handle) {
   LNX_Primitive *prim = (LNX_Primitive *)handle.h[0];
-  return pthread_rwlock_wrlock(&prim->rwlock) == 0;
+  (void)pthread_rwlock_wrlock(&prim->rwlock);
 }
 
 fn bool os_rwlock_write_trylock(OS_Handle handle) {
@@ -225,9 +263,9 @@ fn bool os_rwlock_write_trylock(OS_Handle handle) {
   return pthread_rwlock_trywrlock(&prim->rwlock) == 0;
 }
 
-fn bool os_rwlock_write_unlock(OS_Handle handle) {
+fn void os_rwlock_write_unlock(OS_Handle handle) {
   LNX_Primitive *prim = (LNX_Primitive *)handle.h[0];
-  return pthread_rwlock_unlock(&prim->rwlock) == 0;
+  (void)pthread_rwlock_unlock(&prim->rwlock);
 }
 
 fn void os_rwlock_free(OS_Handle handle) {

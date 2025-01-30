@@ -1,6 +1,9 @@
 #ifndef OS_LINUX_CORE_H
 #define OS_LINUX_CORE_H
 
+#include <dirent.h>
+#include <sys/stat.h>
+
 typedef u64 LNX_PrimitiveType;
 enum {
   LNX_Primitive_Process,
@@ -26,6 +29,12 @@ typedef struct LNX_Primitive {
 } LNX_Primitive;
 
 typedef struct {
+  String8 path;
+  DIR *dir;
+  struct dirent *dir_entry;
+} LNX_FileIter;
+
+typedef struct {
   Arena *arena;
   OS_SystemInfo info;
   pthread_mutex_t primitive_lock;
@@ -37,6 +46,7 @@ fn void lnx_primitiveFree(LNX_Primitive *ptr);
 
 fn void* lnx_threadEntry(void *args);
 
+fn FS_Properties lnx_propertiesFromStat(struct stat *stat);
 fn String8 lnx_getHostname();
 fn void lnx_parseMeminfo();
 

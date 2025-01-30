@@ -75,32 +75,9 @@ fn FS_Properties fs_getProp(OS_Handle file) {
   if(!file.h[0]) { return result; }
 
   struct stat file_stat;
-  if (fstat((i32)file.h[0], &file_stat) < 0) {
-    return result;
+  if (fstat((i32)file.h[0], &file_stat) == 0) {
+    result = lnx_propertiesFromStat(&file_stat);
   }
-
-  result.ownerID = file_stat.st_uid;
-  result.groupID = file_stat.st_gid;
-  result.size = (usize)file_stat.st_size;
-  result.last_access_time = (u64)file_stat.st_atime;
-  result.last_modification_time = (u64)file_stat.st_mtime;
-  result.last_status_change_time = (u64)file_stat.st_ctime;
-
-  result.user = OS_Permissions_Unknown;
-  if (file_stat.st_mode & S_IRUSR) { result.user |= OS_Permissions_Read; }
-  if (file_stat.st_mode & S_IWUSR) { result.user |= OS_Permissions_Write; }
-  if (file_stat.st_mode & S_IXUSR) { result.user |= OS_Permissions_Execute; }
-
-  result.group = OS_Permissions_Unknown;
-  if (file_stat.st_mode & S_IRGRP) { result.group |= OS_Permissions_Read; }
-  if (file_stat.st_mode & S_IWGRP) { result.group |= OS_Permissions_Write; }
-  if (file_stat.st_mode & S_IXGRP) { result.group |= OS_Permissions_Execute; }
-
-  result.other = OS_Permissions_Unknown;
-  if (file_stat.st_mode & S_IROTH) { result.other |= OS_Permissions_Read; }
-  if (file_stat.st_mode & S_IWOTH) { result.other |= OS_Permissions_Write; }
-  if (file_stat.st_mode & S_IXOTH) { result.other |= OS_Permissions_Execute; }
-
   return result;
 }
 
@@ -216,7 +193,7 @@ inline fn bool fs_rmdir(String8 path) {
   return rmdir((char *)path.str) >= 0;
 }
 
-fn FilenameList fs_iterFiles(Arena *arena, String8 dirname) {
+fn FilenameList fs_fileList(Arena *arena, String8 dirname) {
   local const String8 currdir = StrlitInit(".");
   local const String8 parentdir = StrlitInit("..");
 
@@ -297,4 +274,50 @@ fn bool fs_rmIter(String8 dirname) {
 
   ScratchEnd(scratch);
   return res;
+}
+
+fn OS_FileIter* fs_iter_begin(Arena *arena, String8 path) {
+  OS_FileIter *os_iter = New(arena, OS_FileIter);
+  LNX_FileIter *iter = (LNX_FileIter *)os_iter->memory;
+  iter->path = path;
+  iter->dir = opendir((char *)path.str);
+
+  return os_iter;
+}
+
+fn bool fs_iter_next(Arena *arena, OS_FileIter *os_iter, OS_FileInfo *info_out) {
+  local const String8 currdir = StrlitInit(".");
+  local const String8 parentdir = StrlitInit("..");
+
+  String8 str = {0};
+  StringStream ss = {0};
+  LNX_FileIter *iter = (LNX_FileIter *)os_iter->memory;
+  struct dirent *entry = 0;
+
+  do {
+    entry = readdir(iter->dir);
+    if (!entry) { return false; }
+    str = strFromCstr(entry->d_name);
+  } while (strEq(str, currdir) || strEq(str, parentdir));
+
+  Scratch scratch = ScratchBegin(&arena, 1);
+  str = strFormat(scratch.arena, "%.*s/%.*s", Strexpand(iter->path), Strexpand(str));
+  struct stat file_stat = {0};
+  if (stat((char *)str.str, &file_stat) != 0) {
+    ScratchEnd(scratch);
+    return false;
+  }
+
+  // TODO(lb): filter out kinds of files?
+  info_out->properties = lnx_propertiesFromStat(&file_stat);
+  info_out->name.size = str.size;
+  info_out->name.str = New(arena, u8, str.size);
+  memCopy(info_out->name.str, str.str, str.size);
+  ScratchEnd(scratch);
+  return true;
+}
+
+fn void fs_iter_end(OS_FileIter *os_iter) {
+  LNX_FileIter *iter = (LNX_FileIter *)os_iter->memory;
+  closedir(iter->dir);
 }
