@@ -123,7 +123,7 @@ fn OS_SystemInfo *os_getSystemInfo();
 
 // =============================================================================
 // Misc
-fn void os_sleep(usize ms);
+fn void os_sleep(f32 ms);
 fn DateTime os_currentDateTime();
 
 // =============================================================================

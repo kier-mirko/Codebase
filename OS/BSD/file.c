@@ -88,32 +88,9 @@ fn FS_Properties fs_getProp(OS_Handle file) {
   if(!file.h[0]) { return res; }
 
   struct stat file_stat;
-  if (fstat((i32)file.h[0], &file_stat) < 0) {
-    return res;
+  if (fstat((i32)file.h[0], &file_stat) == 0) {
+    res = bsd_propertiesFromStat(&file_stat);
   }
-
-  res.ownerID = file_stat.st_uid;
-  res.groupID = file_stat.st_gid;
-  res.size = (usize)file_stat.st_size;
-  res.last_access_time = (u64)file_stat.st_atime;
-  res.last_modification_time = (u64)file_stat.st_mtime;
-  res.last_status_change_time = (u64)file_stat.st_ctime;
-
-  res.user = OS_Permissions_Unknown;
-  if (file_stat.st_mode & S_IRUSR) { res.user |= OS_Permissions_Read; }
-  if (file_stat.st_mode & S_IWUSR) { res.user |= OS_Permissions_Write; }
-  if (file_stat.st_mode & S_IXUSR) { res.user |= OS_Permissions_Execute; }
-
-  res.group = OS_Permissions_Unknown;
-  if (file_stat.st_mode & S_IRGRP) { res.group |= OS_Permissions_Read; }
-  if (file_stat.st_mode & S_IWGRP) { res.group |= OS_Permissions_Write; }
-  if (file_stat.st_mode & S_IXGRP) { res.group |= OS_Permissions_Execute; }
-
-  res.other = OS_Permissions_Unknown;
-  if (file_stat.st_mode & S_IROTH) { res.other |= OS_Permissions_Read; }
-  if (file_stat.st_mode & S_IWOTH) { res.other |= OS_Permissions_Write; }
-  if (file_stat.st_mode & S_IXOTH) { res.other |= OS_Permissions_Execute; }
-
   return res;
 }
 

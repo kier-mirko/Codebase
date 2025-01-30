@@ -107,8 +107,8 @@ fn OS_SystemInfo *os_getSystemInfo() {
   return &lnx_state.info;
 }
 
-fn void os_sleep(usize ms) {
-  usleep(ms * 1000);
+fn void os_sleep(f32 ms) {
+  usleep((u32)(ms * 1000.f));
 }
 
 fn DateTime os_currentDateTime() {
@@ -168,9 +168,10 @@ fn OS_Handle os_thread_start(ThreadFunc *thread_main, void *args) {
 fn void os_thread_kill(OS_Handle thd_handle) {
   LNX_Primitive *prim = (LNX_Primitive *)thd_handle.h[0];
   (void)pthread_kill(prim->thread.handle, 0);
+  lnx_primitiveFree(prim);
 }
 
-fn bool os_thread_wait(OS_Handle thd_handle) {
+fn bool os_thread_join(OS_Handle thd_handle) {
   LNX_Primitive *prim = (LNX_Primitive *)thd_handle.h[0];
   i32 res = pthread_join(prim->thread.handle, 0);
   lnx_primitiveFree(prim);
