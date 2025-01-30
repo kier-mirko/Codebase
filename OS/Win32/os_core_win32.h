@@ -34,7 +34,7 @@ typedef struct OS_W32_State OS_W32_State;
 struct OS_W32_State
 {
   Arena *arena;
-  OS_SystemInfo *info;
+  OS_SystemInfo info;
   OS_W32_Primitive *free_list;
   CRITICAL_SECTION mutex;
 };

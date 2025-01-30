@@ -1,7 +1,7 @@
 fn OS_SystemInfo*
 os_getSystemInfo(void)
 {
-  return w32_state.info;
+  return &w32_state.info;
 }
 
 fn void* 
@@ -74,7 +74,7 @@ fn OS_Handle
 os_thread_start(ThreadFunc *func, void *arg)
 {
   OS_W32_Primitive *primitive = os_w32_primitive_alloc(OS_W32_Primitive_Thread);
-  HANDLE handle = CreateThread(0, 0, os_w32_thread_entry_point, &primitive->thread, 0, &primitive->thread.tid);
+  HANDLE handle = CreateThread(0, 0, os_w32_thread_entry_point, primitive, 0, &primitive->thread.tid);
   primitive->thread.func = func;
   primitive->thread.arg = arg;
   primitive->thread.handle = handle;
@@ -425,9 +425,9 @@ w32_entry_point_caller(int argc, WCHAR **wargv)
   SYSTEM_INFO sys_info = {0};
   GetSystemInfo(&sys_info);
   
-  w32_state.info->core_count = (u8)sys_info.dwNumberOfProcessors;
-  w32_state.info->page_size = sys_info.dwPageSize;
-  w32_state.info->hugepage_size = GetLargePageMinimum();
+  w32_state.info.core_count = (u8)sys_info.dwNumberOfProcessors;
+  w32_state.info.page_size = sys_info.dwPageSize;
+  w32_state.info.hugepage_size = GetLargePageMinimum();
   
   w32_state.arena = ArenaBuild(.reserve_size = GB(1));
   InitializeCriticalSection(&w32_state.mutex);
@@ -450,10 +450,12 @@ int
 wmain(int argc, WCHAR **argv)
 {
   w32_entry_point_caller(argv, argv);
+  return 0;
 }
 #else
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, PWSTR cmdln, int cmd_show)
 {
   w32_entry_point_caller(__argc, __wargv);
+  return 0;
 }
 #endif
