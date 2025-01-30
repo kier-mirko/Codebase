@@ -202,6 +202,16 @@ fn OS_FileIter* fs_iter_begin(Arena *arena, String8 path) {
   return os_iter;
 }
 
+fn OS_FileIter* fs_iter_beginFiltered(Arena *arena, String8 path, OS_FileType allowed) {
+  OS_FileIter *os_iter = New(arena, OS_FileIter);
+  LNX_FileIter *iter = (LNX_FileIter *)os_iter->memory;
+  iter->path = path;
+  iter->dir = opendir((char *)path.str);
+  os_iter->filter_allowed = allowed;
+
+  return os_iter;
+}
+
 fn bool fs_iter_next(Arena *arena, OS_FileIter *os_iter, OS_FileInfo *info_out) {
   local const String8 currdir = StrlitInit(".");
   local const String8 parentdir = StrlitInit("..");
@@ -211,22 +221,24 @@ fn bool fs_iter_next(Arena *arena, OS_FileIter *os_iter, OS_FileInfo *info_out) 
   LNX_FileIter *iter = (LNX_FileIter *)os_iter->memory;
   struct dirent *entry = 0;
 
-  do {
-    entry = readdir(iter->dir);
-    if (!entry) { return false; }
-    str = strFromCstr(entry->d_name);
-  } while (strEq(str, currdir) || strEq(str, parentdir));
-
   Scratch scratch = ScratchBegin(&arena, 1);
-  str = strFormat(scratch.arena, "%.*s/%.*s", Strexpand(iter->path), Strexpand(str));
-  struct stat file_stat = {0};
-  if (stat((char *)str.str, &file_stat) != 0) {
-    ScratchEnd(scratch);
-    return false;
-  }
+  do {
+    do {
+      entry = readdir(iter->dir);
+      if (!entry) { return false; }
+      str = strFromCstr(entry->d_name);
+    } while (strEq(str, currdir) || strEq(str, parentdir));
 
-  // TODO(lb): filter out kinds of files?
-  info_out->properties = lnx_propertiesFromStat(&file_stat);
+    str = strFormat(scratch.arena, "%.*s/%.*s", Strexpand(iter->path), Strexpand(str));
+    struct stat file_stat = {0};
+    if (stat((char *)str.str, &file_stat) != 0) {
+      ScratchEnd(scratch);
+      return false;
+    }
+
+    info_out->properties = lnx_propertiesFromStat(&file_stat);
+  } while (os_iter->filter_allowed && !(info_out->properties.type & os_iter->filter_allowed));
+
   info_out->name.size = str.size;
   info_out->name.str = New(arena, u8, str.size);
   memCopy(info_out->name.str, str.str, str.size);

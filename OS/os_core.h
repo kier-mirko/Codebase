@@ -105,19 +105,8 @@ typedef struct{
   FS_Properties properties;
 } OS_FileInfo;
 
-typedef u64 OS_FileIterFlag;
-enum {
-  OS_FileIterFlag_SkipBlkDevice  = 1 << 0,
-  OS_FileIterFlag_SkipCharDevice = 1 << 1,
-  OS_FileIterFlag_SkipDir        = 1 << 2,
-  OS_FileIterFlag_SkipPipe       = 1 << 3,
-  OS_FileIterFlag_SkipLink       = 1 << 4,
-  OS_FileIterFlag_SkipSocket     = 1 << 5,
-  OS_FileIterFlag_SkipRegular    = 1 << 6,
-};
-
 typedef struct{
-  OS_FileIterFlag flags;
+  OS_FileType filter_allowed;
   u8 memory[640];
 } OS_FileIter;
 
