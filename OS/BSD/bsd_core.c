@@ -3,6 +3,7 @@
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 
 #include <unistd.h>
 #include <signal.h>
@@ -160,51 +161,106 @@ fn bool os_thread_join(OS_Handle handle) {
 }
 
 fn OS_ProcHandle os_proc_spawn() {
+  BSD_Primitive *prim = bsd_primitiveAlloc(BSD_Primitive_Process);
+  prim->proc = fork();
+
+  OS_ProcHandle res = {prim->proc == 0, {(u64)prim}};
+  return res;
 }
 
 fn void os_proc_kill(OS_ProcHandle proc) {
+  Assert(!proc.is_child);
+  BSD_Primitive *prim = (BSD_Primitive *)proc.handle.h[0];
+  (void)kill(prim->proc, SIGKILL);
+  bsd_primitiveFree(prim);
 }
 
-fn void os_proc_join(OS_ProcHandle proc) {
+fn void os_proc_wait(OS_ProcHandle proc) {
+  Assert(!proc.is_child);
+  BSD_Primitive *prim = (BSD_Primitive *)proc.handle.h[0];
+  i32 child_res = 0;
+  (void)waitpid(prim->proc, &child_res, 0);
+  bsd_primitiveFree(prim);
 }
 
 fn OS_Handle os_mutex_alloc() {
+  BSD_Primitive *prim = bsd_primitiveAlloc(BSD_Primitive_Mutex);
+  pthread_mutexattr_t attr;
+  if (pthread_mutexattr_init(&attr) != 0 ||
+      pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE) != 0) {
+    bsd_primitiveFree(prim);
+    prim = 0;
+  } else {
+    (void)pthread_mutex_init(&prim->mutex, &attr);
+  }
+
+  OS_Handle res = {(u64)prim};
+  return res;
 }
 
 fn void os_mutex_lock(OS_Handle handle) {
+  BSD_Primitive *prim = (BSD_Primitive *)handle.h[0];
+  (void)pthread_mutex_lock(&prim->mutex);
 }
 
 fn bool os_mutex_trylock(OS_Handle handle) {
+  BSD_Primitive *prim = (BSD_Primitive *)handle.h[0];
+  return pthread_mutex_trylock(&prim->mutex) == 0;
 }
 
 fn void os_mutex_unlock(OS_Handle handle) {
+  BSD_Primitive *prim = (BSD_Primitive *)handle.h[0];
+  (void)pthread_mutex_unlock(&prim->mutex);
 }
 
 fn void os_mutex_free(OS_Handle handle) {
+  BSD_Primitive *prim = (BSD_Primitive *)handle.h[0];
+  pthread_mutex_destroy(&prim->mutex);
+  bsd_primitiveFree(prim);
 }
 
 fn OS_Handle os_rwlock_alloc() {
+  BSD_Primitive *prim = bsd_primitiveAlloc(BSD_Primitive_Rwlock);
+  pthread_rwlock_init(&prim->rwlock, 0);
+
+  OS_Handle res = {(u64)prim};
+  return res;
 }
 
 fn void os_rwlock_read_lock(OS_Handle handle) {
+  BSD_Primitive *prim = (BSD_Primitive *)handle.h[0];
+  (void)pthread_rwlock_rdlock(&prim->rwlock);
 }
 
 fn bool os_rwlock_read_trylock(OS_Handle handle) {
+  BSD_Primitive *prim = (BSD_Primitive *)handle.h[0];
+  return pthread_rwlock_tryrdlock(&prim->rwlock) == 0;
 }
 
 fn void os_rwlock_read_unlock(OS_Handle handle) {
+  BSD_Primitive *prim = (BSD_Primitive *)handle.h[0];
+  (void)pthread_rwlock_unlock(&prim->rwlock);
 }
 
 fn void os_rwlock_write_lock(OS_Handle handle) {
+  BSD_Primitive *prim = (BSD_Primitive *)handle.h[0];
+  (void)pthread_rwlock_wrlock(&prim->rwlock);
 }
 
 fn bool os_rwlock_write_trylock(OS_Handle handle) {
+  BSD_Primitive *prim = (BSD_Primitive *)handle.h[0];
+  return pthread_rwlock_trywrlock(&prim->rwlock) == 0;
 }
 
 fn void os_rwlock_write_unlock(OS_Handle handle) {
+  BSD_Primitive *prim = (BSD_Primitive *)handle.h[0];
+  (void)pthread_rwlock_unlock(&prim->rwlock);
 }
 
 fn void os_rwlock_free(OS_Handle handle) {
+  BSD_Primitive *prim = (BSD_Primitive *)handle.h[0];
+  pthread_rwlock_destroy(&prim->rwlock);
+  bsd_primitiveFree(prim);
 }
 
 fn OS_Handle os_lib_open(String8 path) {

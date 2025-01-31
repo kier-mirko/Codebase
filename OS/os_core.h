@@ -16,6 +16,19 @@ typedef struct {
   OS_Handle handle;
 } OS_ProcHandle;
 
+// TODO(lb): not the best naming convetion
+typedef u8 OS_ProcState;
+enum {
+  OS_ProcState_Finished = 1 << 0,
+  OS_ProcState_Killed   = 1 << 1,
+  OS_ProcState_CoreDump = 1 << 2,
+};
+
+typedef struct {
+  OS_ProcState state;
+  u32 exit_code;
+} OS_ProcStatus;
+
 typedef struct {
   u64 page_size;
   u64 hugepage_size;
@@ -151,8 +164,7 @@ fn bool os_thread_join(OS_Handle thd);
 
 fn OS_ProcHandle os_proc_spawn();
 fn void os_proc_kill(OS_ProcHandle proc);
-fn void os_proc_wait(OS_ProcHandle proc);
-// TODO(lb): Handle status code returned by child process
+fn OS_ProcStatus os_proc_wait(OS_ProcHandle proc);
 
 fn OS_Handle os_mutex_alloc();
 fn void os_mutex_lock(OS_Handle handle);
