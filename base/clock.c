@@ -107,3 +107,43 @@ DateTime localizeDateTime(DateTime dt, i8 utc_offset) {
 
   return dt;
 }
+
+fn DenseTime denseTimeFromDateTime(DateTime *date_time){
+  DenseTime result = 0;
+  
+  result += date_time->year;
+  result *= 12;
+  result += date_time->month;
+  result *= 31;
+  result += date_time->day;
+  result *= 24;
+  result += date_time->hour;
+  result *= 60;
+  result += date_time->minute;
+  result *= 60;
+  result += date_time->second;
+  result *= 1000;
+  result += date_time->ms;
+  
+  return result;
+}
+
+fn DateTime dateTimeFromDenseTime(DenseTime dense_time){
+  DateTime result = {0};
+  
+  result.ms = dense_time % 1000;
+  dense_time /= 1000;
+  result.second = dense_time % 60;
+  dense_time /= 60;
+  result.minute = dense_time % 60;
+  dense_time /= 60;
+  result.hour = dense_time % 24;
+  dense_time /= 24;
+  result.day = dense_time % 31;
+  dense_time /= 31;
+  result.month = dense_time % 12;
+  dense_time /= 12;
+  result.year = (u32)dense_time;
+  
+  return result;
+}
