@@ -4,6 +4,9 @@ os_getSystemInfo(void)
   return &w32_state.info;
 }
 
+////////////////////////////////
+//- km: memory
+
 fn void*
 os_reserve(usize base_addr, usize size)
 {
@@ -111,6 +114,7 @@ os_w32_thread_entry_point(void *ptr)
   return 0;
 }
 
+////////////////////////////////
 //- km: critical section mutex
 
 fn OS_Handle
@@ -152,6 +156,7 @@ os_mutex_free(OS_Handle handle)
   os_w32_primitive_release(primitive);
 }
 
+////////////////////////////////
 //- km read/write mutexes
 
 fn OS_Handle os_rwlock_alloc()
@@ -359,19 +364,20 @@ fs_iter_begin(Arena *arena, String8 path)
 {
   Scratch scratch = ScratchBegin(&arena, 1);
   StringStream list = {0};
-
+  
   stringstreamAppend(scratch.arena, &list, path);
   stringstreamAppend(scratch.arena, &list, Strlit("\\*"));
   path = str8FromStream(scratch.arena, list);
-
+  
   String16 path16 = UTF16From8(scratch.arena, path);
   WIN32_FIND_DATAW file_data = {0};
-
+  
   OS_W32_FileIter *iter = New(arena, OS_W32_FileIter);
   iter->handle = FindFirstFileW((WCHAR*)path16.str, &file_data);
   iter->file_data = file_data;
-
-  OS_FileIter *result = (OS_FileIter*)iter;
+  
+  OS_FileIter *result = New(arena, OS_FileIter);
+  result->memory = (OS_FileIter*)iter;
   return result;
 }
 
@@ -379,7 +385,7 @@ fn bool
 fs_iter_next(Arena *arena, OS_FileIter *iter, OS_FileInfo *info_out)
 {
   bool result = false;
-  OS_W32_FileIter *w32_iter = (OS_W32_FileIter*)iter;
+  OS_W32_FileIter *w32_iter = (OS_W32_FileIter*)iter->memory;
   for(;!w32_iter->done;)
   {
     WCHAR *file_name = w32_iter->file_data.cFileName;
@@ -412,7 +418,7 @@ fs_iter_next(Arena *arena, OS_FileIter *iter, OS_FileInfo *info_out)
 fn void
 fs_iter_end(OS_FileIter *iter)
 {
-  OS_W32_FileIter *w32_iter = (OS_W32_FileIter*)iter;
+  OS_W32_FileIter *w32_iter = (OS_W32_FileIter*)iter->memory;
   FindClose(w32_iter->handle);
 }
 
@@ -449,7 +455,7 @@ w32_entry_point_caller(int argc, WCHAR **wargv)
 int
 wmain(int argc, WCHAR **argv)
 {
-  w32_entry_point_caller(argv, argv);
+  w32_entry_point_caller(argc, argv);
   return 0;
 }
 #else
