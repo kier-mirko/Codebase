@@ -1,5 +1,6 @@
 #include <dlfcn.h>
 #include <unistd.h>
+#include <signal.h>
 #include <sys/wait.h>
 #include <sys/sysinfo.h>
 
@@ -193,12 +194,27 @@ fn void os_proc_kill(OS_ProcHandle proc) {
   lnx_primitiveFree(prim);
 }
 
-fn void os_proc_join(OS_ProcHandle proc) {
+fn void os_exit(u8 status_code) {
+  exit(status_code);
+}
+
+fn OS_ProcStatus os_proc_wait(OS_ProcHandle proc) {
   Assert(!proc.is_child);
   LNX_Primitive *prim = (LNX_Primitive *)proc.handle.h[0];
   i32 child_res;
   (void)waitpid(prim->proc, &child_res, 0);
   lnx_primitiveFree(prim);
+
+  OS_ProcStatus res = {0};
+  if (WIFEXITED(child_res)) {
+    res.state = OS_ProcState_Finished;
+    res.exit_code = WEXITSTATUS(child_res);
+  } else if (WCOREDUMP(child_res)) {
+    res.state = OS_ProcState_CoreDump;
+  } else if (WIFSIGNALED(child_res)) {
+    res.state = OS_ProcState_Killed;
+  }
+  return res;
 }
 
 fn OS_Handle os_mutex_alloc() {

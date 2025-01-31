@@ -175,10 +175,10 @@ fn void os_proc_kill(OS_ProcHandle proc) {
   bsd_primitiveFree(prim);
 }
 
-fn void os_proc_join(OS_ProcHandle proc) {
+fn void os_proc_wait(OS_ProcHandle proc) {
   Assert(!proc.is_child);
   BSD_Primitive *prim = (BSD_Primitive *)proc.handle.h[0];
-  i32 child_res;
+  i32 child_res = 0;
   (void)waitpid(prim->proc, &child_res, 0);
   bsd_primitiveFree(prim);
 }
