@@ -188,7 +188,9 @@ fn OS_ProcHandle os_proc_spawn() {
 
 fn void os_proc_kill(OS_ProcHandle proc) {
   Assert(!proc.is_child);
-  (void)kill(((LNX_Primitive *)proc.handle.h[0])->proc, SIGKILL);
+  LNX_Primitive *prim = (LNX_Primitive *)proc.handle.h[0];
+  (void)kill(prim->proc, SIGKILL);
+  lnx_primitiveFree(prim);
 }
 
 fn void os_proc_join(OS_ProcHandle proc) {
