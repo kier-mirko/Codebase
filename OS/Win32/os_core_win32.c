@@ -443,14 +443,14 @@ fs_iter_begin(Arena *arena, String8 path)
 {
   Scratch scratch = ScratchBegin(&arena, 1);
   StringStream list = {0};
-  
+
   stringstreamAppend(scratch.arena, &list, path);
   stringstreamAppend(scratch.arena, &list, Strlit("\\*"));
   path = str8FromStream(scratch.arena, list);
-  
+
   String16 path16 = UTF16From8(scratch.arena, path);
   WIN32_FIND_DATAW file_data = {0};
-  
+
   OS_W32_FileIter *iter = New(arena, OS_W32_FileIter);
   iter->handle = FindFirstFileW((WCHAR*)path16.str, &file_data);
   iter->file_data = file_data;
