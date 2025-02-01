@@ -1,16 +1,16 @@
-#ifndef BASE_TIME_H
-#define BASE_TIME_H
+#ifndef BASE_CLOCK_H
+#define BASE_CLOCK_H
 
 #include <time.h>
 
 typedef struct {
-    i32 year;
-    u8 month;
-    u8 day;
-    u8 hour;
-    u8 minute;
-    u8 second;
-    u8 ms;
+  i32 year;
+  u8 month;
+  u8 day;
+  u8 hour;
+  u8 minute;
+  u8 second;
+  u16 ms;
 } DateTime;
 
 #define UNIX_MINUTE 60
@@ -34,4 +34,11 @@ u64 unixFromDateTime(DateTime dt);
 
 DateTime localizeDateTime(DateTime dt, i8 utc_offset);
 
-#endif
+////////////////////////////////
+//- km: DenseTime <-> DateTime conversion
+typedef u64 DenseTime;
+
+fn DenseTime denseTimeFromDateTime(DateTime *date_time);
+fn DateTime dateTimeFromDenseTime(DenseTime dense_time);
+
+#endif // BASE_CLOCK_H

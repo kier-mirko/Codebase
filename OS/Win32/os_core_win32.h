@@ -52,9 +52,20 @@ StaticAssert(sizeof(OS_W32_FileIter) <= sizeof(OS_FileIter), file_iter_size_chec
 global OS_W32_State w32_state;
 
 
-fn OS_W32_Primitive* os_w32_primitive_alloc(OS_W32_PrimitiveType kind);
-fn void os_w32_primitive_release(OS_W32_Primitive *primitive);
+////////////////////////////////
+//- NOTE(km): Thread entry point
 fn DWORD os_w32_thread_entry_point(void *ptr);
 
+////////////////////////////////
+//- km: Primitive functions
+
+fn OS_W32_Primitive* os_w32_primitive_alloc(OS_W32_PrimitiveType kind);
+fn void os_w32_primitive_release(OS_W32_Primitive *primitive);
+
+////////////////////////////////
+//- km: Time conversion helpers
+
+fn DateTime os_w32_date_time_from_system_time(SYSTEMTIME* in);
+fn SYSTEMTIME os_w32_system_time_from_date_time(DateTime *in);
 
 #endif //OS_CORE_WIN32_H
