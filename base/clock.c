@@ -3,11 +3,76 @@ inline fn bool isLeapYear(u32 year) {
 	   (year % 400 == 0);
 }
 
-inline fn DateTime localCurrentDateTime(i8 utc_offset) {
-  return localizeDateTime(os_currentDateTime(), utc_offset);
+fn DateTime dateTimeFromTime64(time64 t) {
+  DateTime res = {0};
+  res.ms = t & 0x3ff;
+  res.second = (t >> 10) & 0x3f;
+  res.minute = (t >> 16) & 0x3f;
+  res.hour = (t >> 22) & 0x1f;
+  res.day = (t >> 27) & 0x1f;
+  res.month = (t >> 32) & 0xf;
+  res.year = ((t >> 36) & ~(1 << 27)) * (t >> 63 ? 1 : -1);
+  return res;
 }
 
-DateTime dateTimeFromUnix(u64 timestamp) {
+fn time64 time64FromDateTime(DateTime *dt) {
+  time64 res = (dt->year >= 0 ? 1ULL << 63 : 0);
+  res |= (u64)((dt->year >= 0 ? dt->year : -dt->year) & ~(1 << 27)) << 36;
+  res |= (u64)(dt->month) << 32;
+  res |= (u64)(dt->day) << 27;
+  res |= (dt->hour) << 22;
+  res |= (dt->minute) << 16;
+  res |= (dt->second) << 10;
+  res |= dt->ms;
+  return res;
+}
+
+fn time64 time64FromUnix(u64 timestamp) {
+  time64 res = 1ULL << 63;
+
+  u64 year = 1970;
+  for (u64 secondsXyear = isLeapYear(year)
+			  ? UNIX_LEAP_YEAR
+			  : UNIX_YEAR;
+       timestamp >= secondsXyear;
+       ++year, timestamp -= secondsXyear,
+	       secondsXyear = isLeapYear(year)
+			      ? UNIX_LEAP_YEAR
+			      : UNIX_YEAR);
+  res |= (year & ~(1 << 27)) << 36;
+
+  u64 month = 1;
+  while (1) {
+    u8 days = daysXmonth[month - 1];
+    if (month == 2 && isLeapYear(year)) {
+      ++days;
+    }
+
+    u64 secondsXmonth = days * UNIX_DAY;
+    if (timestamp < secondsXmonth) {
+      break;
+    }
+
+    timestamp -= secondsXmonth;
+    ++month;
+  }
+  res |= month << 32;
+
+  res |= (timestamp / UNIX_DAY + 1) << 27;
+  timestamp %= UNIX_DAY;
+
+  res |= (timestamp / UNIX_HOUR) << 22;
+  timestamp %= UNIX_HOUR;
+
+  res |= (timestamp / UNIX_MINUTE) << 16;
+  timestamp %= UNIX_MINUTE;
+
+  res |= timestamp << 10;
+
+  return res;
+}
+
+fn DateTime dateTimeFromUnix(u64 timestamp) {
   DateTime dt = {.year = 1970, .month = 1, .day = 1};
 
   for (u64 secondsXyear = isLeapYear(dt.year)
@@ -15,9 +80,9 @@ DateTime dateTimeFromUnix(u64 timestamp) {
 			  : UNIX_YEAR;
        timestamp >= secondsXyear;
        ++dt.year, timestamp -= secondsXyear,
-       secondsXyear = isLeapYear(dt.year)
-		      ? UNIX_LEAP_YEAR
-		      : UNIX_YEAR);
+		  secondsXyear = isLeapYear(dt.year)
+				 ? UNIX_LEAP_YEAR
+				 : UNIX_YEAR);
 
   while (1) {
     u8 days = daysXmonth[dt.month - 1];
@@ -48,20 +113,20 @@ DateTime dateTimeFromUnix(u64 timestamp) {
   return dt;
 }
 
-u64 unixFromDateTime(DateTime dt) {
-  Assert(dt.year >= 1970);
-  u64 unix_time = ((dt.day - 1) * UNIX_DAY) +
-		  (dt.hour * UNIX_HOUR) +
-		  (dt.minute * UNIX_MINUTE) +
-		  (dt.second);
+fn u64 unixFromDateTime(DateTime *dt) {
+  if (dt->year < 1970) { return 0; }
+  u64 unix_time = ((dt->day - 1) * UNIX_DAY) +
+		  (dt->hour * UNIX_HOUR) +
+		  (dt->minute * UNIX_MINUTE) +
+		  (dt->second);
 
-  for (u32 year = 1970; year < (u32)dt.year; ++year) {
+  for (u32 year = 1970; year < (u32)dt->year; ++year) {
     unix_time += isLeapYear(year) ? UNIX_LEAP_YEAR : UNIX_YEAR;
   }
 
-  for (u8 month = 1; month < dt.month; ++month) {
+  for (u8 month = 1; month < dt->month; ++month) {
     unix_time += daysXmonth[month - 1] * UNIX_DAY;
-    if (month == 2 && isLeapYear(dt.year)) {
+    if (month == 2 && isLeapYear(dt->year)) {
       unix_time += UNIX_DAY;
     }
   }
@@ -69,81 +134,27 @@ u64 unixFromDateTime(DateTime dt) {
   return unix_time;
 }
 
-// TODO: test the edge cases
-DateTime localizeDateTime(DateTime dt, i8 utc_offset) {
-  Assert(utc_offset >= -11 && utc_offset <= 14);
+fn u64 unixFromTime64(time64 timestamp) {
+  u64 res = 0;
+  if (!(timestamp >> 63)) { return 0; }
 
-  i8 new_hour = dt.hour + utc_offset;
-  if (new_hour >= 24) {
-    dt.hour = new_hour % 24;
-    ++dt.day;
-  } else if (new_hour < 0) {
-    dt.hour = 24 + new_hour;
-    --dt.day;
-  } else {
-    dt.hour = new_hour;
-    return dt;
+  i32 year = ((timestamp >> 36) & ~(1 << 27));
+  if (year < 1970) { return 0; }
+  for (i32 i = 1970; i < year; ++i) {
+    res += isLeapYear(i) ? UNIX_LEAP_YEAR : UNIX_YEAR;
   }
 
-  if (dt.day > daysXmonth[dt.month - 1]) {
-    if (dt.month == 12) {
-      dt.month = 1;
-      ++dt.year;
-    } else {
-      ++dt.month;
+  u8 time_month = (timestamp >> 32) & 0xf;
+  for (u8 month = 1; month < time_month; ++month) {
+    res += daysXmonth[month - 1] * UNIX_DAY;
+    if (month == 2 && isLeapYear(year)) {
+      res += UNIX_DAY;
     }
-
-    dt.day = dt.day % daysXmonth[dt.month - 1];
-  } else if (dt.day == 0) {
-    if (dt.month == 1) {
-      dt.month = 12;
-      --dt.year;
-    } else {
-      --dt.month;
-    }
-
-    dt.day = daysXmonth[dt.month - 1];
   }
 
-  return dt;
-}
-
-fn DenseTime denseTimeFromDateTime(DateTime *date_time){
-  DenseTime result = 0;
-  
-  result += date_time->year;
-  result *= 12;
-  result += date_time->month;
-  result *= 31;
-  result += date_time->day;
-  result *= 24;
-  result += date_time->hour;
-  result *= 60;
-  result += date_time->minute;
-  result *= 60;
-  result += date_time->second;
-  result *= 1000;
-  result += date_time->ms;
-  
-  return result;
-}
-
-fn DateTime dateTimeFromDenseTime(DenseTime dense_time){
-  DateTime result = {0};
-  
-  result.ms = dense_time % 1000;
-  dense_time /= 1000;
-  result.second = dense_time % 60;
-  dense_time /= 60;
-  result.minute = dense_time % 60;
-  dense_time /= 60;
-  result.hour = dense_time % 24;
-  dense_time /= 24;
-  result.day = dense_time % 31;
-  dense_time /= 31;
-  result.month = dense_time % 12;
-  dense_time /= 12;
-  result.year = (u32)dense_time;
-  
-  return result;
+  res += (((timestamp >> 27) & 0x1f) - 1) * UNIX_DAY;
+  res += ((timestamp >> 22) & 0x1f) * UNIX_HOUR;
+  res += ((timestamp >> 16) & 0x3f) * UNIX_MINUTE;
+  res += (timestamp >> 10) & 0x3f;
+  return res;
 }

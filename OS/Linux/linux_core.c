@@ -108,12 +108,68 @@ fn OS_SystemInfo *os_getSystemInfo() {
   return &lnx_state.info;
 }
 
-fn void os_sleep(f32 ms) {
-  usleep((u32)(ms * 1000.f));
+fn time64 os_local_now() {
+  struct timespec tms;
+  struct tm lt = {0};
+
+  (void)clock_gettime(CLOCK_REALTIME, &tms);
+  (void)localtime_r(&tms.tv_sec, &lt);
+
+  time64 res = time64FromUnix(tms.tv_sec + lt.tm_gmtoff);
+  res |= (u64)(tms.tv_nsec / 1e6);
+  return res;
 }
 
-fn DateTime os_currentDateTime() {
-  return dateTimeFromUnix(time(0));
+fn DateTime os_local_dateTimeNow() {
+  struct timespec tms;
+  struct tm lt = {0};
+
+  (void)clock_gettime(CLOCK_REALTIME, &tms);
+  (void)localtime_r(&tms.tv_sec, &lt);
+
+  DateTime res = dateTimeFromUnix(tms.tv_sec + lt.tm_gmtoff);
+  res.ms = tms.tv_nsec / 1e6;
+  return res;
+}
+
+fn time64 os_utc_now() {
+  struct timespec tms;
+  (void)clock_gettime(CLOCK_REALTIME, &tms);
+
+  time64 res = time64FromUnix(tms.tv_sec);
+  res |= (u64)(tms.tv_nsec / 1e6);
+  return res;
+}
+
+fn DateTime os_utc_dateTimeNow() {
+  struct timespec tms;
+  (void)clock_gettime(CLOCK_REALTIME, &tms);
+
+  DateTime res = dateTimeFromUnix(tms.tv_sec);
+  res.ms = tms.tv_nsec / 1e6;
+  return res;
+}
+
+fn time64 os_utc_localizedTime64(i8 utc_offset) {
+  struct timespec tms;
+  (void)clock_gettime(CLOCK_REALTIME, &tms);
+
+  time64 res = time64FromUnix(tms.tv_sec + utc_offset * UNIX_HOUR);
+  res |= (u64)(tms.tv_nsec / 1e6);
+  return res;
+}
+
+fn DateTime os_utc_localizedDateTime(i8 utc_offset) {
+  struct timespec tms;
+  (void)clock_gettime(CLOCK_REALTIME, &tms);
+
+  DateTime res = dateTimeFromUnix(tms.tv_sec + utc_offset * UNIX_HOUR);
+  res.ms = tms.tv_nsec / 1e6;
+  return res;
+}
+
+fn void os_sleep_milliseconds(f32 ms) {
+  usleep((u32)(ms * 1000.f));
 }
 
 fn void* os_reserve(usize base_addr, usize size) {

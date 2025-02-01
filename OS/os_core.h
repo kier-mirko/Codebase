@@ -135,17 +135,16 @@ fn void start(CmdLine *cmdln);
 fn OS_SystemInfo *os_getSystemInfo();
 
 // =============================================================================
-// Misc
-fn void os_sleep(f32 ms);
+// DateTime
+fn time64 os_local_now();
+fn DateTime os_local_dateTimeNow();
 
-// =============================================================================
-// DateTime 
-fn DateTime os_currentDateTime();
-fn DateTime os_now_universal_time();
-fn DateTime os_now_unix();
-fn DateTime os_local_time_from_universal();
-fn DateTime os_universal_time_from_local();
-fn void     os_sleep_milliseconds();
+fn time64 os_utc_now();
+fn DateTime os_utc_dateTimeNow();
+fn time64 os_utc_localizedTime64(i8 utc_offset);
+fn DateTime os_utc_localizedDateTime(i8 utc_offset);
+
+fn void os_sleep_milliseconds(f32 ms);
 
 // =============================================================================
 // Memory allocation
