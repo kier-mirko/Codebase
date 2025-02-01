@@ -6,8 +6,7 @@
 #include "memory.h"
 #include "arena.h"
 #include "thread_ctx.h"
-#include "chrono.h"
-#include "clock.h"
+#include "time.h"
 #include "string.h"
 
 #if CPP

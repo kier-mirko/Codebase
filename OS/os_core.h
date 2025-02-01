@@ -29,6 +29,14 @@ typedef struct {
   u32 exit_code;
 } OS_ProcStatus;
 
+typedef u8 OS_TimerGranularity;
+enum {
+  OS_TimerGranularity_min,
+  OS_TimerGranularity_sec,
+  OS_TimerGranularity_ms,
+  OS_TimerGranularity_ns,
+};
+
 typedef struct {
   u64 page_size;
   u64 hugepage_size;
@@ -149,6 +157,9 @@ fn time64 os_utc_fromLocalTime64(time64 t);
 fn DateTime os_utc_fromLocalDateTime(DateTime *dt);
 
 fn void os_sleep_milliseconds(f32 ms);
+
+fn OS_Handle os_timer_start();
+fn u64 os_timer_elapsed(OS_TimerGranularity unit, OS_Handle start, OS_Handle end);
 
 // =============================================================================
 // Memory allocation

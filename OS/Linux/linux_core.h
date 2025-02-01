@@ -10,6 +10,7 @@ enum {
   LNX_Primitive_Thread,
   LNX_Primitive_Rwlock,
   LNX_Primitive_Mutex,
+  LNX_Primitive_Timer,
 };
 
 typedef struct LNX_Primitive {
@@ -20,6 +21,7 @@ typedef struct LNX_Primitive {
     pthread_mutex_t mutex;
     pthread_rwlock_t rwlock;
     pid_t proc;
+    struct timespec timer;
     struct {
       pthread_t handle;
       ThreadFunc *func;

@@ -1,8 +1,6 @@
 #ifndef BASE_CLOCK_H
 #define BASE_CLOCK_H
 
-#include <time.h>
-
 typedef struct {
   i32 year;
   u8 month;
@@ -36,5 +34,14 @@ fn time64 time64FromUnix(u64 timestamp);
 fn DateTime dateTimeFromUnix(u64 timestamp);
 fn u64 unixFromDateTime(DateTime *dt);
 fn u64 unixFromTime64(time64 timestamp);
+
+#define TimedScope                                                           \
+  for (OS_Handle __start = os_timer_start(), __end = {0};                    \
+       __end.h[0] == 0; __end = os_timer_start(),                            \
+           printf("%ldms (%ldns)\n",                                         \
+                  os_timer_elapsed(OS_TimerGranularity_ms, __start, __end),  \
+                  os_timer_elapsed(OS_TimerGranularity_ns, __start, __end)))
+
+#define TimeTrack(expr) TimedScope { (void)(expr); }
 
 #endif // BASE_CLOCK_H

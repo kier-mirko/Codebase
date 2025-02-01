@@ -192,6 +192,46 @@ fn void os_sleep_milliseconds(f32 ms) {
   usleep((u32)(ms * 1000.f));
 }
 
+fn OS_Handle os_timer_start() {
+  LNX_Primitive *prim = lnx_primitiveAlloc(LNX_Primitive_Timer);
+  if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, &prim->timer) != 0) {
+    lnx_primitiveFree(prim);
+    prim = 0;
+  }
+
+  OS_Handle res = {(u64)prim};
+  return res;
+}
+
+fn u64 os_timer_elapsed(OS_TimerGranularity unit, OS_Handle start, OS_Handle end) {
+  struct timespec tstart = ((LNX_Primitive *)start.h[0])->timer;
+  struct timespec tend = ((LNX_Primitive *)end.h[0])->timer;
+  struct timespec diff = {
+    .tv_sec = tend.tv_sec - tstart.tv_sec,
+    .tv_nsec = tend.tv_nsec - tstart.tv_nsec,
+  };
+
+  lnx_primitiveFree((LNX_Primitive *)start.h[0]);
+  lnx_primitiveFree((LNX_Primitive *)end.h[0]);
+
+  u64 res = 0;
+  switch (unit) {
+    case OS_TimerGranularity_min: {
+      res = diff.tv_sec / 60;
+    } break;
+    case OS_TimerGranularity_sec: {
+      res = diff.tv_sec;
+    } break;
+    case OS_TimerGranularity_ms: {
+      res = (u64)(diff.tv_nsec / 1e6);
+    } break;
+    case OS_TimerGranularity_ns: {
+      res = diff.tv_nsec;
+    } break;
+  }
+  return res;
+}
+
 fn void* os_reserve(usize base_addr, usize size) {
   void *res = mmap((void *)base_addr, size, PROT_NONE,
                    MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
