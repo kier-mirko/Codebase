@@ -110,25 +110,32 @@ fn OS_SystemInfo *os_getSystemInfo() {
 
 fn time64 os_local_now() {
   struct timespec tms;
-  struct tm lt = {0};
-
   (void)clock_gettime(CLOCK_REALTIME, &tms);
-  (void)localtime_r(&tms.tv_sec, &lt);
 
-  time64 res = time64FromUnix(tms.tv_sec + lt.tm_gmtoff);
+  time64 res = time64FromUnix(tms.tv_sec + lnx_state.unix_utc_offset);
   res |= (u64)(tms.tv_nsec / 1e6);
   return res;
 }
 
 fn DateTime os_local_dateTimeNow() {
   struct timespec tms;
-  struct tm lt = {0};
-
   (void)clock_gettime(CLOCK_REALTIME, &tms);
-  (void)localtime_r(&tms.tv_sec, &lt);
 
-  DateTime res = dateTimeFromUnix(tms.tv_sec + lt.tm_gmtoff);
+  DateTime res = dateTimeFromUnix(tms.tv_sec + lnx_state.unix_utc_offset);
   res.ms = tms.tv_nsec / 1e6;
+  return res;
+}
+
+fn time64 os_local_fromUTCTime64(time64 t) {
+  u64 utc_time = unixFromTime64(t);
+  time64 res = time64FromUnix(utc_time + lnx_state.unix_utc_offset);
+  return res | (t & 0x3ff);
+}
+
+fn DateTime os_local_fromUTCDateTime(DateTime *dt) {
+  u64 utc_time = unixFromDateTime(dt);
+  DateTime res = dateTimeFromUnix(utc_time + lnx_state.unix_utc_offset);
+  res.ms = dt->ms;
   return res;
 }
 
@@ -165,6 +172,19 @@ fn DateTime os_utc_localizedDateTime(i8 utc_offset) {
 
   DateTime res = dateTimeFromUnix(tms.tv_sec + utc_offset * UNIX_HOUR);
   res.ms = tms.tv_nsec / 1e6;
+  return res;
+}
+
+fn time64 os_utc_fromLocalTime64(time64 t) {
+  u64 local_time = unixFromTime64(t);
+  time64 res = time64FromUnix(local_time - lnx_state.unix_utc_offset);
+  return res | (t & 0x3ff);
+}
+
+fn DateTime os_utc_fromLocalDateTime(DateTime *dt) {
+  u64 local_time = unixFromDateTime(dt);
+  DateTime res = dateTimeFromUnix(local_time - lnx_state.unix_utc_offset);
+  res.ms = dt->ms;
   return res;
 }
 
@@ -396,6 +416,14 @@ i32 main(i32 argc, char **argv) {
   for (isize i = 1; i < argc; ++i) {
     cli.args[i - 1] = strFromCstr(argv[i]);
   }
+
+  struct timespec tms;
+  struct tm lt = {0};
+
+  (void)clock_gettime(CLOCK_REALTIME, &tms);
+  (void)localtime_r(&tms.tv_sec, &lt);
+
+  lnx_state.unix_utc_offset = lt.tm_gmtoff;
 
   start(&cli);
 }

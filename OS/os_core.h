@@ -138,11 +138,15 @@ fn OS_SystemInfo *os_getSystemInfo();
 // DateTime
 fn time64 os_local_now();
 fn DateTime os_local_dateTimeNow();
+fn time64 os_local_fromUTCTime64(time64 t);
+fn DateTime os_local_fromUTCDateTime(DateTime *dt);
 
 fn time64 os_utc_now();
 fn DateTime os_utc_dateTimeNow();
 fn time64 os_utc_localizedTime64(i8 utc_offset);
 fn DateTime os_utc_localizedDateTime(i8 utc_offset);
+fn time64 os_utc_fromLocalTime64(time64 t);
+fn DateTime os_utc_fromLocalDateTime(DateTime *dt);
 
 fn void os_sleep_milliseconds(f32 ms);
 

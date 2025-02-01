@@ -39,6 +39,8 @@ typedef struct {
   OS_SystemInfo info;
   pthread_mutex_t primitive_lock;
   LNX_Primitive *primitive_freelist;
+
+  u64 unix_utc_offset;
 } LNX_State;
 
 fn LNX_Primitive* lnx_primitiveAlloc(LNX_PrimitiveType type);
