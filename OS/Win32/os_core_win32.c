@@ -4,6 +4,193 @@ os_getSystemInfo(void)
   return &w32_state.info;
 }
 
+fn DateTime
+os_w32_date_time_from_system_time(SYSTEMTIME* in)
+{
+  DateTime result = {0};
+  result.year = in->wYear;
+  result.month = in->wMonth - 1;
+  result.day = in->wDay - 1;
+  result.hour = (u8)in->wHour;
+  result.minute = (u8)in->wMinute;
+  result.second = (u8)in->wSecond;
+  result.ms = (u16)in->wMilliseconds;
+  return result;
+}
+
+fn time64
+os_w32_time64_from_system_time(SYSTEMTIME* in) {
+  i16 year = in->wYear;
+  time64 res = (year >= 0 ? 1ULL << 63 : 0);
+  res |= (u64)((year >= 0 ? year : -year) & ~(1 << 27)) << 36;
+  res |= (u64)(in->wMonth) << 32;
+  res |= (u64)(in->wDay) << 27;
+  res |= (in->wHour) << 22;
+  res |= (in->wMinute) << 16;
+  res |= (in->wSecond) << 10;
+  res |= in->wMilliseconds;
+  return res;
+}
+
+fn SYSTEMTIME
+os_w32_system_time_from_date_time(DateTime *in)
+{
+  SYSTEMTIME result = {0};
+  result.wYear = in->year;
+  result.wMonth = in->month + 1;
+  result.wDay = in->day + 1;
+  result.wHour = in->hour;
+  result.wMinute = in->minute;
+  result.wSecond = in->second;
+  result.wMilliseconds = in->ms;
+  return result;
+}
+
+fn SYSTEMTIME
+os_w32_system_time_from_time64(time64 in) {
+  SYSTEMTIME res = {0};
+  i16 year = (in >> 36) & ~(1 << 27)  * (in >> 63 ? 1 : -1);
+  if (year < 1601 || year > 30827) { return res; }
+
+  res.wYear = year;
+  res.wMonth = (in >> 32) & 0xf;
+  res.wDay = (in >> 27) & 0x1f;
+  res.wHour = (in >> 22) & 0x1f;
+  res.wMinuine = (in >> 16) & 0x3f;
+  res.wSecond = (in >> 10) & 0x3f;
+  res.wMilliseconds = in & 0x3ff;
+  return res;
+}
+
+fn time64 os_local_now() {
+  SYSTEMTIME systime;
+  GetLocalTime(&systime);
+  return os_w32_time64_from_system_time(&systime);
+}
+
+fn DateTime os_local_dateTimeNow() {
+  SYSTEMTIME system_time;
+  GetLocalTime(&system_time);
+  DateTime result = os_w32_date_time_from_system_time(&system_time);
+  return result;
+}
+
+fn time64 os_local_fromUTCTime64(time64 in) {
+  SYSTEMTIME utc = {0};
+  SYSTEMTIME local = os_w32_system_time_from_time64(in);
+  SystemTimeToTzSpecificLocalTime(0, &local, &utc);
+  return os_w32_time64_from_system_time(&utc);
+}
+
+fn DateTime
+os_local_fromUTCDateTime(DateTime *in)
+{
+  SYSTEMTIME systime = os_w32_system_time_from_date_time(in);
+  FILETIME ftime;
+  SystemTimeToFileTime(&systime, &ftime);
+  FILETIME ftime_local;
+  FileTimeToLocalFileTime(&ftime, &ftime_local);
+  FileTimeToSystemTime(&ftime_local, &systime);
+  DateTime result = os_w32_date_time_from_system_time(&systime);
+  return result;
+}
+
+
+fn time64
+os_utc_now() {
+  SYSTEMTIME system_time;
+  GetSystemTime(&system_time);
+  return os_w32_time64_from_system_time(&system_time);
+}
+
+fn DateTime
+os_utc_dateTimeNow()
+{
+  SYSTEMTIME system_time;
+  GetSystemTime(&system_time);
+  DateTime result = os_w32_date_time_from_system_time(&system_time);
+  return result;
+}
+
+fn time64
+os_utc_localizedTime64(i8 utc_offset) {
+  time64 now = os_utc_now();
+  i32 year = ((now >> 36) & ~(1 << 27));
+  i8 month = (now >> 32) & 0xf;
+  i8 day = (now >> 27) & 0x1f;
+  i8 hour = ((now >> 22) & 0x1f) + utc_offset;
+
+  if (hour < 0) {
+    day -= 1;
+    hour += 24;
+  } else if (hour > 23) {
+    day += 1;
+    hour -= 24;
+  }
+
+  if (day < 1) {
+    month -= 1;
+    day = daysXmonth[month - 1];
+  } else if (day > daysXmonth[month - 1]) {
+    month += 1;
+    day = 1;
+  }
+
+  if (month < 1) {
+    year -= 1;
+    month = 12;
+  } else if (month > 12) {
+    year += 1;
+    month = 1;
+  }
+
+  time64 res = now;
+  res = (res & (~(bitmask27 << 36))) | (year << 36);
+  res = (res & (~(bitmask4 << 32))) | (month << 32);
+  res = (res & (~(bitmask5 << 27))) | (day << 27);
+  res = (res & (~(bitmask5 << 22))) | (hour << 22);
+  return res;
+}
+
+fn DateTime os_utc_localizedDateTime(i8 utc_offset) {
+  DateTime res = os_utc_dateTimeNow();
+  res.hour += utc_offset;
+  if (res.hour < 0) {
+    res.day -= 1;
+    res.hour += 24;
+  } else if (res.hour > 23) {
+    res.day += 1;
+    res.hour -= 24;
+  }
+
+  if (res.day < 1) {
+    res.month -= 1;
+    res.day = daysXmonth[res.month - 1];
+  } else if (res.day > daysXmonth[res.month - 1]) {
+    res.month += 1;
+    res.day = 1;
+  }
+
+  if (res.month < 1) {
+    res.year -= 1;
+    res.month = 12;
+  } else if (res.month > 12) {
+    res.year += 1;
+    res.month = 1;
+  }
+
+  return res;
+}
+
+fn time64
+os_utc_fromLocalTime64(time64 in) {
+
+}
+
+fn DateTime
+os_utc_fromLocalDateTime(DateTime *in) {
+
+}
 
 ////////////////////////////////
 //- km: memory
@@ -376,7 +563,7 @@ fs_iter_begin(Arena *arena, String8 path)
   OS_W32_FileIter *iter = New(arena, OS_W32_FileIter);
   iter->handle = FindFirstFileW((WCHAR*)path16.str, &file_data);
   iter->file_data = file_data;
-  
+
   OS_FileIter *result = New(arena, OS_FileIter);
   memcpy(result->memory, iter, sizeof(OS_W32_FileIter));
   return result;
