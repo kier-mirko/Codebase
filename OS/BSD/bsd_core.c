@@ -90,8 +90,128 @@ fn OS_SystemInfo *os_getSystemInfo() {
   return &bsd_state.info;
 }
 
-fn void os_sleep(f32 ms) {
-  usleep((u32)(ms * 1000.f));
+fn time64 os_local_now() {
+  struct timespec tms;
+  (void)clock_gettime(CLOCK_REALTIME, &tms);
+
+  time64 res = time64FromUnix(tms.tv_sec + bsd_state.unix_utc_offset);
+  res |= (u64)(tms.tv_nsec / 1e6);
+  return res;
+}
+
+fn DateTime os_local_dateTimeNow() {
+  struct timespec tms;
+  (void)clock_gettime(CLOCK_REALTIME, &tms);
+
+  DateTime res = dateTimeFromUnix(tms.tv_sec + bsd_state.unix_utc_offset);
+  res.ms = tms.tv_nsec / 1e6;
+  return res;
+}
+
+fn time64 os_local_fromUTCTime64(time64 t) {
+  u64 utc_time = unixFromTime64(t);
+  time64 res = time64FromUnix(utc_time + bsd_state.unix_utc_offset);
+  return res | (t & 0x3ff);
+}
+
+fn DateTime os_local_fromUTCDateTime(DateTime *dt) {
+  u64 utc_time = unixFromDateTime(dt);
+  DateTime res = dateTimeFromUnix(utc_time + bsd_state.unix_utc_offset);
+  res.ms = dt->ms;
+  return res;
+}
+
+fn time64 os_utc_now() {
+  struct timespec tms;
+  (void)clock_gettime(CLOCK_REALTIME, &tms);
+
+  time64 res = time64FromUnix(tms.tv_sec);
+  res |= (u64)(tms.tv_nsec / 1e6);
+  return res;
+}
+
+fn DateTime os_utc_dateTimeNow() {
+  struct timespec tms;
+  (void)clock_gettime(CLOCK_REALTIME, &tms);
+
+  DateTime res = dateTimeFromUnix(tms.tv_sec);
+  res.ms = tms.tv_nsec / 1e6;
+  return res;
+}
+
+fn time64 os_utc_localizedTime64(i8 utc_offset) {
+  struct timespec tms;
+  (void)clock_gettime(CLOCK_REALTIME, &tms);
+
+  time64 res = time64FromUnix(tms.tv_sec + utc_offset * UNIX_HOUR);
+  res |= (u64)(tms.tv_nsec / 1e6);
+  return res;
+}
+
+fn DateTime os_utc_localizedDateTime(i8 utc_offset) {
+  struct timespec tms;
+  (void)clock_gettime(CLOCK_REALTIME, &tms);
+
+  DateTime res = dateTimeFromUnix(tms.tv_sec + utc_offset * UNIX_HOUR);
+  res.ms = tms.tv_nsec / 1e6;
+  return res;
+}
+
+fn time64 os_utc_fromLocalTime64(time64 t) {
+  u64 local_time = unixFromTime64(t);
+  time64 res = time64FromUnix(local_time - bsd_state.unix_utc_offset);
+  return res | (t & 0x3ff);
+}
+
+fn DateTime os_utc_fromLocalDateTime(DateTime *dt) {
+  u64 local_time = unixFromDateTime(dt);
+  DateTime res = dateTimeFromUnix(local_time - bsd_state.unix_utc_offset);
+  res.ms = dt->ms;
+  return res;
+}
+
+fn void os_sleep_milliseconds(u32 ms) {
+  usleep(ms * 1e3);
+}
+
+fn OS_Handle os_timer_start() {
+  BSD_Primitive *prim = bsd_primitiveAlloc(BSD_Primitive_Timer);
+  if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, &prim->timer) != 0) {
+    bsd_primitiveFree(prim);
+    prim = 0;
+  }
+
+  OS_Handle res = {(u64)prim};
+  return res;
+}
+
+fn u64 os_timer_elapsed(OS_TimerGranularity unit, OS_Handle start, OS_Handle end) {
+  struct timespec tstart = ((BSD_Primitive *)start.h[0])->timer;
+  struct timespec tend = ((BSD_Primitive *)end.h[0])->timer;
+  struct timespec diff = {
+    .tv_sec = tend.tv_sec - tstart.tv_sec,
+    .tv_nsec = tend.tv_nsec - tstart.tv_nsec,
+  };
+
+  bsd_primitiveFree((BSD_Primitive *)start.h[0]);
+  bsd_primitiveFree((BSD_Primitive *)end.h[0]);
+
+  u64 res = 0;
+  switch (unit) {
+    case OS_TimerGranularity_min: {
+      res = diff.tv_sec / 60;
+    } break;
+    case OS_TimerGranularity_sec: {
+      res = diff.tv_sec;
+    } break;
+    case OS_TimerGranularity_ms: {
+      res = (u64)(diff.tv_nsec / 1e6);
+    } break;
+    case OS_TimerGranularity_ns: {
+      res = diff.tv_nsec;
+    } break;
+  }
+  return res;
 }
 
 fn DateTime os_currentDateTime() {
@@ -175,12 +295,23 @@ fn void os_proc_kill(OS_ProcHandle proc) {
   bsd_primitiveFree(prim);
 }
 
-fn void os_proc_wait(OS_ProcHandle proc) {
+fn OS_ProcStatus os_proc_wait(OS_ProcHandle proc) {
   Assert(!proc.is_child);
   BSD_Primitive *prim = (BSD_Primitive *)proc.handle.h[0];
   i32 child_res = 0;
   (void)waitpid(prim->proc, &child_res, 0);
   bsd_primitiveFree(prim);
+
+  OS_ProcStatus res = {0};
+  if (WIFEXITED(child_res)) {
+    res.state = OS_ProcState_Finished;
+    res.exit_code = WEXITSTATUS(child_res);
+  } else if (WCOREDUMP(child_res)) {
+    res.state = OS_ProcState_CoreDump;
+  } else if (WIFSIGNALED(child_res)) {
+    res.state = OS_ProcState_Killed;
+  }
+  return res;
 }
 
 fn OS_Handle os_mutex_alloc() {
@@ -317,6 +448,14 @@ i32 main(i32 argc, char **argv) {
   for (isize i = 1; i < argc; ++i) {
     cli.args[i - 1] = strFromCstr(argv[i]);
   }
+
+  struct timespec tms;
+  struct tm lt = {0};
+
+  (void)clock_gettime(CLOCK_REALTIME, &tms);
+  (void)localtime_r(&tms.tv_sec, &lt);
+
+  bsd_state.unix_utc_offset = lt.tm_gmtoff;
 
   start(&cli);
 }

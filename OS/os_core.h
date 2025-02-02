@@ -156,7 +156,7 @@ fn DateTime os_utc_localizedDateTime(i8 utc_offset);
 fn time64 os_utc_fromLocalTime64(time64 t);
 fn DateTime os_utc_fromLocalDateTime(DateTime *dt);
 
-fn void os_sleep_milliseconds(f32 ms);
+fn void os_sleep_milliseconds(u32 ms);
 
 fn OS_Handle os_timer_start();
 fn u64 os_timer_elapsed(OS_TimerGranularity unit, OS_Handle start, OS_Handle end);

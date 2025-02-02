@@ -188,8 +188,8 @@ fn DateTime os_utc_fromLocalDateTime(DateTime *dt) {
   return res;
 }
 
-fn void os_sleep_milliseconds(f32 ms) {
-  usleep((u32)(ms * 1000.f));
+fn void os_sleep_milliseconds(u32 ms) {
+  usleep(ms * 1e3);
 }
 
 fn OS_Handle os_timer_start() {

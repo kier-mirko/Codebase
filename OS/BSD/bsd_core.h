@@ -14,6 +14,7 @@ enum {
   BSD_Primitive_Thread,
   BSD_Primitive_Rwlock,
   BSD_Primitive_Mutex,
+  BSD_Primitive_Timer,
 };
 
 typedef struct {
@@ -29,6 +30,7 @@ typedef struct BSD_Primitive {
     pthread_mutex_t mutex;
     pthread_rwlock_t rwlock;
     pid_t proc;
+    struct timespec timer;
     struct {
       pthread_t handle;
       ThreadFunc *func;
@@ -49,6 +51,8 @@ typedef struct {
   String8 filemap[MEMFILES_ALLOWED];
   pthread_mutex_t primitive_lock;
   BSD_Primitive *primitive_freelist;
+
+  u64 unix_utc_offset;
 } BSD_State;
 
 fn BSD_Primitive* bsd_primitiveAlloc(BSD_PrimitiveType type);
